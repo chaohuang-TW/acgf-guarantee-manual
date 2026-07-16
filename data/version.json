@@ -1,0 +1,19 @@
+{
+  "id": "115-04",
+  "title": "農業信用保證業務作業手冊",
+  "edition": "農漁會版",
+  "versionLabel": "中華民國115年4月",
+  "pdfPageCount": 203,
+  "sourceFile": "acgf-guarantee-manual-115-04.pdf",
+  "sha256": "c4883f136acf29a04db31006a73d745d7794b7c99e7745da4e478ba8e15b52cb",
+  "isCurrent": true,
+  "noTextLayerPages": [
+    2,
+    4,
+    56,
+    126,
+    128,
+    188,
+    198
+  ]
+}

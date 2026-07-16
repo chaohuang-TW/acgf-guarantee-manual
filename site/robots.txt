@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://chaohuang-tw.github.io/acgf-guarantee-manual/sitemap.xml

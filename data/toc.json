@@ -1,0 +1,120 @@
+{
+  "parts": [
+    {
+      "id": "part-1",
+      "title": "第一篇　保證",
+      "shortTitle": "保證",
+      "printedPage": 1,
+      "sections": [
+        {"id": "guarantee-subject", "title": "壹、保證對象、貸款用途、類別、範圍、額度及期限", "printedPage": 1},
+        {"id": "guarantee-ratio", "title": "貳、保證成數", "printedPage": 6},
+        {"id": "excluded-guarantee", "title": "參、不予保證規定", "printedPage": 9},
+        {"id": "guarantee-application", "title": "肆、申請信用保證作業", "printedPage": 13}
+      ]
+    },
+    {
+      "id": "part-2",
+      "title": "第二篇　期中管理",
+      "shortTitle": "期中管理",
+      "printedPage": 24,
+      "sections": [
+        {"id": "guarantee-changes", "title": "壹、保證內容變更之處理", "printedPage": 24},
+        {"id": "guarantee-termination", "title": "貳、終止保證之處理", "printedPage": 24},
+        {"id": "credit-deterioration", "title": "參、保證貸款信用惡化之處理", "printedPage": 25},
+        {"id": "pre-negotiation", "title": "肆、保證貸款債務人聲請前置協商（調解）之處理", "printedPage": 27},
+        {"id": "overdue-guarantee", "title": "伍、保證貸款到期未獲清償之處理", "printedPage": 29},
+        {"id": "release-liability", "title": "陸、解除保證責任", "printedPage": 35}
+      ]
+    },
+    {
+      "id": "part-3",
+      "title": "第三篇　代位清償",
+      "shortTitle": "代位清償",
+      "printedPage": 36,
+      "sections": [
+        {"id": "subrogation-requirements", "title": "壹、代位清償要件", "printedPage": 36},
+        {"id": "subrogation-scope", "title": "貳、代位清償範圍", "printedPage": 38},
+        {"id": "subrogation-documents", "title": "參、代位清償應檢送文件", "printedPage": 38},
+        {"id": "subrogation-processing", "title": "肆、本基金對代位清償案件之處理", "printedPage": 39},
+        {"id": "exemption-processing", "title": "伍、本基金免責之處理", "printedPage": 40}
+      ]
+    },
+    {
+      "id": "part-4",
+      "title": "第四篇　代位清償後之債權追索",
+      "shortTitle": "債權追索",
+      "printedPage": 45,
+      "sections": [
+        {"id": "debt-recovery", "title": "代位清償後之債權追索", "printedPage": 45}
+      ]
+    }
+  ],
+  "appendices": [
+    {"id": "appendix-01", "title": "附錄一、台灣地區農業信用保證制度實施方案", "printedPage": 47},
+    {"id": "appendix-02", "title": "附錄二、財團法人農業信用保證基金業務處理準則", "printedPage": 48},
+    {"id": "appendix-03", "title": "附錄三、財團法人農業信用保證基金保證作業要點", "printedPage": 65},
+    {"id": "appendix-04", "title": "附錄四、財團法人農業信用保證基金農家消費貸款保證作業要點", "printedPage": 71},
+    {"id": "appendix-05", "title": "附錄五、財團法人農業信用保證基金農家綜合貸款保證作業要點", "printedPage": 75},
+    {"id": "appendix-06", "title": "附錄六、財團法人農業信用保證基金農漁產品批發市場承銷人週轉金貸款保證作業要點", "printedPage": 78},
+    {"id": "appendix-07", "title": "附錄七、財團法人農業信用保證基金農業天然災害低利貸款保證作業要點", "printedPage": 81},
+    {"id": "appendix-08", "title": "附錄八、財團法人農業信用保證基金青壯年農民從農貸款保證作業要點", "printedPage": 83},
+    {"id": "appendix-09", "title": "附錄九、財團法人農業信用保證基金農業綠能貸款保證作業要點", "printedPage": 85},
+    {"id": "appendix-10", "title": "附錄十、財團法人農業信用保證基金加強辦理農業貸款保證優惠方案", "printedPage": 88},
+    {"id": "appendix-11", "title": "附錄十一、財團法人農業信用保證基金加強辦理農業放款保證作業要點", "printedPage": 90},
+    {"id": "appendix-12", "title": "附錄十二、財團法人農業信用保證基金辦理赴新南向國家投資融資信用保證作業要點", "printedPage": 94},
+    {"id": "appendix-13", "title": "附錄十三、財團法人農業信用保證基金農民紓困貸款保證作業要點", "printedPage": 98},
+    {"id": "appendix-14", "title": "附錄十四、財團法人農業信用保證基金申請信用保證案件應加強檢核事項作業須知", "printedPage": 100},
+    {"id": "appendix-15", "title": "附錄十五、財團法人農業信用保證基金申請信用保證案件辦理票信債信查詢注意事項", "printedPage": 102},
+    {"id": "appendix-16", "title": "附錄十六、財團法人農業信用保證基金代位清償作業要點", "printedPage": 104},
+    {"id": "appendix-17", "title": "附錄十七、財團法人農業信用保證基金受理農業貸款保證範圍一覽表", "printedPage": 111},
+    {"id": "appendix-18", "title": "附錄十八、農業信用保證手續費一次總繳簡捷查索表", "printedPage": 112, "layoutOnly": true}
+  ],
+  "forms": [
+    {"code":"格式 1A","title":"農業貸款申請信用保證查詢表","printedPage":117},
+    {"code":"格式 1B","title":"保證人信用保證情形查詢表","printedPage":118},
+    {"code":"格式 1C","title":"保證對象查覆書","printedPage":119},
+    {"code":"格式 3","title":"信用保證申請書（政策性農業專案貸款個人戶用）","printedPage":120},
+    {"code":"格式 3-1","title":"信用保證申請書（一般農業貸款個人戶用）","printedPage":123},
+    {"code":"格式 3-2","title":"青壯年農民從農貸款信用保證申請書（青年農民專用）","printedPage":126},
+    {"code":"格式 4","title":"信用調查表","printedPage":129},
+    {"code":"格式 4-1","title":"企業戶信用調查表","printedPage":130},
+    {"code":"格式 5","title":"信用保證申請書（政策性農業專案貸款企業戶用）","printedPage":132},
+    {"code":"格式 5-1","title":"信用保證申請書（一般農業貸款企業戶用）","printedPage":135},
+    {"code":"格式 6","title":"保證手續費收入通知單","printedPage":138},
+    {"code":"格式 9","title":"農家消費貸款信用保證申請書","printedPage":139},
+    {"code":"格式 11","title":"農家綜合貸款信用保證申請書","printedPage":141},
+    {"code":"格式 30","title":"農漁產品批發市場承銷人週轉金貸款信用保證申請書","printedPage":143},
+    {"code":"格式 33","title":"辦理赴新南向國家投資融資信用保證申請書（個人戶）","printedPage":145},
+    {"code":"格式 33-1","title":"辦理赴新南向國家投資融資信用保證申請書（企業戶）","printedPage":147},
+    {"code":"格式 12","title":"信用保證委託書（網路送保專用）","printedPage":150},
+    {"code":"格式 12-1","title":"信用保證委託書（消費性貸款網路送保專用）","printedPage":151},
+    {"code":"格式 16","title":"保證手續費匯款明細表（農漁會專用）","printedPage":152},
+    {"code":"格式 17","title":"保證貸款清償結案或餘額變更通知書","printedPage":153},
+    {"code":"格式 18","title":"信用保證貸款內容變更申請書","printedPage":154},
+    {"code":"格式 19","title":"保證貸款期中信用惡化通知書","printedPage":155},
+    {"code":"格式 20","title":"保證戶逾期案件報表","printedPage":156},
+    {"code":"格式 21","title":"保證案件逾期轉正通知書","printedPage":157},
+    {"code":"格式 22","title":"信用保證貸款轉（展）期申請書（個人戶用）","printedPage":158},
+    {"code":"格式 22-1","title":"信用保證貸款轉（展）期申請書（企業戶用）","printedPage":160},
+    {"code":"格式 23","title":"保證貸款協議分期償還申請書","printedPage":162},
+    {"code":"格式 24","title":"保證貸款塗銷抵押權、撤銷假扣押、假處分、撤回強制執行申請書","printedPage":163},
+    {"code":"格式 24-1","title":"保證貸款免予假扣押、假處分、暫緩強制執行申請書","printedPage":164},
+    {"code":"格式 25","title":"代位清償申請書","printedPage":165},
+    {"code":"格式 25A","title":"擔保品及借、保戶財產處分情形表","printedPage":166},
+    {"code":"格式 25B","title":"代位清償案件收回本金明細表","printedPage":167},
+    {"code":"格式 25C","title":"申請代位清償檢附文件影本清單","printedPage":168},
+    {"code":"格式 26","title":"代位清償申請書（農家綜合貸款專用）","printedPage":169},
+    {"code":"格式 26-1","title":"代位清償申請書（農家消費貸款專用）","printedPage":171},
+    {"code":"格式 29","title":"追償收回通知單","printedPage":173},
+    {"code":"格式 31","title":"農業信用保證基金蒐集、處理及利用個人資料告知書","printedPage":174}
+  ],
+  "specialForms": [
+    {"group":"加強辦理農業貸款保證優惠方案","code":"格式 3A","title":"信用保證申請書（政策性農業專案貸款個人戶用）","printedPage":175},
+    {"group":"加強辦理農業貸款保證優惠方案","code":"格式 3-1A","title":"信用保證申請書（一般農業貸款個人戶用）","printedPage":178},
+    {"group":"加強辦理農業貸款保證優惠方案","code":"格式 11A","title":"農家綜合貸款信用保證申請書","printedPage":181},
+    {"group":"加強辦理農業放款保證作業","code":"格式 34","title":"加強辦理農業放款信用保證申請書（政策性農業專案貸款專用）","printedPage":183},
+    {"group":"加強辦理農業放款保證作業","code":"格式 34-1","title":"加強辦理農業放款保證案件彙總表（政策性農業專案貸款專用）","printedPage":184},
+    {"group":"加強辦理農業放款保證作業","code":"格式 35","title":"加強辦理農業放款信用保證申請書（統一農（漁）貸及一般農業貸款專用）","printedPage":185},
+    {"group":"加強辦理農業放款保證作業","code":"格式 35-1","title":"加強辦理農業放款保證案件彙總表（統一農（漁）貸及一般農業貸款專用）","printedPage":186}
+  ]
+}
