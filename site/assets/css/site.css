@@ -96,6 +96,21 @@ button, input { font: inherit; }
 .index-rows li { display: grid; grid-template-columns: 1fr auto; gap: .5rem 1rem; padding: 1rem; border-bottom: 1px solid var(--border); }
 .index-rows li:last-child { border-bottom: 0; }
 .index-rows span, .index-rows small { color: var(--muted); }
+.version-history { display: grid; gap: 1.5rem; margin-block: 2rem; }
+.version-record { padding: clamp(1.25rem, 3vw, 2rem); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.version-record-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; }
+.version-record-head h2, .version-record-head p { margin-top: 0; }
+.version-status { flex: 0 0 auto; padding: .45rem .75rem; border: 2px solid var(--teal-700); border-radius: 8px; color: var(--teal-700); }
+.version-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 2rem; margin-block: 1.5rem; }
+.version-meta div { min-width: 0; padding-top: .75rem; border-top: 1px solid var(--border); }
+.version-meta dt { color: var(--muted); }
+.version-meta dd { margin: .2rem 0 0; font-weight: 650; }
+.version-meta code { font-size: .92em; overflow-wrap: anywhere; word-break: break-word; }
+.version-sha { grid-column: 1 / -1; }
+.version-actions { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; }
+.version-policy { margin-block: 2rem 4rem; padding: clamp(1.25rem, 3vw, 2rem); background: var(--surface-strong); border-radius: var(--radius); }
+.version-policy h2 { margin-top: 0; }
+.version-disclaimer { padding-top: 1rem; border-top: 1px solid var(--border); font-weight: 650; }
 .site-footer { padding-block: 2.5rem; background: var(--navy-950); color: #dbe8ed; }
 .footer-grid { width: min(1180px, calc(100% - 2rem)); margin-inline: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
 .site-footer h2 { color: #fff; font-size: 1rem; }
@@ -126,6 +141,11 @@ button, input { font: inherit; }
   .entry { min-height: 0; }
   .index-rows li { grid-template-columns: 1fr; }
   .page-card { padding: 1rem; }
+  .version-record-head { display: block; }
+  .version-status { display: inline-block; }
+  .version-meta { grid-template-columns: 1fr; }
+  .version-sha { grid-column: auto; }
+  .version-actions { display: grid; }
 }
 
 @media (prefers-reduced-motion: reduce) {

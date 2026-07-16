@@ -16,9 +16,14 @@ from pypdf import PdfReader
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
-SOURCE_PDF = ROOT / "source" / "acgf-guarantee-manual-115-04.pdf"
-DOWNLOAD_PDF = SITE / "downloads" / "acgf-guarantee-manual-115-04.pdf"
-EXPECTED_SHA = "c4883f136acf29a04db31006a73d745d7794b7c99e7745da4e478ba8e15b52cb"
+VERSION_PATH = ROOT / "data" / "version.json"
+VERSIONS_PATH = ROOT / "data" / "versions.json"
+VERSION = json.loads(VERSION_PATH.read_text(encoding="utf-8"))
+SOURCE_PDF = ROOT / "source" / VERSION["sourceFile"]
+DOWNLOAD_PDF = SITE / "downloads" / VERSION["sourceFile"]
+EXPECTED_SHA = VERSION["sha256"]
+EXPECTED_PDF_PAGES = VERSION["pdfPageCount"]
+VERSION_ROOT = f"versions/{VERSION['id']}"
 DISCLAIMER_FRAGMENT = "本網站為公開資料數位閱讀版，非農業信用保證基金官方網站"
 KEYWORDS = [
     "保證對象", "保證貸款用途", "保證成數", "最高保證成數表", "不予保證規定",
@@ -95,11 +100,60 @@ def main() -> int:
     errors: list[str] = []
     warnings: list[str] = []
 
+    if not VERSIONS_PATH.is_file():
+        errors.append("data/versions.json missing")
+        versions = []
+    else:
+        try:
+            versions = json.loads(VERSIONS_PATH.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            errors.append(f"invalid data/versions.json: {exc}")
+            versions = []
+    if not isinstance(versions, list) or not versions:
+        errors.append("data/versions.json must contain at least one version record")
+        versions = []
+
+    current_records = [record for record in versions if record.get("isCurrent") is True]
+    if len(current_records) != 1:
+        errors.append(f"expected exactly one current version, found {len(current_records)}")
+        current = None
+    else:
+        current = current_records[0]
+
+    for field in ("id", "releaseTag", "sitePath"):
+        values = [record.get(field) for record in versions]
+        if len(values) != len(set(values)):
+            errors.append(f"duplicate version {field}")
+    for record in versions:
+        if record.get("status") not in {"current", "archived"}:
+            errors.append(f"invalid version status: {record.get('id')}")
+        if record.get("isCurrent") != (record.get("status") == "current"):
+            errors.append(f"version current status mismatch: {record.get('id')}")
+        if not re.fullmatch(r"v\d{3}\.\d{2}\.\d+", str(record.get("releaseTag", ""))):
+            errors.append(f"invalid release tag: {record.get('releaseTag')}")
+        expected_tag = "v" + str(record.get("id", "")).replace("-", ".") + ".0"
+        if record.get("releaseTag") != expected_tag:
+            errors.append(f"release tag does not match version id: {record.get('id')}")
+        site_path = SITE / str(record.get("sitePath", ""))
+        pdf_path = SITE / str(record.get("pdfPath", ""))
+        source_path = ROOT / "source" / str(record.get("sourceFile", ""))
+        if not site_path.is_dir():
+            errors.append(f"version sitePath missing: {record.get('sitePath')}")
+        if not pdf_path.is_file():
+            errors.append(f"version pdfPath missing: {record.get('pdfPath')}")
+        if not source_path.is_file():
+            errors.append(f"version sourceFile missing: {record.get('sourceFile')}")
+
+    if current:
+        for field in ("id", "versionLabel", "edition", "pdfPageCount", "sha256", "noTextLayerPages", "isCurrent"):
+            if current.get(field) != VERSION.get(field):
+                errors.append(f"version metadata mismatch: {field}")
+
     if not SOURCE_PDF.is_file() or not DOWNLOAD_PDF.is_file():
         errors.append("source or download PDF missing")
     else:
-        if len(PdfReader(str(SOURCE_PDF)).pages) != 203:
-            errors.append("source PDF does not contain 203 pages")
+        if len(PdfReader(str(SOURCE_PDF)).pages) != EXPECTED_PDF_PAGES:
+            errors.append(f"source PDF does not contain {EXPECTED_PDF_PAGES} pages")
         source_sha = digest(SOURCE_PDF)
         download_sha = digest(DOWNLOAD_PDF)
         if source_sha != EXPECTED_SHA or download_sha != EXPECTED_SHA or source_sha != download_sha:
@@ -108,6 +162,8 @@ def main() -> int:
     html_files = sorted(SITE.rglob("*.html"))
     if not html_files:
         errors.append("no HTML files generated")
+    if current and len(html_files) != current.get("htmlPageCount"):
+        errors.append(f"HTML page count mismatch: actual {len(html_files)}, recorded {current.get('htmlPageCount')}")
 
     for page in html_files:
         text = page.read_text(encoding="utf-8")
@@ -148,7 +204,7 @@ def main() -> int:
             errors.append("duplicate search index ids")
         for record in search:
             pdf_page = record.get("pdfPage")
-            if not isinstance(pdf_page, int) or not 1 <= pdf_page <= 203:
+            if not isinstance(pdf_page, int) or not 1 <= pdf_page <= EXPECTED_PDF_PAGES:
                 errors.append(f"search PDF page out of range: {record.get('id')}")
             target = SITE / record["url"]
             if not target.is_file():
@@ -160,12 +216,42 @@ def main() -> int:
             if normalize(keyword) not in corpus:
                 errors.append(f"required keyword not searchable: {keyword}")
 
+    if current and len(search) != current.get("searchRecordCount"):
+        errors.append(f"search record count mismatch: actual {len(search)}, recorded {current.get('searchRecordCount')}")
+
+    versions_page = SITE / "versions" / "index.html"
+    if not versions_page.is_file():
+        errors.append("version history page missing")
+    else:
+        versions_text = versions_page.read_text(encoding="utf-8")
+        versions_parser = PageParser()
+        versions_parser.feed(versions_text)
+        if DISCLAIMER_FRAGMENT not in versions_text:
+            errors.append("version history page missing disclaimer")
+        if versions_parser.h1_count != 1:
+            errors.append(f"version history page expected one h1, found {versions_parser.h1_count}")
+        duplicate_version_ids = sorted({item for item in versions_parser.ids if versions_parser.ids.count(item) > 1})
+        if duplicate_version_ids:
+            errors.append(f"duplicate ids in version history page: {duplicate_version_ids}")
+
+    expected_versions_page = (SITE / "versions" / "index.html").resolve()
+    home_parser = PageParser()
+    home_parser.feed((SITE / "index.html").read_text(encoding="utf-8"))
+    if not any(resolve_link(SITE / "index.html", href) == expected_versions_page for href in home_parser.links):
+        errors.append("homepage does not link to version history")
+    content_root = SITE / VERSION_ROOT
+    for content_page in sorted(content_root.rglob("*.html")):
+        content_parser = PageParser()
+        content_parser.feed(content_page.read_text(encoding="utf-8"))
+        if not any(resolve_link(content_page, href) == expected_versions_page for href in content_parser.links):
+            errors.append(f"content page does not link to version history: {content_page.relative_to(SITE)}")
+
     for part in range(1, 5):
-        target = SITE / f"versions/115-04/chapters/part-{part}/index.html"
+        target = SITE / f"{VERSION_ROOT}/chapters/part-{part}/index.html"
         if not target.is_file() or target.stat().st_size < 1000:
             errors.append(f"missing or blank main part: part-{part}")
     for appendix in range(1, 19):
-        if not (SITE / f"versions/115-04/appendices/appendix-{appendix:02d}.html").is_file():
+        if not (SITE / f"{VERSION_ROOT}/appendices/appendix-{appendix:02d}.html").is_file():
             errors.append(f"missing appendix entry: {appendix}")
 
     joined = "\n".join(path.read_text(encoding="utf-8") for path in [SITE / "index.html", SITE / "assets/js/search.js"])
@@ -173,9 +259,6 @@ def main() -> int:
     for token in forbidden:
         if token in joined.lower():
             errors.append(f"forbidden service or tracking token: {token}")
-
-    if len(search) != 196:
-        warnings.append(f"search index contains {len(search)} records; expected 196 text-layer pages")
 
     if errors:
         print("VALIDATION FAILED")
@@ -185,7 +268,7 @@ def main() -> int:
     print("VALIDATION PASSED")
     print(f"- HTML pages: {len(html_files)}")
     print(f"- Search records: {len(search)}")
-    print("- PDF pages: 203")
+    print(f"- PDF pages: {EXPECTED_PDF_PAGES}")
     print(f"- PDF SHA-256: {EXPECTED_SHA}")
     for warning in warnings:
         print(f"- WARNING: {warning}")

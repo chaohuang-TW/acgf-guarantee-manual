@@ -1,0 +1,28 @@
+[
+  {
+    "id": "115-04",
+    "versionLabel": "中華民國115年4月",
+    "edition": "農漁會版",
+    "status": "current",
+    "isCurrent": true,
+    "releaseTag": "v115.04.0",
+    "pdfPageCount": 203,
+    "searchRecordCount": 196,
+    "htmlPageCount": 291,
+    "noTextLayerPages": [
+      2,
+      4,
+      56,
+      126,
+      128,
+      188,
+      198
+    ],
+    "sha256": "c4883f136acf29a04db31006a73d745d7794b7c99e7745da4e478ba8e15b52cb",
+    "sitePath": "versions/115-04/",
+    "pdfPath": "downloads/acgf-guarantee-manual-115-04.pdf",
+    "sourceFile": "acgf-guarantee-manual-115-04.pdf",
+    "digitalPublishedAt": "2026-07-16",
+    "notes": "第一個公開數位閱讀版本"
+  }
+]

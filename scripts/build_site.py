@@ -14,13 +14,17 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 PAGES = json.loads((ROOT / "data" / "pages.json").read_text(encoding="utf-8"))
 VERSION = json.loads((ROOT / "data" / "version.json").read_text(encoding="utf-8"))
+VERSIONS = json.loads((ROOT / "data" / "versions.json").read_text(encoding="utf-8"))
 TOC = json.loads((ROOT / "data" / "toc.json").read_text(encoding="utf-8"))
 TEMPLATES = {path.stem: path.read_text(encoding="utf-8") for path in (ROOT / "templates").glob("*.html")}
 
 BASE_PATH = "/acgf-guarantee-manual/"
 ORIGIN = "https://chaohuang-tw.github.io"
-VERSION_ROOT = "versions/115-04"
-PDF_NAME = "acgf-guarantee-manual-115-04.pdf"
+VERSION_ROOT = f"versions/{VERSION['id']}"
+PDF_NAME = VERSION["sourceFile"]
+VERSION_LABEL = VERSION["versionLabel"]
+PDF_PAGE_COUNT = VERSION["pdfPageCount"]
+REPOSITORY_URL = "https://github.com/chaohuang-TW/acgf-guarantee-manual"
 DISCLAIMER = "本網站為公開資料數位閱讀版，非農業信用保證基金官方網站。內容如與正式PDF、後續函釋或公告不一致，以正式發布文件為準。"
 
 
@@ -101,7 +105,7 @@ def page_card(page: dict, relative: str, heading_level: int = 2) -> str:
         )
     return f"""
       <section class="page-card" id="pdf-page-{pdf_page}">
-        <h{heading_level}>手冊頁：{e(printed)} <small>PDF頁：{pdf_page}／203</small></h{heading_level}>
+        <h{heading_level}>手冊頁：{e(printed)} <small>PDF頁：{pdf_page}／{PDF_PAGE_COUNT}</small></h{heading_level}>
         <div class="page-actions"><a href="{e(pdf_url)}">開啟原始PDF此頁</a></div>
         {body}
       </section>
@@ -119,6 +123,7 @@ def write(relative: str, title: str, main: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     root = rel_from(relative, "index.html")
     version_url = rel_from(relative, f"{VERSION_ROOT}/index.html")
+    versions_url = rel_from(relative, "versions/index.html")
     pdf_url = rel_from(relative, f"downloads/{PDF_NAME}")
     html_text = fill(
         TEMPLATES["base"],
@@ -129,7 +134,10 @@ def write(relative: str, title: str, main: str) -> None:
         SEARCH_INDEX=e(rel_from(relative, "assets/data/search-index.json")),
         HOME_URL=e(root),
         VERSION_URL=e(version_url),
+        VERSIONS_URL=e(versions_url),
         PDF_URL=e(pdf_url),
+        VERSION_LABEL=e(VERSION_LABEL),
+        EDITION=e(VERSION["edition"]),
         MAIN=main,
     )
     html_text = "\n".join(line.rstrip() for line in html_text.splitlines()) + "\n"
@@ -156,9 +164,9 @@ def build_home() -> None:
     keywords = ["保證對象", "保證成數", "不予保證", "保證手續費", "同一經濟利害關係人", "轉（展）期", "逾期處理", "代位清償"]
     keyword_html = "".join(f'<button type="button" data-keyword="{e(word)}">{e(word)}</button>' for word in keywords)
     hero = f"""
-      <div class="current-version">目前版本 <strong>中華民國115年4月</strong></div>
+      <div class="current-version">目前版本 <strong>{e(VERSION_LABEL)}</strong></div>
       <h1>農業信用保證業務作業手冊</h1>
-      <p class="subtitle">農漁會版｜公開資料數位閱讀版</p>
+      <p class="subtitle">{e(VERSION['edition'])}｜公開資料數位閱讀版</p>
       {search_box()}
       <div class="popular" aria-label="熱門關鍵字"><span>熱門關鍵字</span>{keyword_html}</div>
     """
@@ -175,12 +183,60 @@ def build_home() -> None:
     quick.extend(f'<a class="entry" href="{e(url)}"><strong>{e(label)}</strong><span>開啟資料</span></a>' for label, url in secondary)
     version_panel = f"""
       <h2 id="version-title">版本資訊</h2>
-      <dl><div><dt>資料版本</dt><dd>中華民國115年4月</dd></div><div><dt>來源文件</dt><dd>財團法人農業信用保證基金<br>保證業務作業手冊（農漁會版）</dd></div><div><dt>PDF實體頁數</dt><dd>203頁</dd></div></dl>
+      <dl><div><dt>資料版本</dt><dd>{e(VERSION_LABEL)}</dd></div><div><dt>來源文件</dt><dd>財團法人農業信用保證基金<br>保證業務作業手冊（{e(VERSION['edition'])}）</dd></div><div><dt>PDF實體頁數</dt><dd>{PDF_PAGE_COUNT}頁</dd></div></dl>
       <p><a class="button-link" href="downloads/{PDF_NAME}">開啟／下載完整原始PDF</a></p>
+      <p><a href="versions/index.html">查看版本紀錄</a></p>
       <p class="disclaimer">{e(DISCLAIMER)}</p>
     """
     main = fill(TEMPLATES["home"], HERO=hero, QUICK_LINKS=f'<div class="entry-grid">{"".join(quick)}</div>', VERSION_PANEL=version_panel)
     write("index.html", "首頁", main)
+
+
+def build_versions_history() -> None:
+    relative = "versions/index.html"
+    records = []
+    for version in VERSIONS:
+        status_label = "目前版本" if version["isCurrent"] else "已非最新版"
+        release_url = f'{REPOSITORY_URL}/releases/tag/{version["releaseTag"]}'
+        no_text_count = len(version["noTextLayerPages"])
+        records.append(fill(
+            TEMPLATES["versions"],
+            VERSION_LABEL=e(version["versionLabel"]),
+            EDITION=e(version["edition"]),
+            STATUS=e(status_label),
+            PUBLISHED_AT=e(version["digitalPublishedAt"]),
+            PDF_PAGE_COUNT=e(version["pdfPageCount"]),
+            SEARCH_RECORD_COUNT=e(version["searchRecordCount"]),
+            NO_TEXT_COUNT=e(no_text_count),
+            RELEASE_TAG=e(version["releaseTag"]),
+            SHA256=e(version["sha256"]),
+            VERSION_URL=e(rel_from(relative, version["sitePath"] + "index.html")),
+            PDF_URL=e(rel_from(relative, version["pdfPath"])),
+            RELEASE_URL=e(release_url),
+            REPOSITORY_URL=e(REPOSITORY_URL),
+        ))
+    content = f"""
+      <h1>版本紀錄</h1>
+      <p>本頁記錄農業信用保證業務作業手冊數位閱讀版的公開版本。各版本依原始PDF獨立保存，新版發布後不覆蓋或刪除舊版。</p>
+      <div class="version-history">{''.join(records)}</div>
+      <section class="version-policy" aria-labelledby="version-policy-title">
+        <h2 id="version-policy-title">版本保存原則</h2>
+        <ol>
+          <li>新版本以新的版本ID與網址保存。</li>
+          <li>舊版本不覆蓋、不刪除。</li>
+          <li>根目錄首頁只指向目前版本。</li>
+          <li>舊版本須標示「已非最新版」。</li>
+          <li>正式內容仍以原始PDF、後續函釋及公告為準。</li>
+        </ol>
+        <p class="version-disclaimer">{e(DISCLAIMER)}</p>
+      </section>
+    """
+    main = fill(
+        TEMPLATES["index-list"],
+        BREADCRUMB=breadcrumb([("首頁", rel_from(relative, "index.html"))], "版本紀錄"),
+        CONTENT=content,
+    )
+    write(relative, "版本紀錄", main)
 
 
 def build_version_index() -> None:
@@ -195,7 +251,7 @@ def build_version_index() -> None:
       <section class="toc-group"><h2><a href="{e(rel_from(relative, VERSION_ROOT + '/forms/index.html'))}">信用保證書表</a></h2><p>{len(TOC['forms'])}項格式入口。</p></section>
       <section class="toc-group"><h2><a href="{e(rel_from(relative, VERSION_ROOT + '/forms/special/index.html'))}">專用書表</a></h2><p>{len(TOC['specialForms'])}項格式入口。</p></section>
     """
-    content = f'<h1>中華民國115年4月完整目錄</h1>{search_box(compact=True)}<div class="toc-layout">{"".join(part_links)}{extra}</div>'
+    content = f'<h1>{e(VERSION_LABEL)}完整目錄</h1>{search_box(compact=True)}<div class="toc-layout">{"".join(part_links)}{extra}</div>'
     main = fill(TEMPLATES["index-list"], BREADCRUMB=breadcrumb([("首頁", rel_from(relative, "index.html"))], "完整目錄"), CONTENT=content)
     write(relative, "完整目錄", main)
 
@@ -305,7 +361,7 @@ def build_physical_pages_and_search() -> None:
         if page["hasTextLayer"]:
             index.append({
                 "id": f'page-{page["pdfPage"]:03d}',
-                "version": "115-04",
+                "version": VERSION["id"],
                 "title": title,
                 "breadcrumb": crumbs,
                 "url": url,
@@ -338,6 +394,7 @@ def main() -> None:
     (SITE / ".nojekyll").write_text("", encoding="utf-8")
     shutil.copytree(ROOT / "assets", SITE / "assets", dirs_exist_ok=True)
     build_home()
+    build_versions_history()
     build_version_index()
     build_parts()
     build_appendices()

@@ -1,0 +1,23 @@
+<article class="version-record" aria-labelledby="version-{{RELEASE_TAG}}">
+  <div class="version-record-head">
+    <div>
+      <h2 id="version-{{RELEASE_TAG}}">{{VERSION_LABEL}}</h2>
+      <p>{{EDITION}}</p>
+    </div>
+    <p class="version-status"><strong>狀態：</strong>{{STATUS}}</p>
+  </div>
+  <dl class="version-meta">
+    <div><dt>數位版發布日期</dt><dd>{{PUBLISHED_AT}}</dd></div>
+    <div><dt>PDF實體頁數</dt><dd>{{PDF_PAGE_COUNT}}頁</dd></div>
+    <div><dt>搜尋索引</dt><dd>{{SEARCH_RECORD_COUNT}}筆</dd></div>
+    <div><dt>無文字層頁面</dt><dd>{{NO_TEXT_COUNT}}頁</dd></div>
+    <div><dt>Release tag</dt><dd><code>{{RELEASE_TAG}}</code></dd></div>
+    <div class="version-sha"><dt>PDF SHA-256</dt><dd><code>{{SHA256}}</code></dd></div>
+  </dl>
+  <nav class="version-actions" aria-label="{{VERSION_LABEL}}版本連結">
+    <a href="{{VERSION_URL}}">開啟本版本完整目錄</a>
+    <a href="{{PDF_URL}}">開啟／下載原始PDF</a>
+    <a href="{{RELEASE_URL}}">查看GitHub Release</a>
+    <a href="{{REPOSITORY_URL}}">查看Repository</a>
+  </nav>
+</article>

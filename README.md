@@ -14,6 +14,15 @@
 
 兩份 PDF 必須保持位元完全相同，建置與驗證腳本會檢查 SHA-256。
 
+## 正式發布資料
+
+- 目前正式 Release：`v115.04.0`
+- [版本紀錄頁](https://chaohuang-tw.github.io/acgf-guarantee-manual/versions/)
+- [CHANGELOG](CHANGELOG.md)
+- [新版更新檢核清單](docs/UPDATE_CHECKLIST.md)
+- [本版 Release Notes](docs/releases/115-04.md)
+- [SHA-256 驗證檔](SHA256SUMS.txt)
+
 ## 專案結構
 
 ```text
@@ -43,12 +52,13 @@ python3 -m http.server 8000 --directory site
 
 ## 更新新版手冊
 
-1. 保留既有 `source/`、`data/` 與 `site/versions/` 版本，不覆蓋舊版。
-2. 將新版原始 PDF 以新的版本 ID 命名，例如 `115-10`。
-3. 在擷取腳本新增版本設定並重新確認實體頁數、SHA-256、印刷頁碼映射與無文字層頁面。
-4. 依新版正式目錄新增對應 `toc.json` 資料，不能沿用舊版頁碼。
-5. 依序執行擷取、建置與驗證，並抽查 PDF 原文、數字、日期、金額及百分比。
-6. 將根目錄首頁的目前版本指向新版，舊版標示為非最新版並繼續保留。
+1. 先閱讀並逐項執行 [`docs/UPDATE_CHECKLIST.md`](docs/UPDATE_CHECKLIST.md)。
+2. 保留既有 `source/`、`data/` 與 `site/versions/` 版本，不覆蓋舊版本或舊版 PDF。
+3. 不移動既有 tag，不刪除既有 GitHub Release。
+4. 將新版原始 PDF 以新的版本 ID 命名，例如 `115-10`。
+5. 重新確認實體頁數、SHA-256、印刷頁碼映射與無文字層頁面，不沿用舊版頁碼映射。
+6. 依新版正式目錄建立資料，依序擷取、建置、驗證並抽查原文、數字、日期、金額及百分比。
+7. 將根目錄首頁指向新版，舊版標示為非最新版並繼續保留。
 
 ## 擷取原則
 
