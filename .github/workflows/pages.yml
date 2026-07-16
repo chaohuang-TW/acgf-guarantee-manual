@@ -28,11 +28,18 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - name: Install validation dependency
+      - name: Install build and validation dependencies
         run: pip install -r requirements.txt
+      - name: Render source previews
+        run: python scripts/render_page_previews.py
+      - name: Preserve search index baseline
+        run: cp site/assets/data/search-index.json /tmp/search-index-before.json
+      - name: Build static site
+        run: python scripts/build_site.py
       - name: Validate static site
         run: |
           python scripts/audit_content.py
+          python scripts/validate_page_rendering.py
           python scripts/validate_site.py
       - name: Configure Pages
         uses: actions/configure-pages@v6

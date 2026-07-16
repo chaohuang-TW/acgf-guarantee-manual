@@ -10,6 +10,8 @@ import re
 import shutil
 from pathlib import Path, PurePosixPath
 
+from page_rendering import load_page_rendering
+
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 PAGES = json.loads((ROOT / "data" / "pages.json").read_text(encoding="utf-8"))
@@ -17,6 +19,12 @@ VERSION = json.loads((ROOT / "data" / "version.json").read_text(encoding="utf-8"
 VERSIONS = json.loads((ROOT / "data" / "versions.json").read_text(encoding="utf-8"))
 TOC = json.loads((ROOT / "data" / "toc.json").read_text(encoding="utf-8"))
 TEMPLATES = {path.stem: path.read_text(encoding="utf-8") for path in (ROOT / "templates").glob("*.html")}
+PAGE_RENDERING, _, RESOLVED_RENDERING = load_page_rendering()
+PREVIEW_ROOT = ROOT / "assets" / "page-previews" / VERSION["id"]
+PREVIEW_MANIFEST = {
+    int(item["pdfPage"]): item
+    for item in json.loads((PREVIEW_ROOT / "manifest.json").read_text(encoding="utf-8"))
+}
 
 BASE_PATH = "/acgf-guarantee-manual/"
 ORIGIN = "https://chaohuang-tw.github.io"
@@ -92,21 +100,72 @@ def breadcrumb(items: list[tuple[str, str | None]], current: str) -> str:
     return '<nav class="breadcrumb" aria-label="麵包屑">' + "<span aria-hidden=\"true\">›</span>".join(links) + "</nav>"
 
 
+def resolve_page_rendering(page: dict) -> dict:
+    return RESOLVED_RENDERING[int(page["pdfPage"])]
+
+
+def text_body(page: dict) -> str:
+    return f'<pre class="source-text">{e(page["text"])}</pre>'
+
+
+def blank_page_body() -> str:
+    return (
+        '<div class="blank-source-page" role="note"><strong>原始PDF空白頁</strong>'
+        '<p>本頁在來源文件中為空白頁，未進行文字重建或內容補充。</p></div>'
+    )
+
+
+def source_preview_body(page: dict, relative: str, rendering: dict, pdf_url: str) -> str:
+    pdf_page = page["pdfPage"]
+    manifest = PREVIEW_MANIFEST.get(pdf_page)
+    if not manifest:
+        raise ValueError(f"Missing preview manifest entry for PDF page {pdf_page}")
+    preview_url = rel_from(
+        relative, f"assets/page-previews/{VERSION['id']}/{manifest['file']}"
+    )
+    full_pdf_url = rel_from(relative, f"downloads/{PDF_NAME}")
+    details = ""
+    if page["hasTextLayer"]:
+        details = (
+            '<details class="extracted-text-details"><summary>查看PDF文字層</summary>'
+            '<div class="layout-note" role="note">下列文字取自PDF既有文字層，僅供搜尋、複製與無障礙輔助。'
+            '複雜表格的欄列位置可能失真，正式內容請以原頁預覽或PDF為準。</div>'
+            f'<pre class="source-text source-text-secondary">{e(page["text"])}</pre></details>'
+        )
+    return f"""
+        <figure class="source-preview">
+          <a class="source-preview-link" href="{e(preview_url)}" aria-label="放大查看原始PDF第{pdf_page}頁預覽">
+            <img class="source-preview-image" src="{e(preview_url)}" alt="原始PDF第{pdf_page}頁預覽：{e(rendering['label'])}" width="{manifest['width']}" height="{manifest['height']}" loading="lazy" decoding="async">
+          </a>
+          <figcaption>本頁含複雜表格或正式書表，網頁依原始PDF版面呈現。正式內容仍以原始PDF為準。</figcaption>
+        </figure>
+        <nav class="preview-actions" aria-label="PDF第{pdf_page}頁預覽操作">
+          <a href="{e(preview_url)}">放大查看原頁預覽</a>
+          <a href="{e(pdf_url)}">開啟原始PDF此頁</a>
+          <a href="{e(full_pdf_url)}">開啟／下載完整PDF</a>
+        </nav>
+        {details}
+    """
+
+
 def page_card(page: dict, relative: str, heading_level: int = 2) -> str:
     printed = page["printedPage"] or "無"
     pdf_page = page["pdfPage"]
     pdf_url = rel_from(relative, f"downloads/{PDF_NAME}") + f"#page={pdf_page}"
-    if page["hasTextLayer"]:
-        body = f'<pre class="source-text">{e(page["text"])}</pre>'
+    rendering = resolve_page_rendering(page)
+    if rendering["mode"] == "source-preview":
+        actions = ""
+        body = source_preview_body(page, relative, rendering, pdf_url)
+    elif rendering["mode"] == "blank-page":
+        actions = f'<div class="page-actions"><a href="{e(pdf_url)}">開啟原始PDF此頁</a></div>'
+        body = blank_page_body()
     else:
-        body = (
-            '<div class="layout-note" role="note"><strong>原頁影像／表單版面</strong>'
-            '<p>本頁沒有可用文字層，未使用OCR，也未猜測重建文字。請開啟原始PDF查閱。</p></div>'
-        )
+        actions = f'<div class="page-actions"><a href="{e(pdf_url)}">開啟原始PDF此頁</a></div>'
+        body = text_body(page)
     return f"""
       <section class="page-card" id="pdf-page-{pdf_page}">
         <h{heading_level}>手冊頁：{e(printed)} <small>PDF頁：{pdf_page}／{PDF_PAGE_COUNT}</small></h{heading_level}>
-        <div class="page-actions"><a href="{e(pdf_url)}">開啟原始PDF此頁</a></div>
+        {actions}
         {body}
       </section>
     """
@@ -198,6 +257,7 @@ def build_versions_history() -> None:
     for version in VERSIONS:
         status_label = "目前版本" if version["isCurrent"] else "已非最新版"
         release_url = f'{REPOSITORY_URL}/releases/tag/{version["releaseTag"]}'
+        initial_release_url = f'{REPOSITORY_URL}/releases/tag/{version["initialReleaseTag"]}'
         no_text_count = len(version["noTextLayerPages"])
         records.append(fill(
             TEMPLATES["versions"],
@@ -205,14 +265,17 @@ def build_versions_history() -> None:
             EDITION=e(version["edition"]),
             STATUS=e(status_label),
             PUBLISHED_AT=e(version["digitalPublishedAt"]),
+            UPDATED_AT=e(version["digitalUpdatedAt"]),
             PDF_PAGE_COUNT=e(version["pdfPageCount"]),
             SEARCH_RECORD_COUNT=e(version["searchRecordCount"]),
             NO_TEXT_COUNT=e(no_text_count),
             RELEASE_TAG=e(version["releaseTag"]),
+            INITIAL_RELEASE_TAG=e(version["initialReleaseTag"]),
             SHA256=e(version["sha256"]),
             VERSION_URL=e(rel_from(relative, version["sitePath"] + "index.html")),
             PDF_URL=e(rel_from(relative, version["pdfPath"])),
             RELEASE_URL=e(release_url),
+            INITIAL_RELEASE_URL=e(initial_release_url),
             REPOSITORY_URL=e(REPOSITORY_URL),
         ))
     content = f"""

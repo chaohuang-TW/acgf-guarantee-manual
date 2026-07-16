@@ -16,11 +16,13 @@
 
 ## 正式發布資料
 
-- 目前正式 Release：`v115.04.0`
+- 首次正式 Release：`v115.04.0`
+- 最新數位修正版：`v115.04.1`
 - [版本紀錄頁](https://chaohuang-tw.github.io/acgf-guarantee-manual/versions/)
 - [CHANGELOG](CHANGELOG.md)
 - [新版更新檢核清單](docs/UPDATE_CHECKLIST.md)
-- [本版 Release Notes](docs/releases/115-04.md)
+- [首次發布 Release Notes](docs/releases/115-04.md)
+- [顯示修正版 Release Notes](docs/releases/115-04-1.md)
 - [SHA-256 驗證檔](SHA256SUMS.txt)
 
 ## 專案結構
@@ -42,8 +44,10 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python scripts/extract_manual.py
+python scripts/render_page_previews.py
 python scripts/build_site.py
 python scripts/audit_content.py
+python scripts/validate_page_rendering.py
 python scripts/validate_site.py
 python3 -m http.server 8000 --directory site
 ```
@@ -66,12 +70,14 @@ python3 -m http.server 8000 --directory site
 
 不使用 OCR 的原因是避免在法規、金額、年限、成數、日期與格式編號上產生誤辨。沒有文字層的頁面會標記為「原頁影像／表單版面」，並連回原始 PDF 實體頁。
 
-## 複雜表格與正式書表
+## 複雜表格與正式書表呈現
 
-- 只有欄列順序能可靠確認時，才適合轉成 HTML 表格。
-- 查索表若無法百分之百確認文字順序，不猜測重建，版面以原始 PDF 為準。
-- 正式書表不重新設計為可填寫或可送出的線上表單。
-- 擷取文字只用於搜尋與輔助查閱，正式填表版面仍以 PDF 為準。
+- 一般文字頁使用HTML文字；複雜表格、查索表及正式書表使用完整原PDF頁面預覽。
+- PDF既有文字層仍保留於全文搜尋；預覽頁的折疊文字層只供搜尋、複製與無障礙輔助。
+- 表格欄列與正式表單格式以原PDF為準，不重新設計為可填寫或可送出的線上表單。
+- 不使用OCR，也不使用AI、自動演算法或空白字元推測重建表格。
+- 後續只有完成逐欄人工核對的表格，才可能重建為HTML表格。
+- 完整判定範圍與理由記錄於[`docs/PAGE_RENDERING_AUDIT.md`](docs/PAGE_RENDERING_AUDIT.md)。
 
 ## 全文搜尋與隱私
 
@@ -89,6 +95,8 @@ python3 -m http.server 8000 --directory site
 - 重複 ID、PDF 頁碼範圍與空白主章節
 - 四大篇、附錄一至十八及重要搜尋關鍵字
 - 外部資源、追蹤服務、AI 服務與網域根目錄絕對路徑
+
+`scripts/validate_page_rendering.py`另會檢查三種呈現模式、規則映射、WebP尺寸與比例、manifest、來源與部署圖片一致性、預覽頁HTML、空白頁、搜尋索引基準及禁用技術。
 
 `scripts/audit_content.py` 會重新讀取至少20個代表位置，逐字比對 `pages.json` 與 PDF 當下擷取結果，涵蓋前言、目錄、四大篇、附錄、查索表、一般書表及專用書表。
 

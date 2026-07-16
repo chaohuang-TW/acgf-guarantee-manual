@@ -86,6 +86,16 @@ button, input { font: inherit; }
 .page-card h2 small { display: inline-block; color: var(--muted); font-size: .9rem; font-weight: 500; }
 .page-actions { margin-bottom: 1rem; }
 .source-text { max-width: 100%; margin: 0; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); font: inherit; line-height: 1.85; }
+.source-preview { margin: 1rem 0; }
+.source-preview-link { display: block; overflow: hidden; background: #fff; border: 1px solid var(--border); border-radius: 10px; }
+.source-preview-image { display: block; width: 100%; height: auto; background: #fff; }
+.source-preview figcaption { margin-top: .75rem; color: var(--muted); line-height: 1.7; }
+.preview-actions { display: flex; flex-wrap: wrap; gap: .65rem 1rem; margin-top: 1rem; }
+.extracted-text-details { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.extracted-text-details summary { color: var(--navy-800); font-weight: 700; cursor: pointer; }
+.source-text-secondary { max-height: 32rem; margin-top: 1rem; padding: 1rem; overflow: auto; background: var(--surface-soft); border-radius: 8px; }
+.blank-source-page { margin-block: 1rem; padding: 1.25rem; background: var(--surface-soft); border: 1px dashed var(--border); border-radius: var(--radius); }
+.blank-source-page p { margin: .25rem 0 0; }
 .layout-note { margin-block: 1rem; padding: 1rem; border-left: 5px solid var(--focus); background: #fff6db; color: #493912; }
 .layout-note p { margin: .25rem 0 0; }
 .toc-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -155,7 +165,7 @@ button, input { font: inherit; }
 @media print {
   :root { color-scheme: light; --surface: #fff; --surface-soft: #fff; --text: #000; --muted: #333; --border: #bbb; --navy-950: #000; --navy-900: #000; }
   body { background: #fff; }
-  .skip-link, .identity-notice, .site-header, .section-nav, .search-panel, .page-actions, .popular { display: none !important; }
+  .skip-link, .identity-notice, .site-header, .section-nav, .search-panel, .page-actions, .preview-actions, .popular { display: none !important; }
   .reading-layout { display: block; }
   .page-card { margin-block: .75rem; padding: 0; border: 0; border-radius: 0; break-inside: auto; box-shadow: none; }
   .manual-content > h1 { margin-bottom: .25rem; }

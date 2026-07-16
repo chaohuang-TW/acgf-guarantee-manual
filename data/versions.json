@@ -5,7 +5,8 @@
     "edition": "農漁會版",
     "status": "current",
     "isCurrent": true,
-    "releaseTag": "v115.04.0",
+    "releaseTag": "v115.04.1",
+    "initialReleaseTag": "v115.04.0",
     "pdfPageCount": 203,
     "searchRecordCount": 196,
     "htmlPageCount": 291,
@@ -23,6 +24,7 @@
     "pdfPath": "downloads/acgf-guarantee-manual-115-04.pdf",
     "sourceFile": "acgf-guarantee-manual-115-04.pdf",
     "digitalPublishedAt": "2026-07-16",
-    "notes": "第一個公開數位閱讀版本"
+    "digitalUpdatedAt": "2026-07-16",
+    "notes": "第一個公開數位閱讀版本；v115.04.1改善複雜表格及正式書表顯示"
   }
 ]

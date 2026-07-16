@@ -131,9 +131,14 @@ def main() -> int:
             errors.append(f"version current status mismatch: {record.get('id')}")
         if not re.fullmatch(r"v\d{3}\.\d{2}\.\d+", str(record.get("releaseTag", ""))):
             errors.append(f"invalid release tag: {record.get('releaseTag')}")
-        expected_tag = "v" + str(record.get("id", "")).replace("-", ".") + ".0"
-        if record.get("releaseTag") != expected_tag:
+        tag_prefix = "v" + str(record.get("id", "")).replace("-", ".") + "."
+        if not str(record.get("releaseTag", "")).startswith(tag_prefix):
             errors.append(f"release tag does not match version id: {record.get('id')}")
+        initial_tag = str(record.get("initialReleaseTag", ""))
+        if not re.fullmatch(r"v\d{3}\.\d{2}\.\d+", initial_tag) or not initial_tag.startswith(tag_prefix):
+            errors.append(f"invalid initial release tag: {record.get('id')}")
+        if not record.get("digitalUpdatedAt"):
+            errors.append(f"missing digital update date: {record.get('id')}")
         site_path = SITE / str(record.get("sitePath", ""))
         pdf_path = SITE / str(record.get("pdfPath", ""))
         source_path = ROOT / "source" / str(record.get("sourceFile", ""))
@@ -233,6 +238,10 @@ def main() -> int:
         duplicate_version_ids = sorted({item for item in versions_parser.ids if versions_parser.ids.count(item) > 1})
         if duplicate_version_ids:
             errors.append(f"duplicate ids in version history page: {duplicate_version_ids}")
+        for record in versions:
+            for tag_field in ("initialReleaseTag", "releaseTag"):
+                if str(record.get(tag_field, "")) not in versions_text:
+                    errors.append(f"version history missing {tag_field}: {record.get('id')}")
 
     expected_versions_page = (SITE / "versions" / "index.html").resolve()
     home_parser = PageParser()

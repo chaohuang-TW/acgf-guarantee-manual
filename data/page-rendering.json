@@ -1,0 +1,73 @@
+{
+  "version": "115-04",
+  "defaultMode": "text",
+  "preview": {
+    "format": "webp",
+    "width": 1600,
+    "quality": 86
+  },
+  "rules": [
+    {
+      "id": "qualification-tables",
+      "mode": "source-preview",
+      "printedPageStart": 1,
+      "printedPageEnd": 2,
+      "label": "保證對象及資格認定表",
+      "reason": "複雜欄列表格"
+    },
+    {
+      "id": "maximum-guarantee-ratio",
+      "mode": "source-preview",
+      "printedPageStart": 6,
+      "printedPageEnd": 6,
+      "label": "最高保證成數表",
+      "reason": "數值對照表"
+    },
+    {
+      "id": "guarantee-fee-rates",
+      "mode": "source-preview",
+      "printedPageStart": 20,
+      "printedPageEnd": 20,
+      "label": "農業信用保證基金保證手續費率表",
+      "reason": "數值對照表；文字模式無法可靠呈現欄列關係"
+    },
+    {
+      "id": "appendix-17",
+      "mode": "source-preview",
+      "printedPageStart": 111,
+      "printedPageEnd": 111,
+      "label": "受理農業貸款保證範圍一覽表",
+      "reason": "大型範圍對照表"
+    },
+    {
+      "id": "appendix-18",
+      "mode": "source-preview",
+      "printedPageStart": 112,
+      "printedPageEnd": 116,
+      "label": "保證手續費一次總繳查索表",
+      "reason": "複雜查索表"
+    },
+    {
+      "id": "regular-and-special-forms",
+      "mode": "source-preview",
+      "printedPageStart": 117,
+      "printedPageEnd": 186,
+      "label": "信用保證書表及專用書表",
+      "reason": "正式書表版面"
+    },
+    {
+      "id": "blank-front-pages",
+      "mode": "blank-page",
+      "pdfPages": [2, 4],
+      "label": "原始PDF空白頁",
+      "reason": "原始文件空白頁"
+    },
+    {
+      "id": "no-text-layer-pages",
+      "mode": "source-preview",
+      "pdfPages": [56, 126, 128, 188, 198],
+      "label": "原頁影像或正式書表",
+      "reason": "沒有可用文字層"
+    }
+  ]
+}
