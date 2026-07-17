@@ -11,6 +11,7 @@ import shutil
 from pathlib import Path, PurePosixPath
 
 from page_rendering import load_page_rendering
+from display_text import normalize_display_text
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
@@ -105,7 +106,13 @@ def resolve_page_rendering(page: dict) -> dict:
 
 
 def text_body(page: dict) -> str:
-    return f'<pre class="source-text">{e(page["text"])}</pre>'
+    display = "".join(f"<p>{e(paragraph)}</p>" for paragraph in normalize_display_text(page["text"]))
+    return (
+        f'<div class="display-text">{display}</div>'
+        '<details class="raw-text-details"><summary>查看 PDF 原始文字層</summary>'
+        '<div class="layout-note" role="note">下列內容為 PDF 既有文字層，可能保留原始排版空白與換行；正式內容請以原始 PDF 為準。</div>'
+        f'<pre class="source-text source-text-raw">{e(page["text"])}</pre></details>'
+    )
 
 
 def blank_page_body() -> str:

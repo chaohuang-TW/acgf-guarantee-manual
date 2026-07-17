@@ -86,6 +86,12 @@ button, input { font: inherit; }
 .page-card h2 small { display: inline-block; color: var(--muted); font-size: .9rem; font-weight: 500; }
 .page-actions { margin-bottom: 1rem; }
 .source-text { max-width: 100%; margin: 0; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); font: inherit; line-height: 1.85; }
+.display-text { color: var(--text); font: inherit; line-height: 1.9; letter-spacing: normal; word-spacing: normal; text-align: left; }
+.display-text p { margin: 0 0 1em; overflow-wrap: break-word; word-break: normal; }
+.display-text p:last-child { margin-bottom: 0; }
+.raw-text-details { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.raw-text-details summary { color: var(--navy-800); font-weight: 700; cursor: pointer; }
+.source-text-raw { max-height: 32rem; margin-top: 1rem; padding: 1rem; overflow: auto; background: var(--surface-soft); border-radius: 8px; }
 .source-preview { margin: 1rem 0; }
 .source-preview-link { display: block; overflow: hidden; background: #fff; border: 1px solid var(--border); border-radius: 10px; }
 .source-preview-image { display: block; width: 100%; height: auto; background: #fff; }

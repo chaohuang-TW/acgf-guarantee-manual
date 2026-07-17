@@ -79,6 +79,13 @@ python3 -m http.server 8000 --directory site
 - 後續只有完成逐欄人工核對的表格，才可能重建為HTML表格。
 - 完整判定範圍與理由記錄於[`docs/PAGE_RENDERING_AUDIT.md`](docs/PAGE_RENDERING_AUDIT.md)。
 
+## 正文顯示正規化
+
+- PDF原始文字層與搜尋索引不修改。
+- 網頁閱讀版在建置時移除中文字間的排版空白，並合併PDF固定行寬造成的假換行。
+- 真正的章節、項次與段落仍保留；每頁可展開查看PDF原始文字層。
+- 正式內容仍以原始PDF為準；不使用AI或OCR改寫文字。
+
 ## 全文搜尋與隱私
 
 搜尋索引位於 `site/assets/data/search-index.json`，由原生 JavaScript 在使用者瀏覽器內比對完整子字串。沒有後端、資料庫、模型 API、向量搜尋、分析服務、Cookie 或使用者資料蒐集。

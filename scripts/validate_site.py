@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import re
 import sys
@@ -13,11 +14,13 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 from pypdf import PdfReader
+from display_text import non_whitespace_characters, normalize_display_text
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 VERSION_PATH = ROOT / "data" / "version.json"
 VERSIONS_PATH = ROOT / "data" / "versions.json"
+PAGES_PATH = ROOT / "data" / "pages.json"
 VERSION = json.loads(VERSION_PATH.read_text(encoding="utf-8"))
 SOURCE_PDF = ROOT / "source" / VERSION["sourceFile"]
 DOWNLOAD_PDF = SITE / "downloads" / VERSION["sourceFile"]
@@ -99,6 +102,7 @@ def resolve_link(page: Path, href: str) -> Path | None:
 def main() -> int:
     errors: list[str] = []
     warnings: list[str] = []
+    pages = json.loads(PAGES_PATH.read_text(encoding="utf-8"))
 
     if not VERSIONS_PATH.is_file():
         errors.append("data/versions.json missing")
@@ -223,6 +227,21 @@ def main() -> int:
 
     if current and len(search) != current.get("searchRecordCount"):
         errors.append(f"search record count mismatch: actual {len(search)}, recorded {current.get('searchRecordCount')}")
+
+    for page in pages:
+        raw_text = page["text"]
+        display_text = "".join(normalize_display_text(raw_text))
+        raw_characters = non_whitespace_characters(raw_text)
+        display_characters = non_whitespace_characters(display_text)
+        if raw_characters != display_characters:
+            first = next((index for index, pair in enumerate(zip(raw_characters, display_characters)) if pair[0] != pair[1]), min(len(raw_characters), len(display_characters)))
+            errors.append(f"display text character mismatch PDF page {page['pdfPage']} at {first}: raw={raw_characters[max(0, first-20):first+20]!r} display={display_characters[max(0, first-20):first+20]!r}")
+        rendering_path = SITE / f"versions/{VERSION['id']}/pages/page-{page['pdfPage']:03d}.html"
+        if rendering_path.is_file() and page["hasTextLayer"]:
+            rendered_html = rendering_path.read_text(encoding="utf-8")
+            if 'class="display-text"' in rendered_html:
+                if html.escape(raw_text) not in rendered_html:
+                    errors.append(f"raw PDF text layer missing or modified in HTML: {page['pdfPage']}")
 
     versions_page = SITE / "versions" / "index.html"
     if not versions_page.is_file():

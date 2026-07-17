@@ -184,7 +184,8 @@ def main() -> int:
         elif mode == "blank-page":
             if 'class="blank-source-page"' not in section or "source-preview-image" in section:
                 errors.append(f"invalid blank-page HTML: {number}")
-        elif '<pre class="source-text">' not in section or "source-preview-image" in section:
+        elif ('class="display-text"' not in section or 'class="raw-text-details"' not in section
+              or "source-preview-image" in section):
             errors.append(f"invalid text-mode HTML: {number}")
 
     html_files = sorted(SITE.rglob("*.html"))
