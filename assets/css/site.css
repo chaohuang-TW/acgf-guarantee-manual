@@ -46,6 +46,7 @@ button, input { font: inherit; }
 .search-row input { min-width: 0; padding: .9rem 1rem; color: var(--text); background: var(--surface); border: 2px solid var(--navy-800); border-radius: 8px; }
 .search-row input::placeholder { color: #60727a; opacity: 1; }
 .search-row button, .button-link { padding: .85rem 1.25rem; border: 0; border-radius: 8px; background: var(--teal-700); color: #fff; font-weight: 750; text-decoration: none; cursor: pointer; }
+.button-link.secondary { background: transparent; border: 2px solid currentColor; color: inherit; }
 .search-row button:active, .button-link:active { transform: translateY(1px); }
 .search-status { min-height: 1.7em; margin: .75rem 0 0; color: var(--muted); }
 .search-results { display: grid; gap: .75rem; margin-top: 1rem; }
@@ -124,6 +125,16 @@ button, input { font: inherit; }
 .version-meta code { font-size: .92em; overflow-wrap: anywhere; word-break: break-word; }
 .version-sha { grid-column: 1 / -1; }
 .version-actions { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; }
+.version-actions .button-link.secondary { color: var(--navy-800); }
+.version-update { margin-top: 1.75rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.version-update h3 { margin-top: 0; color: var(--navy-900); }
+.version-update dl, .technical-verification dl { display: grid; gap: .75rem; margin: 0; }
+.version-update dl div, .technical-verification dl div { padding-top: .75rem; border-top: 1px solid var(--border); }
+.version-update dt, .technical-verification dt { color: var(--muted); }
+.version-update dd, .technical-verification dd { margin: .2rem 0 0; }
+.technical-verification { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.technical-verification summary { color: var(--navy-800); font-weight: 700; cursor: pointer; }
+.technical-verification code { overflow-wrap: anywhere; word-break: break-word; }
 .version-policy { margin-block: 2rem 4rem; padding: clamp(1.25rem, 3vw, 2rem); background: var(--surface-strong); border-radius: var(--radius); }
 .version-policy h2 { margin-top: 0; }
 .version-disclaimer { padding-top: 1rem; border-top: 1px solid var(--border); font-weight: 650; }

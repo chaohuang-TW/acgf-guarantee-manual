@@ -6,21 +6,27 @@
     </div>
     <p class="version-status"><strong>狀態：</strong>{{STATUS}}</p>
   </div>
-  <dl class="version-meta">
-    <div><dt>首次數位發布日期</dt><dd>{{PUBLISHED_AT}}</dd></div>
-    <div><dt>數位版更新日期</dt><dd>{{UPDATED_AT}}</dd></div>
-    <div><dt>PDF實體頁數</dt><dd>{{PDF_PAGE_COUNT}}頁</dd></div>
-    <div><dt>搜尋索引</dt><dd>{{SEARCH_RECORD_COUNT}}筆</dd></div>
-    <div><dt>無文字層頁面</dt><dd>{{NO_TEXT_COUNT}}頁</dd></div>
-    <div><dt>首次數位發布</dt><dd><code>{{INITIAL_RELEASE_TAG}}</code></dd></div>
-    <div><dt>最新數位修正版</dt><dd><code>{{RELEASE_TAG}}</code></dd></div>
-    <div class="version-sha"><dt>PDF SHA-256</dt><dd><code>{{SHA256}}</code></dd></div>
-  </dl>
   <nav class="version-actions" aria-label="{{VERSION_LABEL}}版本連結">
-    <a href="{{VERSION_URL}}">開啟本版本完整目錄</a>
-    <a href="{{PDF_URL}}">開啟／下載原始PDF</a>
-    <a href="{{INITIAL_RELEASE_URL}}">查看首次發布Release</a>
-    <a href="{{RELEASE_URL}}">查看最新修正版Release</a>
-    <a href="{{REPOSITORY_URL}}">查看Repository</a>
+    <a class="button-link" href="{{VERSION_URL}}">開啟本版本完整目錄</a>
+    <a class="button-link secondary" href="{{PDF_URL}}">開啟／下載原始PDF</a>
   </nav>
+  <section class="version-update" aria-labelledby="version-update-{{RELEASE_TAG}}">
+    <h3 id="version-update-{{RELEASE_TAG}}">版本紀錄與更新說明</h3>
+    <dl>
+      <div><dt>首次數位發布</dt><dd><code>{{INITIAL_RELEASE_TAG}}</code><br>發布日期：{{PUBLISHED_AT}}<br>{{INITIAL_RELEASE_TEXT}}</dd></div>
+      <div><dt>最新數位修正版</dt><dd><code>{{RELEASE_TAG}}</code><br>更新日期：{{UPDATED_AT}}<br>{{LATEST_RELEASE_TEXT}}</dd></div>
+    </dl>
+  </section>
+  <details class="technical-verification">
+    <summary>技術驗證資訊</summary>
+    <dl>
+      <div><dt>手冊版本ID</dt><dd><code>{{VERSION_ID}}</code></dd></div>
+      <div><dt>首次數位發布版本標記</dt><dd><code>{{INITIAL_RELEASE_TAG}}</code></dd></div>
+      <div><dt>最新數位修正版版本標記</dt><dd><code>{{RELEASE_TAG}}</code></dd></div>
+      <div><dt>PDF實體頁數</dt><dd>{{PDF_PAGE_COUNT}}頁</dd></div>
+      <div><dt>搜尋索引筆數</dt><dd>{{SEARCH_RECORD_COUNT}}筆</dd></div>
+      <div><dt>無文字層頁面數量</dt><dd>{{NO_TEXT_COUNT}}頁</dd></div>
+      <div class="version-sha"><dt>PDF SHA-256</dt><dd><code>{{SHA256}}</code></dd></div>
+    </dl>
+  </details>
 </article>

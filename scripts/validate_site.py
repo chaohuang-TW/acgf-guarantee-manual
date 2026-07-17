@@ -261,12 +261,54 @@ def main() -> int:
             for tag_field in ("initialReleaseTag", "releaseTag"):
                 if str(record.get(tag_field, "")) not in versions_text:
                     errors.append(f"version history missing {tag_field}: {record.get('id')}")
+        for required in ("版本紀錄與更新說明", "首次數位發布", "最新數位修正版", "技術驗證資訊", "開啟本版本完整目錄", "開啟／下載原始PDF"):
+            if required not in versions_text:
+                errors.append(f"version history missing public version text: {required}")
+        external_actions = [href for href in versions_parser.links if urlsplit(href).scheme in {"http", "https"}]
+        if external_actions:
+            errors.append(f"version history contains external action links: {external_actions}")
+        details_match = re.search(r'<details\b[^>]*class="technical-verification"[^>]*>(.*?)</details>', versions_text, re.DOTALL)
+        if not details_match:
+            errors.append("version history missing technical verification details")
+        else:
+            opening_tag = details_match.group(0).split(">", 1)[0]
+            details_body = details_match.group(1)
+            if re.search(r"\bopen(?:\s|=|$)", opening_tag):
+                errors.append("technical verification details must be closed by default")
+            if "<summary>技術驗證資訊</summary>" not in details_body:
+                errors.append("technical verification details missing summary")
+            if "PDF SHA-256" not in details_body:
+                errors.append("technical verification details missing PDF SHA-256")
+            if re.search(r"<a\b", details_body, re.IGNORECASE):
+                errors.append("technical verification details contains a link")
 
     expected_versions_page = (SITE / "versions" / "index.html").resolve()
+    home_path = SITE / "index.html"
+    home_text = home_path.read_text(encoding="utf-8")
     home_parser = PageParser()
-    home_parser.feed((SITE / "index.html").read_text(encoding="utf-8"))
+    home_parser.feed(home_text)
     if not any(resolve_link(SITE / "index.html", href) == expected_versions_page for href in home_parser.links):
         errors.append("homepage does not link to version history")
+    for required in ("開啟本版本完整目錄", "開啟／下載原始PDF", "查看版本紀錄與更新說明"):
+        if required not in home_text:
+            errors.append(f"homepage missing public version text: {required}")
+    for forbidden in ("技術驗證資訊", "PDF SHA-256", "首次數位發布版本標記", "最新數位修正版版本標記"):
+        if forbidden in home_text:
+            errors.append(f"homepage exposes technical verification text: {forbidden}")
+
+    public_forbidden = (
+        "查看Repository",
+        "查看首次發布Release",
+        "查看最新修正版Release",
+        "GitHub Repository",
+        "github.com/chaohuang-TW/acgf-guarantee-manual",
+        "/releases/tag/",
+    )
+    for page in html_files:
+        text = page.read_text(encoding="utf-8")
+        for forbidden in public_forbidden:
+            if forbidden in text:
+                errors.append(f"public HTML contains forbidden version operation text in {page.relative_to(SITE)}: {forbidden}")
     content_root = SITE / VERSION_ROOT
     for content_page in sorted(content_root.rglob("*.html")):
         content_parser = PageParser()

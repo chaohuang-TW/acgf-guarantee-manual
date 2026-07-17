@@ -33,7 +33,6 @@ VERSION_ROOT = f"versions/{VERSION['id']}"
 PDF_NAME = VERSION["sourceFile"]
 VERSION_LABEL = VERSION["versionLabel"]
 PDF_PAGE_COUNT = VERSION["pdfPageCount"]
-REPOSITORY_URL = "https://github.com/chaohuang-TW/acgf-guarantee-manual"
 DISCLAIMER = "本網站為公開資料數位閱讀版，非農業信用保證基金官方網站。內容如與正式PDF、後續函釋或公告不一致，以正式發布文件為準。"
 
 
@@ -250,8 +249,9 @@ def build_home() -> None:
     version_panel = f"""
       <h2 id="version-title">版本資訊</h2>
       <dl><div><dt>資料版本</dt><dd>{e(VERSION_LABEL)}</dd></div><div><dt>來源文件</dt><dd>財團法人農業信用保證基金<br>保證業務作業手冊（{e(VERSION['edition'])}）</dd></div><div><dt>PDF實體頁數</dt><dd>{PDF_PAGE_COUNT}頁</dd></div></dl>
-      <p><a class="button-link" href="downloads/{PDF_NAME}">開啟／下載完整原始PDF</a></p>
-      <p><a href="versions/index.html">查看版本紀錄</a></p>
+      <p><a class="button-link" href="versions/{VERSION['id']}/index.html">開啟本版本完整目錄</a></p>
+      <p><a class="button-link secondary" href="downloads/{PDF_NAME}">開啟／下載原始PDF</a></p>
+      <p><a href="versions/index.html">查看版本紀錄與更新說明</a></p>
       <p class="disclaimer">{e(DISCLAIMER)}</p>
     """
     main = fill(TEMPLATES["home"], HERO=hero, QUICK_LINKS=f'<div class="entry-grid">{"".join(quick)}</div>', VERSION_PANEL=version_panel)
@@ -263,9 +263,9 @@ def build_versions_history() -> None:
     records = []
     for version in VERSIONS:
         status_label = "目前版本" if version["isCurrent"] else "已非最新版"
-        release_url = f'{REPOSITORY_URL}/releases/tag/{version["releaseTag"]}'
-        initial_release_url = f'{REPOSITORY_URL}/releases/tag/{version["initialReleaseTag"]}'
         no_text_count = len(version["noTextLayerPages"])
+        initial_text = "建立公開數位閱讀版，提供完整目錄、全文搜尋、原始PDF頁碼定位及版本保存。"
+        latest_text = "改善複雜表格、正式書表及一般正文的網頁閱讀呈現；原始PDF及手冊資料版本未變更。"
         records.append(fill(
             TEMPLATES["versions"],
             VERSION_LABEL=e(version["versionLabel"]),
@@ -273,6 +273,7 @@ def build_versions_history() -> None:
             STATUS=e(status_label),
             PUBLISHED_AT=e(version["digitalPublishedAt"]),
             UPDATED_AT=e(version["digitalUpdatedAt"]),
+            VERSION_ID=e(version["id"]),
             PDF_PAGE_COUNT=e(version["pdfPageCount"]),
             SEARCH_RECORD_COUNT=e(version["searchRecordCount"]),
             NO_TEXT_COUNT=e(no_text_count),
@@ -281,9 +282,8 @@ def build_versions_history() -> None:
             SHA256=e(version["sha256"]),
             VERSION_URL=e(rel_from(relative, version["sitePath"] + "index.html")),
             PDF_URL=e(rel_from(relative, version["pdfPath"])),
-            RELEASE_URL=e(release_url),
-            INITIAL_RELEASE_URL=e(initial_release_url),
-            REPOSITORY_URL=e(REPOSITORY_URL),
+            INITIAL_RELEASE_TEXT=e(initial_text),
+            LATEST_RELEASE_TEXT=e(latest_text),
         ))
     content = f"""
       <h1>版本紀錄</h1>
