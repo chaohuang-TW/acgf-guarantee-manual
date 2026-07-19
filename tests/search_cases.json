@@ -3,7 +3,7 @@
   {"query":"網路送保","intent":"查找網路送保委託書","expectedUrls":["versions/115-04/pages/page-162.html"],"expectedType":"form","aliases":["信用保證委託書","申請信用保證"]},
   {"query":"保費","intent":"查找保證手續費規定","expectedUrls":["versions/115-04/pages/page-022.html"],"expectedType":"chapter","aliases":["保證手續費","保證手續費率"]},
   {"query":"保證手續費","intent":"查找保證手續費規定","expectedUrls":["versions/115-04/pages/page-022.html","versions/115-04/pages/page-025.html"],"expectedType":"chapter","aliases":["保費","手續費率"],"ambiguous":true},
-  {"query":"手續費率","intent":"查找保證手續費率","expectedUrls":["versions/115-04/pages/page-022.html"],"expectedType":"chapter","aliases":["保證手續費率","保證手續費"]},
+  {"query":"手續費率","intent":"查找保證手續費率","expectedUrls":["versions/115-04/pages/page-028.html"],"expectedType":"chapter","aliases":["保證手續費率","保證手續費"]},
   {"query":"保證成數","intent":"查找保證成數規定","expectedUrls":["versions/115-04/pages/page-014.html"],"expectedType":"chapter","aliases":["最高保證成數"]},
   {"query":"最高保證成數","intent":"查找最高保證成數表","expectedUrls":["versions/115-04/pages/page-014.html"],"expectedType":"chapter","aliases":["保證成數"]},
   {"query":"不予保證","intent":"查找不予保證規定","expectedUrls":["versions/115-04/pages/page-017.html"],"expectedType":"chapter","aliases":["不予保證規定"]},

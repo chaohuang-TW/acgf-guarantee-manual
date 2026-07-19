@@ -42,6 +42,16 @@
             <button type="submit">搜尋</button>
           </div>
         </form>
+        <fieldset class="search-filters">
+          <legend>篩選內容類型</legend>
+          <div class="search-filter-options">
+            <button type="button" data-search-type="all" aria-pressed="true">全部</button>
+            <button type="button" data-search-type="chapter" aria-pressed="false">正文</button>
+            <button type="button" data-search-type="appendix" aria-pressed="false">附錄</button>
+            <button type="button" data-search-type="form" aria-pressed="false">書表</button>
+            <button type="button" data-search-type="lookup-table" aria-pressed="false">查索表</button>
+          </div>
+        </fieldset>
         <p class="search-status" aria-live="polite"></p>
         <div class="search-results"></div>
       </div>

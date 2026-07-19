@@ -86,6 +86,16 @@ def search_box(compact: bool = False) -> str:
             <button type="submit">搜尋</button>
           </div>
         </form>
+        <fieldset class="search-filters">
+          <legend>篩選內容類型</legend>
+          <div class="search-filter-options">
+            <button type="button" data-search-type="all" aria-pressed="true">全部</button>
+            <button type="button" data-search-type="chapter" aria-pressed="false">正文</button>
+            <button type="button" data-search-type="appendix" aria-pressed="false">附錄</button>
+            <button type="button" data-search-type="form" aria-pressed="false">書表</button>
+            <button type="button" data-search-type="lookup-table" aria-pressed="false">查索表</button>
+          </div>
+        </fieldset>
         <p class="search-status" aria-live="polite"></p>
         <div class="search-results"></div>
       </div>
@@ -404,28 +414,29 @@ def build_forms(items: list[dict], special: bool = False) -> None:
         write(item_relative, f'{item["code"]}：{item["title"]}', main)
 
 
-def classify_page(page: dict) -> tuple[str, list[str], str]:
+def classify_page(page: dict) -> tuple[str, list[str], str, str]:
     printed = int(page["printedPage"]) if page["printedPage"] else None
     if printed is None:
-        return ("前置頁或分隔頁", ["手冊"], f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html')
+        return ("前置頁或分隔頁", ["手冊"], f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html', "front-matter")
     if printed <= 46:
         part = next(part for part, end in zip(TOC["parts"], [23, 35, 44, 46]) if printed <= end)
         section = max((s for s in part["sections"] if s["printedPage"] <= printed), key=lambda s: s["printedPage"])
-        return (section["title"], [part["title"], section["title"]], f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html')
+        return (section["title"], [part["title"], section["title"]], f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html', "chapter")
     if printed <= 116:
         item = max((a for a in TOC["appendices"] if a["printedPage"] <= printed), key=lambda a: a["printedPage"])
-        return (item["title"], ["附錄", item["title"]], f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html')
+        page_type = "lookup-table" if item["id"] == "appendix-18" else "appendix"
+        return (item["title"], ["附錄", item["title"]], f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html', page_type)
     source = TOC["forms"] if printed <= 174 else TOC["specialForms"]
     item = max((f for f in source if f["printedPage"] <= printed), key=lambda f: f["printedPage"])
     parent = item.get("group", "信用保證書表")
-    return (f'{item["code"]}：{item["title"]}', [parent, item["code"]], f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html')
+    return (f'{item["code"]}：{item["title"]}', [parent, item["code"]], f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html', "form")
 
 
 def build_physical_pages_and_search() -> None:
     index = []
     for page in PAGES:
         relative = f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html'
-        title, crumbs, url = classify_page(page)
+        title, crumbs, url, page_type = classify_page(page)
         content = f'<h1>{e(title)}</h1>{page_card(page, relative)}'
         main = fill(TEMPLATES["index-list"], BREADCRUMB=breadcrumb([("首頁", rel_from(relative, "index.html")), ("完整目錄", rel_from(relative, VERSION_ROOT + "/index.html"))], f'PDF頁 {page["pdfPage"]}'), CONTENT=content)
         write(relative, f'{title}｜PDF頁 {page["pdfPage"]}', main)
@@ -439,6 +450,7 @@ def build_physical_pages_and_search() -> None:
                 "printedPage": page["printedPage"],
                 "pdfPage": page["pdfPage"],
                 "text": page["searchText"],
+                "type": page_type,
             })
     data_dir = SITE / "assets" / "data"
     data_dir.mkdir(parents=True, exist_ok=True)

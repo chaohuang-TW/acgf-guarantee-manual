@@ -48,10 +48,19 @@ button, input { font: inherit; }
 .search-row button, .button-link { padding: .85rem 1.25rem; border: 0; border-radius: 8px; background: var(--teal-700); color: #fff; font-weight: 750; text-decoration: none; cursor: pointer; }
 .button-link.secondary { background: transparent; border: 2px solid currentColor; color: inherit; }
 .search-row button:active, .button-link:active { transform: translateY(1px); }
+.search-filters { min-width: 0; margin: 1rem 0 0; padding: 0; border: 0; }
+.search-filters legend { padding: 0; color: var(--muted); font-size: .9rem; font-weight: 700; }
+.search-filter-options { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .45rem; }
+.search-filter-options button { min-width: max-content; padding: .35rem .7rem; color: var(--navy-800); background: transparent; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; }
+.search-filter-options button[aria-pressed="true"] { color: #fff; background: var(--teal-700); border-color: var(--teal-700); }
 .search-status { min-height: 1.7em; margin: .75rem 0 0; color: var(--muted); }
 .search-results { display: grid; gap: .75rem; margin-top: 1rem; }
 .search-result { padding: 1rem; border-left: 4px solid var(--teal-700); background: var(--surface-soft); }
 .search-result h3, .search-result p { margin: 0; }
+.search-result h3 { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.result-type { display: inline-flex; padding: .1rem .5rem; color: #0e4f4c; background: var(--teal-100); border-radius: 999px; font-size: .78rem; font-weight: 750; white-space: nowrap; }
+.result-snippet { margin-top: .35rem !important; overflow-wrap: anywhere; }
+.search-result mark { padding: 0 .08em; color: inherit; background: #ffe39a; border-radius: .15em; }
 .result-path, .result-pages { color: var(--muted); font-size: .9rem; }
 .popular { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: 1rem; }
 .popular span { color: var(--muted); }
@@ -164,6 +173,8 @@ button, input { font: inherit; }
   .hero { padding-block: 2.5rem; }
   .search-row { grid-template-columns: 1fr; }
   .search-row button { width: 100%; }
+  .search-filter-options { gap: .4rem; }
+  .search-filter-options button { padding-inline: .6rem; }
   .entry-grid, .toc-layout, .footer-grid { grid-template-columns: 1fr; }
   .entry { min-height: 0; }
   .index-rows li { grid-template-columns: 1fr; }
