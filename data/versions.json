@@ -5,8 +5,9 @@
     "edition": "農漁會版",
     "status": "current",
     "isCurrent": true,
-    "releaseTag": "v115.04.1",
+    "releaseTag": "v115.04.2",
     "initialReleaseTag": "v115.04.0",
+    "previousReleaseTag": "v115.04.1",
     "pdfPageCount": 203,
     "searchRecordCount": 196,
     "htmlPageCount": 291,
@@ -24,7 +25,27 @@
     "pdfPath": "downloads/acgf-guarantee-manual-115-04.pdf",
     "sourceFile": "acgf-guarantee-manual-115-04.pdf",
     "digitalPublishedAt": "2026-07-16",
-    "digitalUpdatedAt": "2026-07-16",
-    "notes": "第一個公開數位閱讀版本；v115.04.1改善複雜表格及正式書表顯示"
+    "digitalUpdatedAt": "2026-07-19",
+    "notes": "修正一般正文的中文字間排版空白與PDF假換行，並簡化公開版本操作；原始PDF與手冊資料版本未變更。",
+    "releaseHistory": [
+      {
+        "tag": "v115.04.0",
+        "date": "2026-07-16",
+        "title": "首次公開數位閱讀版",
+        "description": "建立公開數位閱讀版，提供完整目錄、全文搜尋、原始PDF頁碼定位及版本保存。"
+      },
+      {
+        "tag": "v115.04.1",
+        "date": "2026-07-16",
+        "title": "原頁預覽呈現",
+        "description": "複雜表格、查索表及正式書表改以原始PDF頁面預覽呈現。"
+      },
+      {
+        "tag": "v115.04.2",
+        "date": "2026-07-19",
+        "title": "正文閱讀修正及前台操作簡化",
+        "description": "修正一般正文的中文字間排版空白與PDF假換行，並簡化公開版本操作；原始PDF與手冊資料版本未變更。"
+      }
+    ]
   }
 ]

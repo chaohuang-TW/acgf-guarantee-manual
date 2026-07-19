@@ -264,8 +264,10 @@ def build_versions_history() -> None:
     for version in VERSIONS:
         status_label = "目前版本" if version["isCurrent"] else "已非最新版"
         no_text_count = len(version["noTextLayerPages"])
-        initial_text = "建立公開數位閱讀版，提供完整目錄、全文搜尋、原始PDF頁碼定位及版本保存。"
-        latest_text = "改善複雜表格、正式書表及一般正文的網頁閱讀呈現；原始PDF及手冊資料版本未變更。"
+        release_history = "".join(
+            f'<div><dt>{e(item["title"])}</dt><dd><code>{e(item["tag"])}</code><br>發布日期：{e(item["date"])}<br>{e(item["description"])}</dd></div>'
+            for item in version.get("releaseHistory", [])
+        )
         records.append(fill(
             TEMPLATES["versions"],
             VERSION_LABEL=e(version["versionLabel"]),
@@ -282,8 +284,7 @@ def build_versions_history() -> None:
             SHA256=e(version["sha256"]),
             VERSION_URL=e(rel_from(relative, version["sitePath"] + "index.html")),
             PDF_URL=e(rel_from(relative, version["pdfPath"])),
-            INITIAL_RELEASE_TEXT=e(initial_text),
-            LATEST_RELEASE_TEXT=e(latest_text),
+            RELEASE_HISTORY=release_history,
         ))
     content = f"""
       <h1>版本紀錄</h1>
