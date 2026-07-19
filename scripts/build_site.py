@@ -464,6 +464,8 @@ def main() -> None:
     shutil.copy2(ROOT / "source" / PDF_NAME, SITE / "downloads" / PDF_NAME)
     (SITE / ".nojekyll").write_text("", encoding="utf-8")
     shutil.copytree(ROOT / "assets", SITE / "assets", dirs_exist_ok=True)
+    (SITE / "assets" / "data").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(ROOT / "data" / "search-synonyms.json", SITE / "assets" / "data" / "search-synonyms.json")
     build_home()
     build_versions_history()
     build_version_index()
