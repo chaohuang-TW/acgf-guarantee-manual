@@ -75,29 +75,48 @@ def fill(template: str, **values: str) -> str:
     return template
 
 
-def search_box(compact: bool = False) -> str:
+def search_box(compact: bool = False, scope: str = "", scope_label: str = "本章", limit: int = 50) -> str:
     class_name = "search-panel compact" if compact else "search-panel"
+    scope_controls = ""
+    if scope:
+        scope_controls = f"""
+        <fieldset class="search-scope">
+          <legend>搜尋範圍</legend>
+          <div class="search-scope-options">
+            <button type="button" data-search-scope="local" aria-pressed="true">{e(scope_label)}</button>
+            <button type="button" data-search-scope="all" aria-pressed="false">全手冊</button>
+          </div>
+        </fieldset>"""
     return f"""
-      <div class="{class_name}" data-search>
+      <div class="{class_name}" data-search data-search-scope="{e(scope)}" data-search-scope-label="{e(scope_label)}" data-search-limit="{limit}">
         <form role="search" novalidate>
-          <label for="site-search">全文搜尋</label>
+          <label>全文搜尋
           <div class="search-row">
-            <input id="site-search" name="q" type="search" autocomplete="off" placeholder="搜尋保證成數、同一經濟利害關係人、轉（展）期、代位清償……">
+            <input name="q" type="search" autocomplete="off" aria-label="全文搜尋" placeholder="搜尋保證成數、同一經濟利害關係人、轉（展）期、代位清償……">
             <button type="submit">搜尋</button>
           </div>
+          </label>
         </form>
-        <fieldset class="search-filters">
-          <legend>篩選內容類型</legend>
-          <div class="search-filter-options">
-            <button type="button" data-search-type="all" aria-pressed="true">全部</button>
-            <button type="button" data-search-type="chapter" aria-pressed="false">正文</button>
-            <button type="button" data-search-type="appendix" aria-pressed="false">附錄</button>
-            <button type="button" data-search-type="form" aria-pressed="false">書表</button>
-            <button type="button" data-search-type="lookup-table" aria-pressed="false">查索表</button>
-          </div>
-        </fieldset>
+        {scope_controls}
+        <details class="advanced-filters">
+          <summary>進階篩選</summary>
+          <fieldset class="search-filters">
+            <legend>篩選內容類型</legend>
+            <div class="search-filter-options">
+              <button type="button" data-search-type="all" aria-pressed="true">全部</button>
+              <button type="button" data-search-type="chapter" aria-pressed="false">正文</button>
+              <button type="button" data-search-type="appendix" aria-pressed="false">附錄</button>
+              <button type="button" data-search-type="form" aria-pressed="false">書表</button>
+              <button type="button" data-search-type="lookup-table" aria-pressed="false">查索表</button>
+            </div>
+          </fieldset>
+        </details>
         <p class="search-status" aria-live="polite"></p>
         <div class="search-results"></div>
+        <div class="search-result-actions">
+          <button type="button" class="search-more" hidden>顯示更多結果</button>
+          <button type="button" class="search-search-all" hidden>改搜尋全手冊</button>
+        </div>
       </div>
     """
 
@@ -150,15 +169,16 @@ def source_preview_body(page: dict, relative: str, rendering: dict, pdf_url: str
         )
     return f"""
         <figure class="source-preview">
-          <a class="source-preview-link" href="{e(preview_url)}" aria-label="放大查看原始PDF第{pdf_page}頁預覽">
+          <a class="source-preview-link" href="{e(preview_url)}" target="_blank" rel="noopener noreferrer" aria-label="放大查看原始PDF第{pdf_page}頁預覽">
             <img class="source-preview-image" src="{e(preview_url)}" alt="原始PDF第{pdf_page}頁預覽：{e(rendering['label'])}" width="{manifest['width']}" height="{manifest['height']}" loading="lazy" decoding="async">
           </a>
           <figcaption>本頁含複雜表格或正式書表，網頁依原始PDF版面呈現。正式內容仍以原始PDF為準。</figcaption>
         </figure>
         <nav class="preview-actions" aria-label="PDF第{pdf_page}頁預覽操作">
-          <a href="{e(preview_url)}">放大查看原頁預覽</a>
-          <a href="{e(pdf_url)}">開啟原始PDF此頁</a>
-          <a href="{e(full_pdf_url)}">開啟／下載完整PDF</a>
+          <a href="{e(preview_url)}" target="_blank" rel="noopener noreferrer">放大查看原頁預覽 ↗</a>
+          <a href="{e(pdf_url)}" target="_blank" rel="noopener noreferrer">開啟原始PDF此頁 ↗</a>
+          <a href="{e(full_pdf_url)}" target="_blank" rel="noopener noreferrer">開啟完整PDF ↗</a>
+          <a href="{e(full_pdf_url)}" download>下載完整PDF</a>
         </nav>
         {details}
     """
@@ -173,10 +193,10 @@ def page_card(page: dict, relative: str, heading_level: int = 2) -> str:
         actions = ""
         body = source_preview_body(page, relative, rendering, pdf_url)
     elif rendering["mode"] == "blank-page":
-        actions = f'<div class="page-actions"><a href="{e(pdf_url)}">開啟原始PDF此頁</a></div>'
+        actions = f'<div class="page-actions"><a href="{e(pdf_url)}" target="_blank" rel="noopener noreferrer">開啟原始PDF此頁 ↗</a></div>'
         body = blank_page_body()
     else:
-        actions = f'<div class="page-actions"><a href="{e(pdf_url)}">開啟原始PDF此頁</a></div>'
+        actions = f'<div class="page-actions"><a href="{e(pdf_url)}" target="_blank" rel="noopener noreferrer">開啟原始PDF此頁 ↗</a></div>'
         body = text_body(page)
     return f"""
       <section class="page-card" id="pdf-page-{pdf_page}">
@@ -235,6 +255,34 @@ def local_part_nav(part: dict, relative: str) -> str:
     return f'<details open><summary>{e(part["title"])}</summary><ol>{"".join(links)}</ol></details>'
 
 
+def scope_for_page(page: dict) -> str:
+    """Return a stable reading-unit key derived from the existing TOC structure."""
+    printed = int(page["printedPage"]) if page["printedPage"] else None
+    if printed is None:
+        return "front-matter"
+    if printed <= 46:
+        part = next(part for part, end in zip(TOC["parts"], [23, 35, 44, 46]) if printed <= end)
+        section = max((item for item in part["sections"] if item["printedPage"] <= printed), key=lambda item: item["printedPage"])
+        return f'chapter:{part["id"]}/{section["id"]}'
+    if printed <= 116:
+        item = max((item for item in TOC["appendices"] if item["printedPage"] <= printed), key=lambda item: item["printedPage"])
+        return f'appendix:{item["id"]}'
+    source = TOC["forms"] if printed <= 174 else TOC["specialForms"]
+    item = max((item for item in source if item["printedPage"] <= printed), key=lambda item: item["printedPage"])
+    group = "special" if printed > 174 else "forms"
+    return f'form:{group}/{slug_code(item["code"])}'
+
+
+def pdf_entry(label: str, url: str, download: bool = False) -> str:
+    attributes = " download" if download else ' target="_blank" rel="noopener noreferrer"'
+    return f'<a class="button-link secondary" href="{e(url)}"{attributes}>{e(label)}</a>'
+
+
+def quick_entry(label: str, url: str) -> str:
+    attributes = ' target="_blank" rel="noopener noreferrer"' if url.startswith("downloads/") else ""
+    return f'<a class="entry" href="{e(url)}"{attributes}><strong>{e(label)}</strong><span>開啟資料</span></a>'
+
+
 def build_home() -> None:
     keywords = ["保證對象", "保證成數", "不予保證", "保證手續費", "同一經濟利害關係人", "轉（展）期", "逾期處理", "代位清償"]
     keyword_html = "".join(f'<button type="button" data-keyword="{e(word)}">{e(word)}</button>' for word in keywords)
@@ -253,14 +301,15 @@ def build_home() -> None:
         ("附錄", f"{VERSION_ROOT}/appendices/index.html"),
         ("查索表", f"{VERSION_ROOT}/appendices/appendix-18.html"),
         ("信用保證書表", f"{VERSION_ROOT}/forms/index.html"),
-        ("下載完整PDF", f"downloads/{PDF_NAME}"),
+        ("開啟完整PDF ↗", f"downloads/{PDF_NAME}"),
     ]
-    quick.extend(f'<a class="entry" href="{e(url)}"><strong>{e(label)}</strong><span>開啟資料</span></a>' for label, url in secondary)
+    quick.extend(quick_entry(label, url) for label, url in secondary)
     version_panel = f"""
       <h2 id="version-title">版本資訊</h2>
       <dl><div><dt>資料版本</dt><dd>{e(VERSION_LABEL)}</dd></div><div><dt>來源文件</dt><dd>財團法人農業信用保證基金<br>保證業務作業手冊（{e(VERSION['edition'])}）</dd></div><div><dt>PDF實體頁數</dt><dd>{PDF_PAGE_COUNT}頁</dd></div></dl>
       <p><a class="button-link" href="versions/{VERSION['id']}/index.html">開啟本版本完整目錄</a></p>
-      <p><a class="button-link secondary" href="downloads/{PDF_NAME}">開啟／下載原始PDF</a></p>
+      <p>{pdf_entry("開啟原始PDF ↗", f"downloads/{PDF_NAME}")}</p>
+      <p>{pdf_entry("下載原始PDF", f"downloads/{PDF_NAME}", download=True)}</p>
       <p><a href="versions/index.html">查看版本紀錄與更新說明</a></p>
       <p class="disclaimer">{e(DISCLAIMER)}</p>
     """
@@ -341,7 +390,7 @@ def build_parts() -> None:
     part_ends = [23, 35, 44, 46]
     for part, part_end in zip(TOC["parts"], part_ends):
         relative = f'{VERSION_ROOT}/chapters/{part["id"]}/index.html'
-        content = [f'<h1>{e(part["title"])}</h1><p class="source-meta">手冊頁 {part["printedPage"]}-{part_end}</p>']
+        content = [f'<h1>{e(part["title"])}</h1><p class="source-meta">手冊頁 {part["printedPage"]}-{part_end}</p>', search_box(compact=True, scope=f"chapter:{part['id']}/", scope_label="本章", limit=5)]
         for page in page_range(part["printedPage"], part_end):
             content.append(page_card(page, relative))
         main = fill(
@@ -354,7 +403,7 @@ def build_parts() -> None:
 
         for section, section_end in unit_ranges(part["sections"], part_end):
             section_relative = f'{VERSION_ROOT}/chapters/{part["id"]}/{section["id"]}.html'
-            section_content = [f'<h1>{e(section["title"])}</h1><p class="source-meta">手冊頁 {section["printedPage"]}-{section_end}</p>']
+            section_content = [f'<h1>{e(section["title"])}</h1><p class="source-meta">手冊頁 {section["printedPage"]}-{section_end}</p>', search_box(compact=True, scope=f"chapter:{part['id']}/{section['id']}", scope_label="本章", limit=5)]
             for page in page_range(section["printedPage"], section_end):
                 section_content.append(page_card(page, section_relative))
             section_main = fill(
@@ -372,7 +421,7 @@ def build_appendices() -> None:
     for item in TOC["appendices"]:
         target = f'{VERSION_ROOT}/appendices/{item["id"]}.html'
         rows.append(f'<li><a href="{e(rel_from(relative, target))}">{e(item["title"])}</a><span>手冊頁 {item["printedPage"]}</span></li>')
-    content = f'<h1>附錄</h1><p>完整收錄附錄一至附錄十八。複雜查索表版面請以原始PDF為準。</p><ol class="index-rows">{"".join(rows)}</ol>'
+    content = f'<h1>附錄</h1><p>完整收錄附錄一至附錄十八。複雜查索表版面請以原始PDF為準。</p>{search_box(compact=True, scope="appendix:", scope_label="附錄區", limit=5)}<ol class="index-rows">{"".join(rows)}</ol>'
     main = fill(TEMPLATES["index-list"], BREADCRUMB=breadcrumb([("首頁", rel_from(relative, "index.html")), ("完整目錄", rel_from(relative, VERSION_ROOT + "/index.html"))], "附錄"), CONTENT=content)
     write(relative, "附錄", main)
 
@@ -380,7 +429,8 @@ def build_appendices() -> None:
         item_relative = f'{VERSION_ROOT}/appendices/{item["id"]}.html'
         note = '<div class="layout-note"><strong>本表版面請以原始PDF為準</strong><p>文字層僅供全文搜尋，不據此重建欄列或數字位置。</p></div>' if item.get("layoutOnly") else ""
         cards = "".join(page_card(page, item_relative) for page in page_range(item["printedPage"], end))
-        content = f'<h1>{e(item["title"])}</h1><p class="source-meta">手冊頁 {item["printedPage"]}-{end}</p>{note}{cards}'
+        scope_label = "查索表區" if item["id"] == "appendix-18" else "目前附錄"
+        content = f'<h1>{e(item["title"])}</h1><p class="source-meta">手冊頁 {item["printedPage"]}-{end}</p>{search_box(compact=True, scope=f"appendix:{item['id']}", scope_label=scope_label, limit=5)}{note}{cards}'
         main = fill(TEMPLATES["section"], BREADCRUMB=breadcrumb([("首頁", rel_from(item_relative, "index.html")), ("完整目錄", rel_from(item_relative, VERSION_ROOT + "/index.html")), ("附錄", rel_from(item_relative, relative))], item["title"]), LOCAL_NAV='<p><a href="index.html">返回附錄目錄</a></p>', CONTENT=content)
         write(item_relative, item["title"], main)
 
@@ -396,7 +446,8 @@ def build_forms(items: list[dict], special: bool = False) -> None:
         rows.append(f'<li><a href="{e(rel_from(relative, target))}"><strong>{e(item["code"])}</strong> {e(item["title"])}</a><span>手冊頁 {item["printedPage"]}</span>{group}</li>')
     heading = "專用書表" if special else "信用保證書表"
     intro = "正式填表版面以原始PDF為準。本網站不提供可填寫或送出的線上表單。"
-    content = f'<h1>{heading}</h1><p>{intro}</p><ol class="index-rows">{"".join(rows)}</ol>'
+    group_scope = "form:special/" if special else "form:forms/"
+    content = f'<h1>{heading}</h1><p>{intro}</p>{search_box(compact=True, scope=group_scope, scope_label="目前書表區", limit=5)}<ol class="index-rows">{"".join(rows)}</ol>'
     crumbs = [("首頁", rel_from(relative, "index.html")), ("完整目錄", rel_from(relative, VERSION_ROOT + "/index.html"))]
     if special:
         crumbs.append(("信用保證書表", rel_from(relative, VERSION_ROOT + "/forms/index.html")))
@@ -408,7 +459,8 @@ def build_forms(items: list[dict], special: bool = False) -> None:
         item_relative = f'{base}/{slug_code(item["code"])}.html'
         note = '<div class="layout-note"><strong>正式書表版面請以原始PDF為準</strong><p>下列擷取文字僅供搜尋與輔助查閱，未重新設計為線上表單。</p></div>'
         cards = "".join(page_card(page, item_relative) for page in page_range(item["printedPage"], end))
-        content = f'<h1>{e(item["code"])}：{e(item["title"])}</h1><p class="source-meta">手冊頁 {item["printedPage"]}-{end}</p>{note}{cards}'
+        item_scope = f"form:{'special' if special else 'forms'}/{slug_code(item['code'])}"
+        content = f'<h1>{e(item["code"])}：{e(item["title"])}</h1><p class="source-meta">手冊頁 {item["printedPage"]}-{end}</p>{search_box(compact=True, scope=item_scope, scope_label="目前書表", limit=5)}{note}{cards}'
         parent_title = "專用書表" if special else "信用保證書表"
         main = fill(TEMPLATES["section"], BREADCRUMB=breadcrumb([("首頁", rel_from(item_relative, "index.html")), ("完整目錄", rel_from(item_relative, VERSION_ROOT + "/index.html")), (parent_title, rel_from(item_relative, relative))], f'{item["code"]}：{item["title"]}'), LOCAL_NAV=f'<p><a href="{e(rel_from(item_relative, relative))}">返回{parent_title}目錄</a></p>', CONTENT=content)
         write(item_relative, f'{item["code"]}：{item["title"]}', main)
@@ -451,6 +503,7 @@ def build_physical_pages_and_search() -> None:
                 "pdfPage": page["pdfPage"],
                 "text": page["searchText"],
                 "type": page_type,
+                "scope": scope_for_page(page),
             })
     data_dir = SITE / "assets" / "data"
     data_dir.mkdir(parents=True, exist_ok=True)

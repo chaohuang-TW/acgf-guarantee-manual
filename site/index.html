@@ -23,7 +23,7 @@
       <nav aria-label="主要導覽">
         <a href="versions/115-04/index.html">完整目錄</a>
         <a href="versions/index.html">版本紀錄</a>
-        <a href="downloads/acgf-guarantee-manual-115-04.pdf">完整PDF</a>
+        <a href="downloads/acgf-guarantee-manual-115-04.pdf" target="_blank" rel="noopener noreferrer">開啟完整PDF ↗</a>
       </nav>
     </div>
   </header>
@@ -34,26 +34,35 @@
       <h1>農業信用保證業務作業手冊</h1>
       <p class="subtitle">農漁會版｜公開資料數位閱讀版</p>
 
-      <div class="search-panel" data-search>
+      <div class="search-panel" data-search data-search-scope="" data-search-scope-label="本章" data-search-limit="50">
         <form role="search" novalidate>
-          <label for="site-search">全文搜尋</label>
+          <label>全文搜尋
           <div class="search-row">
-            <input id="site-search" name="q" type="search" autocomplete="off" placeholder="搜尋保證成數、同一經濟利害關係人、轉（展）期、代位清償……">
+            <input name="q" type="search" autocomplete="off" aria-label="全文搜尋" placeholder="搜尋保證成數、同一經濟利害關係人、轉（展）期、代位清償……">
             <button type="submit">搜尋</button>
           </div>
+          </label>
         </form>
-        <fieldset class="search-filters">
-          <legend>篩選內容類型</legend>
-          <div class="search-filter-options">
-            <button type="button" data-search-type="all" aria-pressed="true">全部</button>
-            <button type="button" data-search-type="chapter" aria-pressed="false">正文</button>
-            <button type="button" data-search-type="appendix" aria-pressed="false">附錄</button>
-            <button type="button" data-search-type="form" aria-pressed="false">書表</button>
-            <button type="button" data-search-type="lookup-table" aria-pressed="false">查索表</button>
-          </div>
-        </fieldset>
+
+        <details class="advanced-filters">
+          <summary>進階篩選</summary>
+          <fieldset class="search-filters">
+            <legend>篩選內容類型</legend>
+            <div class="search-filter-options">
+              <button type="button" data-search-type="all" aria-pressed="true">全部</button>
+              <button type="button" data-search-type="chapter" aria-pressed="false">正文</button>
+              <button type="button" data-search-type="appendix" aria-pressed="false">附錄</button>
+              <button type="button" data-search-type="form" aria-pressed="false">書表</button>
+              <button type="button" data-search-type="lookup-table" aria-pressed="false">查索表</button>
+            </div>
+          </fieldset>
+        </details>
         <p class="search-status" aria-live="polite"></p>
         <div class="search-results"></div>
+        <div class="search-result-actions">
+          <button type="button" class="search-more" hidden>顯示更多結果</button>
+          <button type="button" class="search-search-all" hidden>改搜尋全手冊</button>
+        </div>
       </div>
 
       <div class="popular" aria-label="熱門關鍵字"><span>熱門關鍵字</span><button type="button" data-keyword="保證對象">保證對象</button><button type="button" data-keyword="保證成數">保證成數</button><button type="button" data-keyword="不予保證">不予保證</button><button type="button" data-keyword="保證手續費">保證手續費</button><button type="button" data-keyword="同一經濟利害關係人">同一經濟利害關係人</button><button type="button" data-keyword="轉（展）期">轉（展）期</button><button type="button" data-keyword="逾期處理">逾期處理</button><button type="button" data-keyword="代位清償">代位清償</button></div>
@@ -61,14 +70,15 @@
   </section>
   <section class="shell section-block" aria-labelledby="quick-title">
     <h2 id="quick-title">快速入口</h2>
-    <div class="entry-grid"><a class="entry primary" href="versions/115-04/chapters/part-1/index.html"><strong>保證</strong><span>第一篇　保證</span></a><a class="entry primary" href="versions/115-04/chapters/part-2/index.html"><strong>期中管理</strong><span>第二篇　期中管理</span></a><a class="entry primary" href="versions/115-04/chapters/part-3/index.html"><strong>代位清償</strong><span>第三篇　代位清償</span></a><a class="entry primary" href="versions/115-04/chapters/part-4/index.html"><strong>債權追索</strong><span>第四篇　代位清償後之債權追索</span></a><a class="entry" href="versions/115-04/appendices/index.html"><strong>附錄</strong><span>開啟資料</span></a><a class="entry" href="versions/115-04/appendices/appendix-18.html"><strong>查索表</strong><span>開啟資料</span></a><a class="entry" href="versions/115-04/forms/index.html"><strong>信用保證書表</strong><span>開啟資料</span></a><a class="entry" href="downloads/acgf-guarantee-manual-115-04.pdf"><strong>下載完整PDF</strong><span>開啟資料</span></a></div>
+    <div class="entry-grid"><a class="entry primary" href="versions/115-04/chapters/part-1/index.html"><strong>保證</strong><span>第一篇　保證</span></a><a class="entry primary" href="versions/115-04/chapters/part-2/index.html"><strong>期中管理</strong><span>第二篇　期中管理</span></a><a class="entry primary" href="versions/115-04/chapters/part-3/index.html"><strong>代位清償</strong><span>第三篇　代位清償</span></a><a class="entry primary" href="versions/115-04/chapters/part-4/index.html"><strong>債權追索</strong><span>第四篇　代位清償後之債權追索</span></a><a class="entry" href="versions/115-04/appendices/index.html"><strong>附錄</strong><span>開啟資料</span></a><a class="entry" href="versions/115-04/appendices/appendix-18.html"><strong>查索表</strong><span>開啟資料</span></a><a class="entry" href="versions/115-04/forms/index.html"><strong>信用保證書表</strong><span>開啟資料</span></a><a class="entry" href="downloads/acgf-guarantee-manual-115-04.pdf" target="_blank" rel="noopener noreferrer"><strong>開啟完整PDF ↗</strong><span>開啟資料</span></a></div>
   </section>
   <section class="shell section-block version-panel" aria-labelledby="version-title">
 
       <h2 id="version-title">版本資訊</h2>
       <dl><div><dt>資料版本</dt><dd>中華民國115年4月</dd></div><div><dt>來源文件</dt><dd>財團法人農業信用保證基金<br>保證業務作業手冊（農漁會版）</dd></div><div><dt>PDF實體頁數</dt><dd>203頁</dd></div></dl>
       <p><a class="button-link" href="versions/115-04/index.html">開啟本版本完整目錄</a></p>
-      <p><a class="button-link secondary" href="downloads/acgf-guarantee-manual-115-04.pdf">開啟／下載原始PDF</a></p>
+      <p><a class="button-link secondary" href="downloads/acgf-guarantee-manual-115-04.pdf" target="_blank" rel="noopener noreferrer">開啟原始PDF ↗</a></p>
+      <p><a class="button-link secondary" href="downloads/acgf-guarantee-manual-115-04.pdf" download>下載原始PDF</a></p>
       <p><a href="versions/index.html">查看版本紀錄與更新說明</a></p>
       <p class="disclaimer">本網站為公開資料數位閱讀版，非農業信用保證基金官方網站。內容如與正式PDF、後續函釋或公告不一致，以正式發布文件為準。</p>
 

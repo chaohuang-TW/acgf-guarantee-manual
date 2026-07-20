@@ -41,6 +41,7 @@ class PageParser(HTMLParser):
         super().__init__()
         self.ids: list[str] = []
         self.links: list[str] = []
+        self.anchors: list[dict[str, str]] = []
         self.resources: list[str] = []
         self.title_count = 0
         self.h1_count = 0
@@ -53,6 +54,7 @@ class PageParser(HTMLParser):
             self.ids.append(values["id"] or "")
         if tag == "a" and values.get("href"):
             self.links.append(values["href"] or "")
+            self.anchors.append({key: value or "" for key, value in values.items()})
         if tag in {"script", "img", "iframe", "video", "audio", "source"} and values.get("src"):
             self.resources.append(values["src"] or "")
         if tag == "link" and values.get("href") and values.get("rel") != "canonical":
@@ -201,6 +203,12 @@ def main() -> int:
             target = resolve_link(page, href)
             if target and not target.exists():
                 errors.append(f"broken link from {relative}: {href}")
+        for anchor in parser.anchors:
+            href = anchor.get("href", "")
+            if urlsplit(href).path.lower().endswith(".pdf"):
+                opens_new_tab = anchor.get("target") == "_blank" and anchor.get("rel") == "noopener noreferrer"
+                if not opens_new_tab and "download" not in anchor:
+                    errors.append(f"PDF link does not open safely or download: {relative}: {href}")
 
     search_path = SITE / "assets" / "data" / "search-index.json"
     if not search_path.is_file():
@@ -220,6 +228,8 @@ def main() -> int:
                 errors.append(f"search result URL missing: {record['url']}")
             if not record.get("text", "").strip():
                 errors.append(f"blank search text: {record.get('id')}")
+            if not record.get("scope"):
+                errors.append(f"search scope missing: {record.get('id')}")
         corpus = normalize(" ".join(record["text"] for record in search))
         for keyword in KEYWORDS:
             if normalize(keyword) not in corpus:
@@ -261,7 +271,7 @@ def main() -> int:
             for tag_field in ("initialReleaseTag", "releaseTag"):
                 if str(record.get(tag_field, "")) not in versions_text:
                     errors.append(f"version history missing {tag_field}: {record.get('id')}")
-        for required in ("版本紀錄與更新說明", "首次數位發布", "最新數位修正版", "技術驗證資訊", "開啟本版本完整目錄", "開啟／下載原始PDF"):
+        for required in ("版本紀錄與更新說明", "首次數位發布", "最新數位修正版", "技術驗證資訊", "開啟本版本完整目錄", "開啟原始PDF", "下載原始PDF"):
             if required not in versions_text:
                 errors.append(f"version history missing public version text: {required}")
         external_actions = [href for href in versions_parser.links if urlsplit(href).scheme in {"http", "https"}]
@@ -289,7 +299,7 @@ def main() -> int:
     home_parser.feed(home_text)
     if not any(resolve_link(SITE / "index.html", href) == expected_versions_page for href in home_parser.links):
         errors.append("homepage does not link to version history")
-    for required in ("開啟本版本完整目錄", "開啟／下載原始PDF", "查看版本紀錄與更新說明"):
+    for required in ("開啟本版本完整目錄", "開啟原始PDF", "下載原始PDF", "查看版本紀錄與更新說明"):
         if required not in home_text:
             errors.append(f"homepage missing public version text: {required}")
     for forbidden in ("技術驗證資訊", "PDF SHA-256", "首次數位發布版本標記", "最新數位修正版版本標記"):

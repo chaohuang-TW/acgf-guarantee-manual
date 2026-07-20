@@ -213,6 +213,12 @@
     return selectedType === "all" ? matches : matches.filter(({ record }) => record.type === selectedType);
   }
 
+  function filterRecordsByScope(records, scope) {
+    if (!scope) return records;
+    const isGroupScope = scope.endsWith("/") || scope.endsWith(":");
+    return records.filter((record) => isGroupScope ? String(record.scope || "").startsWith(scope) : record.scope === scope);
+  }
+
   function snippet(rawText, terms) {
     const text = cleanSnippetText(rawText);
     const normalized = normalize(text);
@@ -295,11 +301,36 @@
     const status = panel.querySelector(".search-status");
     const results = panel.querySelector(".search-results");
     const filterButtons = [...panel.querySelectorAll("[data-search-type]")];
+    const scopeButtons = [...panel.querySelectorAll("[data-search-scope]")];
+    const moreButton = panel.querySelector(".search-more");
+    const searchAllButton = panel.querySelector(".search-search-all");
+    const localScope = panel.dataset.searchScope || "";
+    const localScopeLabel = panel.dataset.searchScopeLabel || "本章";
+    const resultLimit = Number(panel.dataset.searchLimit || 50);
     let selectedType = "all";
+    let selectedScope = localScope ? "local" : "all";
+    let visibleCount = resultLimit;
+    let currentMatches = [];
     let timer;
+
+    function updateScopeButtons() {
+      for (const option of scopeButtons) option.setAttribute("aria-pressed", String(option.dataset.searchScope === selectedScope));
+    }
+
+    function render() {
+      const filtered = filterMatches(currentMatches, selectedType);
+      const shown = filtered.slice(0, visibleCount);
+      const siteRoot = new URL(document.body.dataset.siteRoot || "./", document.baseURI);
+      status.textContent = `找到 ${filtered.length} 筆結果，先顯示 ${shown.length} 筆。`;
+      results.replaceChildren(...shown.map((result) => resultElement(result, siteRoot)));
+      if (moreButton) moreButton.hidden = shown.length >= filtered.length;
+    }
 
     async function run() {
       const query = input.value;
+      visibleCount = resultLimit;
+      if (moreButton) moreButton.hidden = true;
+      if (searchAllButton) searchAllButton.hidden = true;
       if (!normalize(query)) {
         status.textContent = "請輸入搜尋文字。";
         results.replaceChildren();
@@ -308,16 +339,21 @@
       status.textContent = "搜尋中…";
       try {
         const [records, concepts, intents] = await Promise.all([loadIndex(), loadConcepts(), loadIntents()]);
-        const searched = searchRecords(records, query, concepts, intents);
-        const filtered = filterMatches(searched.matches, selectedType);
-        if (!searched.matches.length) {
+        const scopedRecords = selectedScope === "local" ? filterRecordsByScope(records, localScope) : records;
+        const searched = searchRecords(scopedRecords, query, concepts, intents);
+        currentMatches = searched.matches;
+        if (!currentMatches.length && selectedScope === "local") {
+          status.textContent = `${localScopeLabel}未找到相關內容。`;
+          results.replaceChildren();
+          if (searchAllButton) searchAllButton.hidden = false;
+          return;
+        }
+        if (!currentMatches.length) {
           status.textContent = zeroResultMessage(query);
           results.replaceChildren();
           return;
         }
-        const siteRoot = new URL(document.body.dataset.siteRoot || "./", document.baseURI);
-        status.textContent = `找到 ${filtered.length} 筆結果，先顯示 ${Math.min(50, filtered.length)} 筆。`;
-        results.replaceChildren(...filtered.slice(0, 50).map((result) => resultElement(result, siteRoot)));
+        render();
       } catch (error) {
         status.textContent = "搜尋索引目前無法載入，請稍後再試或查閱完整PDF。";
         results.replaceChildren();
@@ -329,11 +365,34 @@
     for (const button of filterButtons) button.addEventListener("click", () => {
       selectedType = button.dataset.searchType;
       for (const option of filterButtons) option.setAttribute("aria-pressed", String(option === button));
+      visibleCount = resultLimit;
+      if (currentMatches.length) render();
+      else run();
+    });
+    for (const button of scopeButtons) button.addEventListener("click", () => {
+      selectedScope = button.dataset.searchScope;
+      updateScopeButtons();
       run();
     });
-    document.querySelectorAll("[data-keyword]").forEach((button) => button.addEventListener("click", () => { input.value = button.dataset.keyword; input.focus(); run(); }));
+    if (moreButton) moreButton.addEventListener("click", () => { visibleCount += resultLimit; render(); });
+    if (searchAllButton) searchAllButton.addEventListener("click", () => {
+      selectedScope = "all";
+      updateScopeButtons();
+      run();
+    });
+    panel.__manualSearch = { input, run };
   }
 
-  globalThis.ManualSearch = { cleanSnippetText, diversify, filterMatches, formNumber, queryConcepts, searchRecords, snippet, tokenizeQuery, zeroResultMessage };
-  if (typeof document !== "undefined") document.querySelectorAll("[data-search]").forEach(attach);
+  globalThis.ManualSearch = { cleanSnippetText, diversify, filterMatches, filterRecordsByScope, formNumber, queryConcepts, searchRecords, snippet, tokenizeQuery, zeroResultMessage };
+  if (typeof document !== "undefined") {
+    document.querySelectorAll("[data-search]").forEach(attach);
+    document.querySelectorAll("[data-keyword]").forEach((button) => button.addEventListener("click", () => {
+      const panel = button.closest("section")?.querySelector("[data-search]") || document.querySelector("[data-search]");
+      const search = panel?.__manualSearch;
+      if (!search) return;
+      search.input.value = button.dataset.keyword;
+      search.input.focus();
+      search.run();
+    }));
+  }
 })();
