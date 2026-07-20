@@ -34,5 +34,17 @@
   {"query":"保證手續費查索表","intent":"查找保證手續費一次總繳查索表","expectedUrls":["versions/115-04/pages/page-122.html"],"expectedType":"lookup-table","aliases":["農業信用保證手續費一次總繳簡捷查索表","保證手續費"]},
   {"query":"申請信用保證","intent":"查找申請信用保證作業","expectedUrls":["versions/115-04/pages/page-021.html"],"expectedType":"chapter","aliases":["送保","網路送保"]},
   {"query":"轉（展）期","intent":"查找轉展期申請書","expectedUrls":["versions/115-04/pages/page-170.html"],"expectedType":"form","aliases":["展期","轉期","轉展期"]},
-  {"query":"農業天然災害低利貸款","intent":"查找天然災害低利貸款要點","expectedUrls":["versions/115-04/pages/page-091.html"],"expectedType":"appendix","aliases":["天災貸款"]}
+  {"query":"農業天然災害低利貸款","intent":"查找天然災害低利貸款要點","expectedUrls":["versions/115-04/pages/page-091.html"],"expectedType":"appendix","aliases":["天災貸款"]},
+  {"query":"青農 保證成數","intent":"查找青壯年農民從農貸款保證成數","expectedUrls":["versions/115-04/pages/page-094.html"],"expectedType":"appendix","aliases":["青壯年農民","保證成數"],"suite":"multi-word"},
+  {"query":"青農 貸款資格","intent":"查找青壯年農民從農貸款資格","expectedUrls":["versions/115-04/pages/page-093.html"],"expectedType":"appendix","aliases":["青壯年農民從農貸款","資格"],"suite":"multi-word"},
+  {"query":"代償 應備文件","intent":"查找申請代位清償檢附文件","expectedUrls":["versions/115-04/pages/page-180.html"],"expectedType":"form","aliases":["代位清償","應檢送文件"],"suite":"multi-word"},
+  {"query":"代位清償 文件","intent":"查找申請代位清償檢附文件","expectedUrls":["versions/115-04/pages/page-180.html"],"expectedType":"form","aliases":["代償文件","申請代位清償"],"suite":"multi-word"},
+  {"query":"手續費 計算","intent":"查找保證手續費計算資料","expectedUrls":["versions/115-04/pages/page-122.html"],"expectedType":"lookup-table","aliases":["保證手續費","計算公式"],"suite":"multi-word"},
+  {"query":"保費 費率","intent":"查找保證手續費費率資料","expectedUrls":["versions/115-04/pages/page-122.html"],"expectedType":"lookup-table","aliases":["保證手續費率","查索表"],"suite":"multi-word"},
+  {"query":"手續費 查索表","intent":"查找保證手續費一次總繳查索表","expectedUrls":["versions/115-04/pages/page-122.html"],"expectedType":"lookup-table","aliases":["簡捷查索表","保證手續費"],"suite":"multi-word"},
+  {"query":"天災 貸款 保證","intent":"查找天然災害低利貸款保證作業要點","expectedUrls":["versions/115-04/pages/page-091.html"],"expectedType":"appendix","aliases":["農業天然災害低利貸款","保證"],"suite":"multi-word"},
+  {"query":"展期 保證責任","intent":"查找轉展期保證相關書表","expectedUrls":["versions/115-04/pages/page-170.html"],"expectedType":"form","aliases":["轉（展）期","保證責任"],"suite":"multi-word"},
+  {"query":"逾期 通知","intent":"查找保證貸款逾期通知規定","expectedUrls":["versions/115-04/pages/page-037.html"],"expectedType":"chapter","aliases":["逾期通知","保證貸款逾期之通知"],"suite":"multi-word"},
+  {"query":"格式25 申請書","intent":"查找代位清償申請書","expectedUrls":["versions/115-04/pages/page-177.html"],"expectedType":"form","aliases":["格式25","代位清償申請書"],"suite":"multi-word"},
+  {"query":"借新還舊 保證","intent":"查找借新還舊保證規定","expectedUrls":["versions/115-04/pages/page-038.html"],"expectedType":"chapter","aliases":["借新還舊","保證"],"suite":"multi-word"}
 ]

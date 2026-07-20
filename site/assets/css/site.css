@@ -58,9 +58,9 @@ button, input { font: inherit; }
 .search-result { padding: 1rem; border-left: 4px solid var(--teal-700); background: var(--surface-soft); }
 .search-result h3, .search-result p { margin: 0; }
 .search-result h3 { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
-.result-type { display: inline-flex; padding: .1rem .5rem; color: #0e4f4c; background: var(--teal-100); border-radius: 999px; font-size: .78rem; font-weight: 750; white-space: nowrap; }
+.result-type { color: var(--muted); font-size: .82rem; font-weight: 650; white-space: nowrap; }
 .result-snippet { margin-top: .35rem !important; overflow-wrap: anywhere; }
-.search-result mark { padding: 0 .08em; color: inherit; background: #ffe39a; border-radius: .15em; }
+.result-match-meta { margin-top: .35rem !important; color: var(--muted); font-size: .86rem; font-weight: 600; }
 .result-path, .result-pages { color: var(--muted); font-size: .9rem; }
 .popular { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: 1rem; }
 .popular span { color: var(--muted); }

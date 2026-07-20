@@ -478,6 +478,8 @@ def main() -> None:
     shutil.copytree(ROOT / "assets", SITE / "assets", dirs_exist_ok=True)
     (SITE / "assets" / "data").mkdir(parents=True, exist_ok=True)
     shutil.copy2(ROOT / "data" / "search-synonyms.json", SITE / "assets" / "data" / "search-synonyms.json")
+    shutil.copy2(ROOT / "data" / "search-concepts.json", SITE / "assets" / "data" / "search-concepts.json")
+    shutil.copy2(ROOT / "data" / "search-intents.json", SITE / "assets" / "data" / "search-intents.json")
     build_home()
     build_versions_history()
     build_version_index()

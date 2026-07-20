@@ -1,0 +1,47 @@
+{
+  "intents": [
+    {
+      "id": "guarantee-fee",
+      "triggers": ["保費", "手續費", "手續費率", "保證手續費", "保證手續費率"],
+      "preferredTerms": ["保證手續費率", "保證手續費率表", "計算公式", "收取方式", "查索表"],
+      "preferredTypes": ["chapter"],
+      "typeOverrideTerms": {"lookup-table": ["查索表", "簡捷查索表"]}
+    },
+    {
+      "id": "claim-documents",
+      "triggers": ["代償文件", "應備文件", "應檢送文件", "申請代位清償", "文件"],
+      "preferredTerms": ["應檢送文件", "申請代位清償", "檢附文件"],
+      "preferredTypes": ["form"]
+    },
+    {
+      "id": "guarantee-ratio",
+      "triggers": ["保證成數", "最高保證成數"],
+      "preferredTerms": ["保證成數", "最高保證成數"],
+      "preferredTypes": ["chapter"]
+    },
+    {
+      "id": "young-farmer",
+      "triggers": ["青農", "青年農民", "青壯年農民", "青農貸款", "青年農民貸款"],
+      "preferredTerms": ["青壯年農民", "青年農民", "青壯年農民從農貸款"],
+      "preferredTypes": ["appendix", "form"]
+    },
+    {
+      "id": "extension",
+      "triggers": ["展期", "轉期", "轉展期", "轉（展）期"],
+      "preferredTerms": ["轉（展）期", "信用保證貸款轉（展）期申請書"],
+      "preferredTypes": ["form"]
+    },
+    {
+      "id": "overdue-notice",
+      "triggers": ["逾期", "逾期通知", "通知"],
+      "preferredTerms": ["保證貸款到期未獲清償之處理", "保證貸款逾期之通知"],
+      "preferredTypes": ["chapter"]
+    },
+    {
+      "id": "refinancing",
+      "triggers": ["借新還舊", "舊案續約"],
+      "preferredTerms": ["保證貸款到期未獲清償之處理", "借新還舊"],
+      "preferredTypes": ["chapter"]
+    }
+  ]
+}
