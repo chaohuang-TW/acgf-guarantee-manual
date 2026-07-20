@@ -2,43 +2,73 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const walk = (directory) => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+const siteRoot = path.resolve("site");
+const toc = JSON.parse(fs.readFileSync("data/toc.json", "utf8"));
+const read = (file) => fs.readFileSync(path.join(siteRoot, file), "utf8");
+const exists = (file) => fs.existsSync(path.join(siteRoot, file));
+const anchors = (html) => [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].map((match) => ({ attrs: match[1], text: match[2].replace(/<[^>]+>/g, "").trim() }));
+const href = (attributes) => (attributes.match(/\bhref="([^"]+)"/) || [])[1];
+
+const htmlFiles = [];
+const walk = (directory) => fs.readdirSync(directory, { withFileTypes: true }).forEach((entry) => {
   const child = path.join(directory, entry.name);
-  return entry.isDirectory() ? walk(child) : entry.name.endsWith(".html") ? [child] : [];
+  if (entry.isDirectory()) walk(child);
+  else if (entry.name.endsWith(".html")) htmlFiles.push(child);
 });
-const htmlFiles = walk("site");
-const anchors = htmlFiles.flatMap((file) => [...fs.readFileSync(file, "utf8").matchAll(/<a\b[^>]*href="[^"]+\.pdf(?:#[^"]*)?"[^>]*>/g)].map((match) => ({ file, tag: match[0] })));
-assert.equal(anchors.length > 0, true);
-assert.equal(anchors.every(({ tag }) => (tag.includes('target="_blank"') && tag.includes('rel="noopener noreferrer"')) || /\sdownload(?:\s|>)/.test(tag)), true);
-assert.equal(anchors.some(({ tag }) => /\sdownload(?:\s|>)/.test(tag)), true);
+walk(siteRoot);
 
-const home = fs.readFileSync("site/index.html", "utf8");
-assert.match(home, /href="versions\/115-04\/index\.html"(?![^>]*target=)/);
-assert.match(home, /<details class="advanced-filters">/);
-assert.doesNotMatch(home, /<details class="advanced-filters" open/);
-assert.match(home, /開啟原始PDF ↗/);
-assert.match(home, /下載原始PDF/);
-
-for (const file of [
-  "site/versions/115-04/chapters/part-1/guarantee-ratio.html",
-  "site/versions/115-04/appendices/appendix-07.html",
-  "site/versions/115-04/appendices/appendix-18.html",
-  "site/versions/115-04/forms/index.html",
-]) {
+const searchPanels = htmlFiles.filter((file) => /<div[^>]*\bdata-search\b/.test(fs.readFileSync(file, "utf8")));
+assert.deepEqual(searchPanels.map((file) => path.relative(siteRoot, file)).sort(), ["index.html", "versions/115-04/index.html"]);
+assert.match(read("index.html"), /id="manual-search"/);
+for (const file of htmlFiles) {
   const html = fs.readFileSync(file, "utf8");
-  assert.match(html, /data-search-scope="[^"]+"/);
-  assert.match(html, /data-search-limit="5"/);
-  assert.match(html, /class="search-more" hidden/);
-  assert.match(html, /class="search-search-all" hidden>改搜尋全手冊/);
-  assert.match(html, /<details class="advanced-filters">/);
-  assert.doesNotMatch(html, /<details class="advanced-filters" open/);
+  const searchLink = anchors(html).find((anchor) => anchor.text === "全文搜尋");
+  assert.ok(searchLink, `missing full-text search link: ${path.relative(siteRoot, file)}`);
+  assert.equal(href(searchLink.attrs).endsWith("#manual-search"), true);
 }
 
-const js = fs.readFileSync("assets/js/search.js", "utf8");
-const css = fs.readFileSync("assets/css/site.css", "utf8");
-assert.match(js, /filterRecordsByScope/);
-assert.match(js, /localScopeLabel}未找到相關內容/);
-assert.equal(js.includes('createElement("mark")'), false);
-assert.equal(css.includes("#ffe39a"), false);
+const directory = read("versions/115-04/index.html");
+const chapterLinks = anchors(directory).filter((anchor) => /^chapters\/part-[1-4]\//.test(href(anchor.attrs) || "") && !href(anchor.attrs).endsWith("/index.html"));
+const expectedSections = toc.parts.flatMap((part) => part.sections.map((section) => ({
+  title: section.title,
+  target: `chapters/${part.id}/${section.id}.html`,
+})));
+assert.equal(chapterLinks.length, expectedSections.length);
+for (const section of expectedSections) {
+  const link = chapterLinks.find((item) => href(item.attrs) === section.target && item.text === section.title);
+  assert.ok(link, `missing chapter link: ${section.target}`);
+  assert.equal(exists(`versions/115-04/${section.target}`), true);
+}
+
+for (const [indexFile, items, base] of [
+  ["versions/115-04/appendices/index.html", toc.appendices, "appendices"],
+  ["versions/115-04/forms/index.html", toc.forms, "forms"],
+  ["versions/115-04/forms/special/index.html", toc.specialForms, "forms/special"],
+]) {
+  const list = anchors(read(indexFile));
+  for (const item of items) {
+    const expectedText = base.includes("forms") ? `${item.code} ${item.title}` : item.title;
+    const link = list.find((anchor) => anchor.text === expectedText);
+    assert.ok(link, `missing list link: ${expectedText}`);
+    const destination = path.posix.normalize(path.posix.join(path.posix.dirname(indexFile), href(link.attrs)));
+    assert.equal(exists(destination), true, `broken list link: ${destination}`);
+  }
+}
+
+for (const part of toc.parts) {
+  for (const section of part.sections) {
+    const relative = `versions/115-04/chapters/${part.id}/${section.id}.html`;
+    const html = read(relative);
+    const localLinks = anchors(html).filter((anchor) => /href="[^"]+\.html"/.test(anchor.attrs) && toc.parts.flatMap((entry) => entry.sections).some((item) => item.title === anchor.text));
+    assert.equal(localLinks.length, part.sections.length, `incomplete side navigation: ${relative}`);
+    const current = localLinks.filter((anchor) => /aria-current="page"/.test(anchor.attrs));
+    assert.equal(current.length, 1, `missing current chapter: ${relative}`);
+    assert.equal(href(current[0].attrs), `${section.id}.html`);
+  }
+}
+
+const pdfAnchors = htmlFiles.flatMap((file) => anchors(fs.readFileSync(file, "utf8")).filter((anchor) => /\.pdf(?:#|"|$)/.test(href(anchor.attrs) || "")));
+assert.equal(pdfAnchors.length > 0, true);
+assert.equal(pdfAnchors.every((anchor) => (/target="_blank"/.test(anchor.attrs) && /rel="noopener noreferrer"/.test(anchor.attrs)) || /\bdownload\b/.test(anchor.attrs)), true);
 
 console.log("SEARCH EXPERIENCE TESTS PASSED");
