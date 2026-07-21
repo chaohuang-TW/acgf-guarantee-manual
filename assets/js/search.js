@@ -71,7 +71,7 @@
   }
 
   function formNumber(query) {
-    const match = normalize(query).match(/^(?:格式\s*)?(\d+(?:-\d+)?)$/);
+    const match = normalize(query).match(/^(?:格式\s*)?(\d+(?:-\d+)?[a-z]?)$/);
     return match ? match[1] : null;
   }
 
@@ -93,17 +93,19 @@
   function intentScore(record, queryInfo, intents) {
     const title = normalize(record.title);
     const breadcrumb = normalize((record.breadcrumb || []).join(" › "));
+    const headings = normalize((record.headings || []).join(" "));
     const body = normalize(record.text);
     let score = 0;
     for (const intent of intents) {
       const preferred = (intent.preferredTerms || []).map(normalize);
-      const hasPreferredTitle = preferred.some((term) => title.includes(term) || breadcrumb.includes(term));
+      const hasPreferredTitle = preferred.some((term) => title.includes(term) || breadcrumb.includes(term) || headings.includes(term));
       const hasPreferredBody = preferred.some((term) => body.includes(term));
-      if (hasPreferredTitle) score += 150;
+      if (hasPreferredTitle) score += 150 + (intent.preferredTitleScore || 0);
       if (hasPreferredBody) score += 75;
       const overrides = intent.typeOverrideTerms?.[record.type] || [];
       const hasTypeOverride = overrides.map(normalize).some((term) => queryInfo.phrase.includes(term) || queryInfo.words.includes(term));
       if (intent.preferredTypes?.length && !intent.preferredTypes.includes(record.type) && !hasTypeOverride) score -= 350;
+      if (intent.preferredTypes?.includes(record.type)) score += intent.preferredTypeScore || 0;
       if (hasTypeOverride) score += 100;
     }
     return score;
@@ -126,35 +128,41 @@
   function recordSearchResult(record, index, queryInfo, intents) {
     const title = record.title || "";
     const breadcrumb = (record.breadcrumb || []).join(" › ");
+    const headings = (record.headings || []).join(" › ");
     const body = record.text || "";
     const titleNormalized = normalize(title);
     const breadcrumbNormalized = normalize(breadcrumb);
+    const headingsNormalized = normalize(headings);
     const bodyNormalized = normalize(body);
     const requestedForm = formNumber(queryInfo.phrase);
-    const exactForm = requestedForm && new RegExp(`^格式\\s*${requestedForm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:：|\\s|$)`).test(title);
+    const exactForm = requestedForm && new RegExp(`^格式\\s*${requestedForm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:：|\\s|$)`, "i").test(title);
     const covered = [];
     const matchedTerms = new Set();
     let score = 0;
     for (const concept of queryInfo.concepts) {
       const originalInTitle = titleNormalized.includes(concept.token);
       const originalInBreadcrumb = breadcrumbNormalized.includes(concept.token);
+      const originalInHeadings = headingsNormalized.includes(concept.token);
       const originalInBody = bodyNormalized.includes(concept.token);
       const expansionInTitle = fieldMatches(title, concept.terms);
       const expansionInBreadcrumb = fieldMatches(breadcrumb, concept.terms);
+      const expansionInHeadings = fieldMatches(headings, concept.terms);
       const expansionInBody = fieldMatches(body, concept.terms);
-      const hasMatch = originalInTitle || originalInBreadcrumb || originalInBody || expansionInTitle.length || expansionInBreadcrumb.length || expansionInBody.length;
+      const hasMatch = originalInTitle || originalInBreadcrumb || originalInHeadings || originalInBody || expansionInTitle.length || expansionInBreadcrumb.length || expansionInHeadings.length || expansionInBody.length;
       if (!hasMatch) continue;
       covered.push(concept);
       [
         ...(originalInTitle ? [concept.token] : expansionInTitle),
         ...(originalInBreadcrumb ? [concept.token] : expansionInBreadcrumb),
+        ...(originalInHeadings ? [concept.token] : expansionInHeadings),
         ...(originalInBody ? [concept.token] : expansionInBody),
       ].forEach((term) => matchedTerms.add(term));
       score += originalInTitle ? 115 : expansionInTitle.length ? 75 : 0;
       score += originalInBreadcrumb ? 90 : expansionInBreadcrumb.length ? 55 : 0;
+      score += originalInHeadings ? 430 : expansionInHeadings.length ? 300 : 0;
       score += originalInBody ? 220 : expansionInBody.length ? 30 : 0;
     }
-    const phraseMatch = queryInfo.words.length > 1 && [titleNormalized, breadcrumbNormalized, bodyNormalized].some((field) => field.includes(queryInfo.phrase));
+    const phraseMatch = queryInfo.words.length > 1 && [titleNormalized, breadcrumbNormalized, headingsNormalized, bodyNormalized].some((field) => field.includes(queryInfo.phrase));
     if (!covered.length && !exactForm) return null;
     score += exactForm ? 1000 : 0;
     score += phraseMatch ? 300 : 0;

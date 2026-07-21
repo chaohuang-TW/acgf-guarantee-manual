@@ -46,5 +46,13 @@
   {"query":"展期 保證責任","intent":"查找轉展期保證相關書表","expectedUrls":["versions/115-04/pages/page-170.html"],"expectedType":"form","aliases":["轉（展）期","保證責任"],"suite":"multi-word"},
   {"query":"逾期 通知","intent":"查找保證貸款逾期通知規定","expectedUrls":["versions/115-04/pages/page-037.html"],"expectedType":"chapter","aliases":["逾期通知","保證貸款逾期之通知"],"suite":"multi-word"},
   {"query":"格式25 申請書","intent":"查找代位清償申請書","expectedUrls":["versions/115-04/pages/page-177.html"],"expectedType":"form","aliases":["格式25","代位清償申請書"],"suite":"multi-word"},
-  {"query":"借新還舊 保證","intent":"查找借新還舊保證規定","expectedUrls":["versions/115-04/pages/page-038.html"],"expectedType":"chapter","aliases":["借新還舊","保證"],"suite":"multi-word"}
+  {"query":"借新還舊 保證","intent":"查找借新還舊保證規定","expectedUrls":["versions/115-04/pages/page-038.html"],"expectedType":"chapter","aliases":["借新還舊","保證"],"suite":"multi-word"},
+  {"query":"擔保品","intent":"查找擔保品及保證人規定","expectedUrls":["versions/115-04/pages/page-021.html"],"expectedType":"chapter","aliases":["抵押品","擔保物"],"suite":"collateral"},
+  {"query":"抵押品","intent":"查找擔保品及保證人規定","expectedUrls":["versions/115-04/pages/page-021.html"],"expectedType":"chapter","aliases":["擔保品","抵押權"],"suite":"collateral"},
+  {"query":"擔保品及保證人","intent":"查找擔保品及保證人規定","expectedUrls":["versions/115-04/pages/page-021.html"],"expectedType":"chapter","aliases":["擔保品","保證人"],"suite":"collateral"},
+  {"query":"保證人","intent":"查找擔保品及保證人規定","expectedUrls":["versions/115-04/pages/page-021.html"],"expectedType":"chapter","aliases":["擔保品及保證人"],"suite":"collateral"},
+  {"query":"格式25A","intent":"查找格式25A書表","expectedUrls":["versions/115-04/pages/page-178.html"],"expectedType":"form","aliases":["格式 25A","擔保品及借、保戶財產處分情形表"],"suite":"collateral"},
+  {"query":"格式 25A","intent":"查找格式25A書表","expectedUrls":["versions/115-04/pages/page-178.html"],"expectedType":"form","aliases":["格式25A","擔保品及借、保戶財產處分情形表"],"suite":"collateral"},
+  {"query":"擔保品處分情形表","intent":"查找格式25A書表","expectedUrls":["versions/115-04/pages/page-178.html"],"expectedType":"form","aliases":["擔保品及借、保戶財產處分情形表","格式25A"],"suite":"collateral"},
+  {"query":"擔保品及借、保戶財產處分情形表","intent":"查找格式25A書表","expectedUrls":["versions/115-04/pages/page-178.html"],"expectedType":"form","aliases":["擔保品處分情形表","格式25A"],"suite":"collateral"}
 ]

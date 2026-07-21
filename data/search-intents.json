@@ -42,6 +42,20 @@
       "triggers": ["借新還舊", "舊案續約"],
       "preferredTerms": ["保證貸款到期未獲清償之處理", "借新還舊"],
       "preferredTypes": ["chapter"]
+    },
+    {
+      "id": "collateral-regulation",
+      "triggers": ["擔保品", "抵押品", "擔保物", "擔保品及保證人"],
+      "preferredTerms": ["擔保品及保證人", "徵信作業", "保證人", "抵押權"],
+      "preferredTypes": ["chapter", "appendix"]
+    },
+    {
+      "id": "collateral-form",
+      "triggers": ["格式25a", "格式 25a", "擔保品及借、保戶財產處分情形表", "擔保品處分情形表", "擔保品表格"],
+      "preferredTerms": ["擔保品及借、保戶財產處分情形表"],
+      "preferredTypes": ["form"],
+      "preferredTypeScore": 850,
+      "preferredTitleScore": 500
     }
   ]
 }

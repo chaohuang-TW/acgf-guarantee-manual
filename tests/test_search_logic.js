@@ -31,6 +31,15 @@ const fee = searchRecords(index, "保費", concepts, intents).matches;
 assert.equal(rank("保費", "versions/115-04/pages/page-022.html") <= 3, true);
 assert.equal(rank("手續費率", "versions/115-04/pages/page-028.html") <= 3, true);
 assert.equal(searchRecords(index, "格式25", concepts, intents).matches[0].record.url, "versions/115-04/pages/page-177.html");
+assert.deepEqual(index.find((record) => record.pdfPage === 21).headings, ["二、擔保品及保證人"]);
+assert.equal(searchRecords(index, "擔保品", concepts, intents).matches[0].record.url, "versions/115-04/pages/page-021.html");
+assert.equal(rank("抵押品", "versions/115-04/pages/page-021.html") <= 3, true);
+assert.equal(searchRecords(index, "擔保品及保證人", concepts, intents).matches[0].record.url, "versions/115-04/pages/page-021.html");
+assert.equal(rank("保證人", "versions/115-04/pages/page-021.html") <= 3, true);
+for (const query of ["格式25A", "格式 25A", "擔保品處分情形表", "擔保品及借、保戶財產處分情形表", "擔保品表格"]) {
+  assert.equal(searchRecords(index, query, concepts, intents).matches[0].record.url, "versions/115-04/pages/page-178.html", query);
+}
+assert.notEqual(searchRecords(index, "擔保品", concepts, intents).matches[0].record.url, "versions/115-04/pages/page-178.html");
 assert.equal(searchRecords(index, "青農 保證成數", concepts, intents).matches[0].coverage, 2);
 assert.equal(searchRecords(index, "手續費 計算", concepts, intents).matches[0].record.url, "versions/115-04/pages/page-122.html");
 assert.equal(searchRecords(index, "代償 應備文件", concepts, intents).matches[0].record.url, "versions/115-04/pages/page-180.html");

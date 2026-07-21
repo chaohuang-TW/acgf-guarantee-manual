@@ -19,6 +19,7 @@ PAGES = json.loads((ROOT / "data" / "pages.json").read_text(encoding="utf-8"))
 VERSION = json.loads((ROOT / "data" / "version.json").read_text(encoding="utf-8"))
 VERSIONS = json.loads((ROOT / "data" / "versions.json").read_text(encoding="utf-8"))
 TOC = json.loads((ROOT / "data" / "toc.json").read_text(encoding="utf-8"))
+SEARCH_HEADINGS = json.loads((ROOT / "data" / "search-headings.json").read_text(encoding="utf-8"))
 TEMPLATES = {path.stem: path.read_text(encoding="utf-8") for path in (ROOT / "templates").glob("*.html")}
 PAGE_RENDERING, _, RESOLVED_RENDERING = load_page_rendering()
 PREVIEW_ROOT = ROOT / "assets" / "page-previews" / VERSION["id"]
@@ -363,8 +364,11 @@ def build_version_index() -> None:
     part_links = []
     for part in TOC["parts"]:
         url = rel_from(relative, f'{VERSION_ROOT}/chapters/{part["id"]}/index.html')
+        def section_link(section: dict) -> str:
+            target = f"{VERSION_ROOT}/chapters/{part['id']}/{section['id']}.html"
+            return f'<li><a href="{e(rel_from(relative, target))}">{e(section["title"])}</a> <small>手冊頁 {section["printedPage"]}</small></li>'
         sections = "".join(
-            f'<li><a href="{e(rel_from(relative, f"{VERSION_ROOT}/chapters/{part["id"]}/{section["id"]}.html"))}">{e(section["title"])}</a> <small>手冊頁 {section["printedPage"]}</small></li>'
+            section_link(section)
             for section in part["sections"]
         )
         part_links.append(f'<section class="toc-group"><h2><a href="{e(url)}">{e(part["title"])}</a></h2><ol>{sections}</ol></section>')
@@ -482,7 +486,7 @@ def build_physical_pages_and_search() -> None:
         main = fill(TEMPLATES["index-list"], BREADCRUMB=breadcrumb([("首頁", rel_from(relative, "index.html")), ("完整目錄", rel_from(relative, VERSION_ROOT + "/index.html"))], f'PDF頁 {page["pdfPage"]}'), CONTENT=content)
         write(relative, f'{title}｜PDF頁 {page["pdfPage"]}', main)
         if page["hasTextLayer"]:
-            index.append({
+            record = {
                 "id": f'page-{page["pdfPage"]:03d}',
                 "version": VERSION["id"],
                 "title": title,
@@ -493,7 +497,10 @@ def build_physical_pages_and_search() -> None:
                 "text": page["searchText"],
                 "type": page_type,
                 "scope": scope_for_page(page),
-            })
+            }
+            if headings := SEARCH_HEADINGS.get(url):
+                record["headings"] = headings
+            index.append(record)
     data_dir = SITE / "assets" / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     (data_dir / "search-index.json").write_text(json.dumps(index, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")

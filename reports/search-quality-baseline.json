@@ -1,6 +1,6 @@
 {
   "method": {
-    "matching": "query phrase, tokens, concept groups, intent weighting and chapter diversity",
+    "matching": "query phrase, tokens, concept groups, headings, intent weighting and chapter diversity",
     "analysisLimit": 50,
     "topResultsIncluded": 10
   },
@@ -12156,10 +12156,20 @@
     "top10Rate": 100.0,
     "zeroResultQueries": []
   },
+  "collateral": {
+    "caseCount": 8,
+    "PASS": 8,
+    "WEAK": 0,
+    "FAIL": 0,
+    "AMBIGUOUS": 0,
+    "top3Rate": 100.0,
+    "top10Rate": 100.0,
+    "zeroResultQueries": []
+  },
   "summary": {
-    "caseCount": 48,
-    "conceptGroupCount": 11,
-    "intentCount": 7,
+    "caseCount": 56,
+    "conceptGroupCount": 12,
+    "intentCount": 9,
     "typeCounts": {
       "chapter": 46,
       "appendix": 65,
@@ -19079,6 +19089,18 @@
           "snippetHasMatch": true
         },
         {
+          "title": "肆、申請信用保證作業",
+          "url": "versions/115-04/pages/page-021.html",
+          "type": "chapter",
+          "pdfPage": 21,
+          "chapterKey": "chapter:第一篇　保證|肆、申請信用保證作業",
+          "chapterPenalty": 0,
+          "coverage": 2,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
           "title": "附錄十、財團法人農業信用保證基金加強辦理農業貸款保證優惠方案",
           "url": "versions/115-04/pages/page-098.html",
           "type": "appendix",
@@ -19168,18 +19190,6 @@
           "type": "chapter",
           "pdfPage": 35,
           "chapterKey": "chapter:第二篇　期中管理|肆、保證貸款債務人聲請前置協商（調解）之處理",
-          "chapterPenalty": 0,
-          "coverage": 2,
-          "snippetHasLargePdfSpacing": false,
-          "snippetHasLongSeparator": false,
-          "snippetHasMatch": true
-        },
-        {
-          "title": "伍、保證貸款到期未獲清償之處理",
-          "url": "versions/115-04/pages/page-037.html",
-          "type": "chapter",
-          "pdfPage": 37,
-          "chapterKey": "chapter:第二篇　期中管理|伍、保證貸款到期未獲清償之處理",
           "chapterPenalty": 0,
           "coverage": 2,
           "snippetHasLargePdfSpacing": false,
@@ -19829,12 +19839,12 @@
         },
         {
           "title": "肆、申請信用保證作業",
-          "url": "versions/115-04/pages/page-025.html",
+          "url": "versions/115-04/pages/page-021.html",
           "type": "chapter",
-          "pdfPage": 25,
+          "pdfPage": 21,
           "chapterKey": "chapter:第一篇　保證|肆、申請信用保證作業",
           "chapterPenalty": 250,
-          "coverage": 2,
+          "coverage": 1,
           "snippetHasLargePdfSpacing": false,
           "snippetHasLongSeparator": false,
           "snippetHasMatch": true
@@ -19883,6 +19893,1246 @@
           "chapterKey": "record:versions/115-04/pages/page-136.html",
           "chapterPenalty": 0,
           "coverage": 2,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        }
+      ],
+      "zeroResults": false,
+      "summaryHasLargePdfSpacing": false,
+      "summaryHasLongSeparator": false,
+      "summaryHasMatch": true,
+      "sameChapterOverThree": false,
+      "outcome": "PASS"
+    },
+    {
+      "query": "擔保品",
+      "suite": "collateral",
+      "intent": "查找擔保品及保證人規定",
+      "expectedUrls": [
+        "versions/115-04/pages/page-021.html"
+      ],
+      "expectedType": "chapter",
+      "ambiguous": false,
+      "queryTerms": [
+        "擔保品"
+      ],
+      "conceptCoverage": [
+        {
+          "token": "擔保品",
+          "id": "collateral",
+          "terms": [
+            "擔保品",
+            "抵押品",
+            "擔保物",
+            "擔保品及保證人",
+            "抵押權"
+          ]
+        }
+      ],
+      "resultCount": 92,
+      "firstCorrectRank": 1,
+      "correctInTop3": true,
+      "correctInTop10": true,
+      "filterResultCounts": {
+        "all": 92,
+        "chapter": 22,
+        "appendix": 28,
+        "form": 39,
+        "lookup-table": 0,
+        "front-matter": 3
+      },
+      "top10": [
+        {
+          "title": "肆、申請信用保證作業",
+          "url": "versions/115-04/pages/page-021.html",
+          "type": "chapter",
+          "pdfPage": 21,
+          "chapterKey": "chapter:第一篇　保證|肆、申請信用保證作業",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "貳、保證成數",
+          "url": "versions/115-04/pages/page-014.html",
+          "type": "chapter",
+          "pdfPage": 14,
+          "chapterKey": "chapter:第一篇　保證|貳、保證成數",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "壹、保證內容變更之處理",
+          "url": "versions/115-04/pages/page-032.html",
+          "type": "chapter",
+          "pdfPage": 32,
+          "chapterKey": "chapter:第二篇　期中管理|壹、保證內容變更之處理",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "伍、保證貸款到期未獲清償之處理",
+          "url": "versions/115-04/pages/page-037.html",
+          "type": "chapter",
+          "pdfPage": 37,
+          "chapterKey": "chapter:第二篇　期中管理|伍、保證貸款到期未獲清償之處理",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "壹、代位清償要件",
+          "url": "versions/115-04/pages/page-045.html",
+          "type": "chapter",
+          "pdfPage": 45,
+          "chapterKey": "chapter:第三篇　代位清償|壹、代位清償要件",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "伍、本基金免責之處理",
+          "url": "versions/115-04/pages/page-050.html",
+          "type": "chapter",
+          "pdfPage": 50,
+          "chapterKey": "chapter:第三篇　代位清償|伍、本基金免責之處理",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "代位清償後之債權追索",
+          "url": "versions/115-04/pages/page-053.html",
+          "type": "chapter",
+          "pdfPage": 53,
+          "chapterKey": "chapter:第四篇　代位清償後之債權追索|代位清償後之債權追索",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "附錄二、財團法人農業信用保證基金業務處理準則",
+          "url": "versions/115-04/pages/page-060.html",
+          "type": "appendix",
+          "pdfPage": 60,
+          "chapterKey": "appendix:附錄|附錄二、財團法人農業信用保證基金業務處理準則",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "附錄三、財團法人農業信用保證基金保證作業要點",
+          "url": "versions/115-04/pages/page-078.html",
+          "type": "appendix",
+          "pdfPage": 78,
+          "chapterKey": "appendix:附錄|附錄三、財團法人農業信用保證基金保證作業要點",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "附錄四、財團法人農業信用保證基金農家消費貸款保證作業要點",
+          "url": "versions/115-04/pages/page-083.html",
+          "type": "appendix",
+          "pdfPage": 83,
+          "chapterKey": "appendix:附錄|附錄四、財團法人農業信用保證基金農家消費貸款保證作業要點",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        }
+      ],
+      "zeroResults": false,
+      "summaryHasLargePdfSpacing": false,
+      "summaryHasLongSeparator": false,
+      "summaryHasMatch": true,
+      "sameChapterOverThree": false,
+      "outcome": "PASS"
+    },
+    {
+      "query": "抵押品",
+      "suite": "collateral",
+      "intent": "查找擔保品及保證人規定",
+      "expectedUrls": [
+        "versions/115-04/pages/page-021.html"
+      ],
+      "expectedType": "chapter",
+      "ambiguous": false,
+      "queryTerms": [
+        "抵押品"
+      ],
+      "conceptCoverage": [
+        {
+          "token": "抵押品",
+          "id": "collateral",
+          "terms": [
+            "擔保品",
+            "抵押品",
+            "擔保物",
+            "擔保品及保證人",
+            "抵押權"
+          ]
+        }
+      ],
+      "resultCount": 92,
+      "firstCorrectRank": 1,
+      "correctInTop3": true,
+      "correctInTop10": true,
+      "filterResultCounts": {
+        "all": 92,
+        "chapter": 22,
+        "appendix": 28,
+        "form": 39,
+        "lookup-table": 0,
+        "front-matter": 3
+      },
+      "top10": [
+        {
+          "title": "肆、申請信用保證作業",
+          "url": "versions/115-04/pages/page-021.html",
+          "type": "chapter",
+          "pdfPage": 21,
+          "chapterKey": "chapter:第一篇　保證|肆、申請信用保證作業",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "貳、保證成數",
+          "url": "versions/115-04/pages/page-014.html",
+          "type": "chapter",
+          "pdfPage": 14,
+          "chapterKey": "chapter:第一篇　保證|貳、保證成數",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "壹、保證內容變更之處理",
+          "url": "versions/115-04/pages/page-032.html",
+          "type": "chapter",
+          "pdfPage": 32,
+          "chapterKey": "chapter:第二篇　期中管理|壹、保證內容變更之處理",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "伍、保證貸款到期未獲清償之處理",
+          "url": "versions/115-04/pages/page-037.html",
+          "type": "chapter",
+          "pdfPage": 37,
+          "chapterKey": "chapter:第二篇　期中管理|伍、保證貸款到期未獲清償之處理",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "壹、代位清償要件",
+          "url": "versions/115-04/pages/page-045.html",
+          "type": "chapter",
+          "pdfPage": 45,
+          "chapterKey": "chapter:第三篇　代位清償|壹、代位清償要件",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "伍、本基金免責之處理",
+          "url": "versions/115-04/pages/page-050.html",
+          "type": "chapter",
+          "pdfPage": 50,
+          "chapterKey": "chapter:第三篇　代位清償|伍、本基金免責之處理",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "代位清償後之債權追索",
+          "url": "versions/115-04/pages/page-053.html",
+          "type": "chapter",
+          "pdfPage": 53,
+          "chapterKey": "chapter:第四篇　代位清償後之債權追索|代位清償後之債權追索",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "附錄二、財團法人農業信用保證基金業務處理準則",
+          "url": "versions/115-04/pages/page-060.html",
+          "type": "appendix",
+          "pdfPage": 60,
+          "chapterKey": "appendix:附錄|附錄二、財團法人農業信用保證基金業務處理準則",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "附錄三、財團法人農業信用保證基金保證作業要點",
+          "url": "versions/115-04/pages/page-078.html",
+          "type": "appendix",
+          "pdfPage": 78,
+          "chapterKey": "appendix:附錄|附錄三、財團法人農業信用保證基金保證作業要點",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "附錄四、財團法人農業信用保證基金農家消費貸款保證作業要點",
+          "url": "versions/115-04/pages/page-083.html",
+          "type": "appendix",
+          "pdfPage": 83,
+          "chapterKey": "appendix:附錄|附錄四、財團法人農業信用保證基金農家消費貸款保證作業要點",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        }
+      ],
+      "zeroResults": false,
+      "summaryHasLargePdfSpacing": false,
+      "summaryHasLongSeparator": false,
+      "summaryHasMatch": true,
+      "sameChapterOverThree": false,
+      "outcome": "PASS"
+    },
+    {
+      "query": "擔保品及保證人",
+      "suite": "collateral",
+      "intent": "查找擔保品及保證人規定",
+      "expectedUrls": [
+        "versions/115-04/pages/page-021.html"
+      ],
+      "expectedType": "chapter",
+      "ambiguous": false,
+      "queryTerms": [
+        "擔保品及保證人"
+      ],
+      "conceptCoverage": [
+        {
+          "token": "擔保品及保證人",
+          "id": "collateral",
+          "terms": [
+            "擔保品",
+            "抵押品",
+            "擔保物",
+            "擔保品及保證人",
+            "抵押權"
+          ]
+        }
+      ],
+      "resultCount": 92,
+      "firstCorrectRank": 1,
+      "correctInTop3": true,
+      "correctInTop10": true,
+      "filterResultCounts": {
+        "all": 92,
+        "chapter": 22,
+        "appendix": 28,
+        "form": 39,
+        "lookup-table": 0,
+        "front-matter": 3
+      },
+      "top10": [
+        {
+          "title": "肆、申請信用保證作業",
+          "url": "versions/115-04/pages/page-021.html",
+          "type": "chapter",
+          "pdfPage": 21,
+          "chapterKey": "chapter:第一篇　保證|肆、申請信用保證作業",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "伍、保證貸款到期未獲清償之處理",
+          "url": "versions/115-04/pages/page-037.html",
+          "type": "chapter",
+          "pdfPage": 37,
+          "chapterKey": "chapter:第二篇　期中管理|伍、保證貸款到期未獲清償之處理",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "附錄二、財團法人農業信用保證基金業務處理準則",
+          "url": "versions/115-04/pages/page-066.html",
+          "type": "appendix",
+          "pdfPage": 66,
+          "chapterKey": "appendix:附錄|附錄二、財團法人農業信用保證基金業務處理準則",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "附錄四、財團法人農業信用保證基金農家消費貸款保證作業要點",
+          "url": "versions/115-04/pages/page-083.html",
+          "type": "appendix",
+          "pdfPage": 83,
+          "chapterKey": "appendix:附錄|附錄四、財團法人農業信用保證基金農家消費貸款保證作業要點",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "貳、保證成數",
+          "url": "versions/115-04/pages/page-014.html",
+          "type": "chapter",
+          "pdfPage": 14,
+          "chapterKey": "chapter:第一篇　保證|貳、保證成數",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "壹、保證內容變更之處理",
+          "url": "versions/115-04/pages/page-032.html",
+          "type": "chapter",
+          "pdfPage": 32,
+          "chapterKey": "chapter:第二篇　期中管理|壹、保證內容變更之處理",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "壹、代位清償要件",
+          "url": "versions/115-04/pages/page-045.html",
+          "type": "chapter",
+          "pdfPage": 45,
+          "chapterKey": "chapter:第三篇　代位清償|壹、代位清償要件",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "伍、本基金免責之處理",
+          "url": "versions/115-04/pages/page-050.html",
+          "type": "chapter",
+          "pdfPage": 50,
+          "chapterKey": "chapter:第三篇　代位清償|伍、本基金免責之處理",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "代位清償後之債權追索",
+          "url": "versions/115-04/pages/page-053.html",
+          "type": "chapter",
+          "pdfPage": 53,
+          "chapterKey": "chapter:第四篇　代位清償後之債權追索|代位清償後之債權追索",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "附錄三、財團法人農業信用保證基金保證作業要點",
+          "url": "versions/115-04/pages/page-078.html",
+          "type": "appendix",
+          "pdfPage": 78,
+          "chapterKey": "appendix:附錄|附錄三、財團法人農業信用保證基金保證作業要點",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        }
+      ],
+      "zeroResults": false,
+      "summaryHasLargePdfSpacing": false,
+      "summaryHasLongSeparator": false,
+      "summaryHasMatch": true,
+      "sameChapterOverThree": false,
+      "outcome": "PASS"
+    },
+    {
+      "query": "保證人",
+      "suite": "collateral",
+      "intent": "查找擔保品及保證人規定",
+      "expectedUrls": [
+        "versions/115-04/pages/page-021.html"
+      ],
+      "expectedType": "chapter",
+      "ambiguous": false,
+      "queryTerms": [
+        "保證人"
+      ],
+      "conceptCoverage": [
+        {
+          "token": "保證人",
+          "id": "collateral",
+          "terms": [
+            "擔保品",
+            "抵押品",
+            "擔保物",
+            "擔保品及保證人",
+            "抵押權"
+          ]
+        }
+      ],
+      "resultCount": 119,
+      "firstCorrectRank": 1,
+      "correctInTop3": true,
+      "correctInTop10": true,
+      "filterResultCounts": {
+        "all": 119,
+        "chapter": 26,
+        "appendix": 35,
+        "form": 54,
+        "lookup-table": 0,
+        "front-matter": 4
+      },
+      "top10": [
+        {
+          "title": "肆、申請信用保證作業",
+          "url": "versions/115-04/pages/page-021.html",
+          "type": "chapter",
+          "pdfPage": 21,
+          "chapterKey": "chapter:第一篇　保證|肆、申請信用保證作業",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 1B：保證人信用保證情形查詢表",
+          "url": "versions/115-04/pages/page-130.html",
+          "type": "form",
+          "pdfPage": 130,
+          "chapterKey": "record:versions/115-04/pages/page-130.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "貳、保證成數",
+          "url": "versions/115-04/pages/page-016.html",
+          "type": "chapter",
+          "pdfPage": 16,
+          "chapterKey": "chapter:第一篇　保證|貳、保證成數",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "參、不予保證規定",
+          "url": "versions/115-04/pages/page-019.html",
+          "type": "chapter",
+          "pdfPage": 19,
+          "chapterKey": "chapter:第一篇　保證|參、不予保證規定",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "壹、保證內容變更之處理",
+          "url": "versions/115-04/pages/page-032.html",
+          "type": "chapter",
+          "pdfPage": 32,
+          "chapterKey": "chapter:第二篇　期中管理|壹、保證內容變更之處理",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "肆、保證貸款債務人聲請前置協商（調解）之處理",
+          "url": "versions/115-04/pages/page-035.html",
+          "type": "chapter",
+          "pdfPage": 35,
+          "chapterKey": "chapter:第二篇　期中管理|肆、保證貸款債務人聲請前置協商（調解）之處理",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "伍、保證貸款到期未獲清償之處理",
+          "url": "versions/115-04/pages/page-037.html",
+          "type": "chapter",
+          "pdfPage": 37,
+          "chapterKey": "chapter:第二篇　期中管理|伍、保證貸款到期未獲清償之處理",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "附錄二、財團法人農業信用保證基金業務處理準則",
+          "url": "versions/115-04/pages/page-061.html",
+          "type": "appendix",
+          "pdfPage": 61,
+          "chapterKey": "appendix:附錄|附錄二、財團法人農業信用保證基金業務處理準則",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "附錄四、財團法人農業信用保證基金農家消費貸款保證作業要點",
+          "url": "versions/115-04/pages/page-083.html",
+          "type": "appendix",
+          "pdfPage": 83,
+          "chapterKey": "appendix:附錄|附錄四、財團法人農業信用保證基金農家消費貸款保證作業要點",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "附錄六、財團法人農業信用保證基金農漁產品批發市場承銷人週轉金貸款保證作業要點",
+          "url": "versions/115-04/pages/page-089.html",
+          "type": "appendix",
+          "pdfPage": 89,
+          "chapterKey": "appendix:附錄|附錄六、財團法人農業信用保證基金農漁產品批發市場承銷人週轉金貸款保證作業要點",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        }
+      ],
+      "zeroResults": false,
+      "summaryHasLargePdfSpacing": false,
+      "summaryHasLongSeparator": false,
+      "summaryHasMatch": true,
+      "sameChapterOverThree": false,
+      "outcome": "PASS"
+    },
+    {
+      "query": "格式25A",
+      "suite": "collateral",
+      "intent": "查找格式25A書表",
+      "expectedUrls": [
+        "versions/115-04/pages/page-178.html"
+      ],
+      "expectedType": "form",
+      "ambiguous": false,
+      "queryTerms": [
+        "格式25a"
+      ],
+      "conceptCoverage": [
+        {
+          "token": "格式25a",
+          "id": "term:格式25a",
+          "terms": [
+            "格式25a"
+          ]
+        }
+      ],
+      "resultCount": 2,
+      "firstCorrectRank": 1,
+      "correctInTop3": true,
+      "correctInTop10": true,
+      "filterResultCounts": {
+        "all": 2,
+        "chapter": 0,
+        "appendix": 0,
+        "form": 2,
+        "lookup-table": 0,
+        "front-matter": 0
+      },
+      "top10": [
+        {
+          "title": "格式 25A：擔保品及借、保戶財產處分情形表",
+          "url": "versions/115-04/pages/page-178.html",
+          "type": "form",
+          "pdfPage": 178,
+          "chapterKey": "record:versions/115-04/pages/page-178.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 25：代位清償申請書",
+          "url": "versions/115-04/pages/page-177.html",
+          "type": "form",
+          "pdfPage": 177,
+          "chapterKey": "record:versions/115-04/pages/page-177.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        }
+      ],
+      "zeroResults": false,
+      "summaryHasLargePdfSpacing": false,
+      "summaryHasLongSeparator": false,
+      "summaryHasMatch": true,
+      "sameChapterOverThree": false,
+      "outcome": "PASS"
+    },
+    {
+      "query": "格式 25A",
+      "suite": "collateral",
+      "intent": "查找格式25A書表",
+      "expectedUrls": [
+        "versions/115-04/pages/page-178.html"
+      ],
+      "expectedType": "form",
+      "ambiguous": false,
+      "queryTerms": [
+        "格式",
+        "25a"
+      ],
+      "conceptCoverage": [
+        {
+          "token": "格式",
+          "id": "term:格式",
+          "terms": [
+            "格式"
+          ]
+        },
+        {
+          "token": "25a",
+          "id": "term:25a",
+          "terms": [
+            "25a"
+          ]
+        }
+      ],
+      "resultCount": 91,
+      "firstCorrectRank": 1,
+      "correctInTop3": true,
+      "correctInTop10": true,
+      "filterResultCounts": {
+        "all": 91,
+        "chapter": 14,
+        "appendix": 5,
+        "form": 70,
+        "lookup-table": 0,
+        "front-matter": 2
+      },
+      "top10": [
+        {
+          "title": "格式 25A：擔保品及借、保戶財產處分情形表",
+          "url": "versions/115-04/pages/page-178.html",
+          "type": "form",
+          "pdfPage": 178,
+          "chapterKey": "record:versions/115-04/pages/page-178.html",
+          "chapterPenalty": 0,
+          "coverage": 2,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 26-1：代位清償申請書（農家消費貸款專用）",
+          "url": "versions/115-04/pages/page-184.html",
+          "type": "form",
+          "pdfPage": 184,
+          "chapterKey": "record:versions/115-04/pages/page-184.html",
+          "chapterPenalty": 0,
+          "coverage": 2,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 26：代位清償申請書（農家綜合貸款專用）",
+          "url": "versions/115-04/pages/page-181.html",
+          "type": "form",
+          "pdfPage": 181,
+          "chapterKey": "record:versions/115-04/pages/page-181.html",
+          "chapterPenalty": 0,
+          "coverage": 2,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 25：代位清償申請書",
+          "url": "versions/115-04/pages/page-177.html",
+          "type": "form",
+          "pdfPage": 177,
+          "chapterKey": "record:versions/115-04/pages/page-177.html",
+          "chapterPenalty": 0,
+          "coverage": 2,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 1A：農業貸款申請信用保證查詢表",
+          "url": "versions/115-04/pages/page-129.html",
+          "type": "form",
+          "pdfPage": 129,
+          "chapterKey": "record:versions/115-04/pages/page-129.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 1B：保證人信用保證情形查詢表",
+          "url": "versions/115-04/pages/page-130.html",
+          "type": "form",
+          "pdfPage": 130,
+          "chapterKey": "record:versions/115-04/pages/page-130.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 1C：保證對象查覆書",
+          "url": "versions/115-04/pages/page-131.html",
+          "type": "form",
+          "pdfPage": 131,
+          "chapterKey": "record:versions/115-04/pages/page-131.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3：信用保證申請書（政策性農業專案貸款個人戶用）",
+          "url": "versions/115-04/pages/page-132.html",
+          "type": "form",
+          "pdfPage": 132,
+          "chapterKey": "record:versions/115-04/pages/page-132.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3-1：信用保證申請書（一般農業貸款個人戶用）",
+          "url": "versions/115-04/pages/page-135.html",
+          "type": "form",
+          "pdfPage": 135,
+          "chapterKey": "record:versions/115-04/pages/page-135.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3-2：青壯年農民從農貸款信用保證申請書（青年農民專用）",
+          "url": "versions/115-04/pages/page-138.html",
+          "type": "form",
+          "pdfPage": 138,
+          "chapterKey": "record:versions/115-04/pages/page-138.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        }
+      ],
+      "zeroResults": false,
+      "summaryHasLargePdfSpacing": false,
+      "summaryHasLongSeparator": false,
+      "summaryHasMatch": true,
+      "sameChapterOverThree": false,
+      "outcome": "PASS"
+    },
+    {
+      "query": "擔保品處分情形表",
+      "suite": "collateral",
+      "intent": "查找格式25A書表",
+      "expectedUrls": [
+        "versions/115-04/pages/page-178.html"
+      ],
+      "expectedType": "form",
+      "ambiguous": false,
+      "queryTerms": [
+        "擔保品處分情形表"
+      ],
+      "conceptCoverage": [
+        {
+          "token": "擔保品處分情形表",
+          "id": "collateral",
+          "terms": [
+            "擔保品",
+            "抵押品",
+            "擔保物",
+            "擔保品及保證人",
+            "抵押權"
+          ]
+        }
+      ],
+      "resultCount": 92,
+      "firstCorrectRank": 1,
+      "correctInTop3": true,
+      "correctInTop10": true,
+      "filterResultCounts": {
+        "all": 92,
+        "chapter": 22,
+        "appendix": 28,
+        "form": 39,
+        "lookup-table": 0,
+        "front-matter": 3
+      },
+      "top10": [
+        {
+          "title": "格式 25A：擔保品及借、保戶財產處分情形表",
+          "url": "versions/115-04/pages/page-178.html",
+          "type": "form",
+          "pdfPage": 178,
+          "chapterKey": "record:versions/115-04/pages/page-178.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 24：保證貸款塗銷抵押權、撤銷假扣押、假處分、撤回強制執行申請書",
+          "url": "versions/115-04/pages/page-175.html",
+          "type": "form",
+          "pdfPage": 175,
+          "chapterKey": "record:versions/115-04/pages/page-175.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 26：代位清償申請書（農家綜合貸款專用）",
+          "url": "versions/115-04/pages/page-181.html",
+          "type": "form",
+          "pdfPage": 181,
+          "chapterKey": "record:versions/115-04/pages/page-181.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 26-1：代位清償申請書（農家消費貸款專用）",
+          "url": "versions/115-04/pages/page-184.html",
+          "type": "form",
+          "pdfPage": 184,
+          "chapterKey": "record:versions/115-04/pages/page-184.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3：信用保證申請書（政策性農業專案貸款個人戶用）",
+          "url": "versions/115-04/pages/page-133.html",
+          "type": "form",
+          "pdfPage": 133,
+          "chapterKey": "record:versions/115-04/pages/page-133.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3：信用保證申請書（政策性農業專案貸款個人戶用）",
+          "url": "versions/115-04/pages/page-134.html",
+          "type": "form",
+          "pdfPage": 134,
+          "chapterKey": "record:versions/115-04/pages/page-134.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3-1：信用保證申請書（一般農業貸款個人戶用）",
+          "url": "versions/115-04/pages/page-135.html",
+          "type": "form",
+          "pdfPage": 135,
+          "chapterKey": "record:versions/115-04/pages/page-135.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3-1：信用保證申請書（一般農業貸款個人戶用）",
+          "url": "versions/115-04/pages/page-136.html",
+          "type": "form",
+          "pdfPage": 136,
+          "chapterKey": "record:versions/115-04/pages/page-136.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3-1：信用保證申請書（一般農業貸款個人戶用）",
+          "url": "versions/115-04/pages/page-137.html",
+          "type": "form",
+          "pdfPage": 137,
+          "chapterKey": "record:versions/115-04/pages/page-137.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3-2：青壯年農民從農貸款信用保證申請書（青年農民專用）",
+          "url": "versions/115-04/pages/page-139.html",
+          "type": "form",
+          "pdfPage": 139,
+          "chapterKey": "record:versions/115-04/pages/page-139.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        }
+      ],
+      "zeroResults": false,
+      "summaryHasLargePdfSpacing": false,
+      "summaryHasLongSeparator": false,
+      "summaryHasMatch": true,
+      "sameChapterOverThree": false,
+      "outcome": "PASS"
+    },
+    {
+      "query": "擔保品及借、保戶財產處分情形表",
+      "suite": "collateral",
+      "intent": "查找格式25A書表",
+      "expectedUrls": [
+        "versions/115-04/pages/page-178.html"
+      ],
+      "expectedType": "form",
+      "ambiguous": false,
+      "queryTerms": [
+        "擔保品及借",
+        "保戶財產處分情形表"
+      ],
+      "conceptCoverage": [
+        {
+          "token": "擔保品及借",
+          "id": "collateral",
+          "terms": [
+            "擔保品",
+            "抵押品",
+            "擔保物",
+            "擔保品及保證人",
+            "抵押權"
+          ]
+        },
+        {
+          "token": "保戶財產處分情形表",
+          "id": "term:保戶財產處分情形表",
+          "terms": [
+            "保戶財產處分情形表"
+          ]
+        }
+      ],
+      "resultCount": 92,
+      "firstCorrectRank": 1,
+      "correctInTop3": true,
+      "correctInTop10": true,
+      "filterResultCounts": {
+        "all": 92,
+        "chapter": 22,
+        "appendix": 28,
+        "form": 39,
+        "lookup-table": 0,
+        "front-matter": 3
+      },
+      "top10": [
+        {
+          "title": "格式 25A：擔保品及借、保戶財產處分情形表",
+          "url": "versions/115-04/pages/page-178.html",
+          "type": "form",
+          "pdfPage": 178,
+          "chapterKey": "record:versions/115-04/pages/page-178.html",
+          "chapterPenalty": 0,
+          "coverage": 2,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 26：代位清償申請書（農家綜合貸款專用）",
+          "url": "versions/115-04/pages/page-181.html",
+          "type": "form",
+          "pdfPage": 181,
+          "chapterKey": "record:versions/115-04/pages/page-181.html",
+          "chapterPenalty": 0,
+          "coverage": 2,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 26-1：代位清償申請書（農家消費貸款專用）",
+          "url": "versions/115-04/pages/page-184.html",
+          "type": "form",
+          "pdfPage": 184,
+          "chapterKey": "record:versions/115-04/pages/page-184.html",
+          "chapterPenalty": 0,
+          "coverage": 2,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 25：代位清償申請書",
+          "url": "versions/115-04/pages/page-177.html",
+          "type": "form",
+          "pdfPage": 177,
+          "chapterKey": "record:versions/115-04/pages/page-177.html",
+          "chapterPenalty": 0,
+          "coverage": 2,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 24：保證貸款塗銷抵押權、撤銷假扣押、假處分、撤回強制執行申請書",
+          "url": "versions/115-04/pages/page-175.html",
+          "type": "form",
+          "pdfPage": 175,
+          "chapterKey": "record:versions/115-04/pages/page-175.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3：信用保證申請書（政策性農業專案貸款個人戶用）",
+          "url": "versions/115-04/pages/page-133.html",
+          "type": "form",
+          "pdfPage": 133,
+          "chapterKey": "record:versions/115-04/pages/page-133.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3：信用保證申請書（政策性農業專案貸款個人戶用）",
+          "url": "versions/115-04/pages/page-134.html",
+          "type": "form",
+          "pdfPage": 134,
+          "chapterKey": "record:versions/115-04/pages/page-134.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3-1：信用保證申請書（一般農業貸款個人戶用）",
+          "url": "versions/115-04/pages/page-135.html",
+          "type": "form",
+          "pdfPage": 135,
+          "chapterKey": "record:versions/115-04/pages/page-135.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3-1：信用保證申請書（一般農業貸款個人戶用）",
+          "url": "versions/115-04/pages/page-136.html",
+          "type": "form",
+          "pdfPage": 136,
+          "chapterKey": "record:versions/115-04/pages/page-136.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
+          "snippetHasLargePdfSpacing": false,
+          "snippetHasLongSeparator": false,
+          "snippetHasMatch": true
+        },
+        {
+          "title": "格式 3-1：信用保證申請書（一般農業貸款個人戶用）",
+          "url": "versions/115-04/pages/page-137.html",
+          "type": "form",
+          "pdfPage": 137,
+          "chapterKey": "record:versions/115-04/pages/page-137.html",
+          "chapterPenalty": 0,
+          "coverage": 1,
           "snippetHasLargePdfSpacing": false,
           "snippetHasLongSeparator": false,
           "snippetHasMatch": true

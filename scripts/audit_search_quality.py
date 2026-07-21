@@ -48,7 +48,7 @@ def query_concepts(query: str, raw_concepts: dict) -> dict:
 
 
 def form_number(query: str) -> str | None:
-    match = re.fullmatch(r"(?:格式\s*)?(\d+(?:-\d+)?)", normalize(query))
+    match = re.fullmatch(r"(?:格式\s*)?(\d+(?:-\d+)?[a-z]?)", normalize(query))
     return match.group(1) if match else None
 
 
@@ -65,18 +65,21 @@ def has_terms(value: str, terms: list[str]) -> bool:
 def intent_score(record: dict, query_info: dict, intents: list[dict]) -> int:
     title = normalize(record.get("title", ""))
     breadcrumb = normalize(" › ".join(record.get("breadcrumb", [])))
+    headings = normalize(" ".join(record.get("headings", [])))
     body = normalize(record.get("text", ""))
     score = 0
     for intent in intents:
         preferred = list(map(normalize, intent.get("preferredTerms", [])))
-        if any(term in title or term in breadcrumb for term in preferred):
-            score += 150
+        if any(term in title or term in breadcrumb or term in headings for term in preferred):
+            score += 150 + intent.get("preferredTitleScore", 0)
         if any(term in body for term in preferred):
             score += 75
         overrides = list(map(normalize, intent.get("typeOverrideTerms", {}).get(record.get("type"), [])))
         override = any(term in query_info["phrase"] or term in query_info["words"] for term in overrides)
         if intent.get("preferredTypes") and record.get("type") not in intent["preferredTypes"] and not override:
             score -= 350
+        if record.get("type") in intent.get("preferredTypes", []):
+            score += intent.get("preferredTypeScore", 0)
         if override:
             score += 100
     return score
@@ -109,28 +112,32 @@ def explicit_front_matter(phrase: str) -> bool:
 def record_result(record: dict, index: int, query_info: dict, intents: list[dict]) -> dict | None:
     title = record.get("title", "")
     breadcrumb = " › ".join(record.get("breadcrumb", []))
+    headings = " › ".join(record.get("headings", []))
     body = record.get("text", "")
-    title_n, breadcrumb_n, body_n = normalize(title), normalize(breadcrumb), normalize(body)
+    title_n, breadcrumb_n, headings_n, body_n = normalize(title), normalize(breadcrumb), normalize(headings), normalize(body)
     requested_form = form_number(query_info["phrase"])
-    exact_form = bool(requested_form and re.match(rf"^格式\s*{re.escape(requested_form)}(?:：|\s|$)", title))
+    exact_form = bool(requested_form and re.match(rf"^格式\s*{re.escape(requested_form)}(?:：|\s|$)", title, re.IGNORECASE))
     covered, matched = [], set()
     score = 0
     for concept in query_info["concepts"]:
         original = concept["token"]
-        original_title, original_breadcrumb, original_body = original in title_n, original in breadcrumb_n, original in body_n
+        original_title, original_breadcrumb, original_headings, original_body = original in title_n, original in breadcrumb_n, original in headings_n, original in body_n
         title_terms = [term for term in concept["terms"] if term in title_n]
         breadcrumb_terms = [term for term in concept["terms"] if term in breadcrumb_n]
+        heading_terms = [term for term in concept["terms"] if term in headings_n]
         body_terms = [term for term in concept["terms"] if term in body_n]
-        if not (original_title or original_breadcrumb or original_body or title_terms or breadcrumb_terms or body_terms):
+        if not (original_title or original_breadcrumb or original_headings or original_body or title_terms or breadcrumb_terms or heading_terms or body_terms):
             continue
         covered.append(concept)
         matched.update([original] if original_title else title_terms)
         matched.update([original] if original_breadcrumb else breadcrumb_terms)
+        matched.update([original] if original_headings else heading_terms)
         matched.update([original] if original_body else body_terms)
         score += 115 if original_title else 75 if title_terms else 0
         score += 90 if original_breadcrumb else 55 if breadcrumb_terms else 0
+        score += 430 if original_headings else 300 if heading_terms else 0
         score += 220 if original_body else 30 if body_terms else 0
-    phrase_match = len(query_info["words"]) > 1 and any(query_info["phrase"] in field for field in (title_n, breadcrumb_n, body_n))
+    phrase_match = len(query_info["words"]) > 1 and any(query_info["phrase"] in field for field in (title_n, breadcrumb_n, headings_n, body_n))
     if not covered and not exact_form:
         return None
     score += 1000 if exact_form else 0
@@ -213,11 +220,13 @@ def history() -> tuple[dict, dict, dict]:
 
 
 def markdown(report: dict) -> str:
-    original, multi, summary = report["original36"], report["multiWord"], report["summary"]
+    original, multi, collateral, summary = report["original36"], report["multiWord"], report["collateral"], report["summary"]
     initial, phase1, phase2 = report["baseline"], report["phase1"], report["phase2"]
     lines = ["# 搜尋品質 2.0 稽核", "", "## 四階段比較", "", f"- 初始：PASS {initial['summary']['PASS']}／WEAK {initial['summary']['WEAK']}／FAIL {initial['summary']['FAIL']}／AMBIGUOUS {initial['summary']['AMBIGUOUS']}。", f"- 第一階段：PASS {phase1['summary']['PASS']}／WEAK {phase1['summary']['WEAK']}／FAIL {phase1['summary']['FAIL']}／AMBIGUOUS {phase1['summary']['AMBIGUOUS']}。", f"- 第二階段：PASS {phase2['summary']['PASS']}／WEAK {phase2['summary']['WEAK']}／FAIL {phase2['summary']['FAIL']}／AMBIGUOUS {phase2['summary']['AMBIGUOUS']}。", f"- 第三階段原36組：PASS {original['PASS']}／WEAK {original['WEAK']}／FAIL {original['FAIL']}／AMBIGUOUS {original['AMBIGUOUS']}。", "", "## 第三階段結果", "", f"- 原36組前3／前10命中率：{original['top3Rate']}%／{original['top10Rate']}%。", f"- 多詞查詢：{multi['PASS']} 組進入前3，共 {multi['caseCount']} 組；前3／前10命中率 {multi['top3Rate']}%／{multi['top10Rate']}%。", f"- 摘要異常：{summary['summaryAnomalyCount']} 筆；空白頁結果：{summary['blankPageResultCount']} 筆；同章節前10超過3筆：{summary['sameChapterOverThreeCount']} 組。", f"- 保費／手續費率排名：第 {summary['feeRank']}／第 {summary['rateRank']} 名。", "", "## 概念與內容類型", "", f"- 概念群組：{summary['conceptGroupCount']} 組；查詢意圖：{summary['intentCount']} 組。", *[f"- `{kind}`：{count} 筆。" for kind, count in summary['typeCounts'].items()], "", "## 查詢結果", "", "| 類別 | 查詢 | 首個正確排名 | 結果 |", "| --- | --- | ---: | --- |"]
+    lines.insert(15, f"- 擔保品查詢：{collateral['PASS']} 組進入前3，共 {collateral['caseCount']} 組；前3／前10命中率 {collateral['top3Rate']}%／{collateral['top10Rate']}%。")
     for case in report["cases"]:
-        lines.append(f"| {'多詞' if case['suite'] == 'multi-word' else '原36組'} | {case['query']} | {case['firstCorrectRank'] or '—'} | {case['outcome']} |")
+        label = {"original": "原36組", "multi-word": "多詞", "collateral": "擔保品"}.get(case["suite"], case["suite"])
+        lines.append(f"| {label} | {case['query']} | {case['firstCorrectRank'] or '—'} | {case['outcome']} |")
     return "\n".join(lines) + "\n"
 
 
@@ -236,14 +245,15 @@ def main() -> None:
     results = [case_result(case, records, concepts, intents) for case in cases]
     original = [case for case in results if case["suite"] == "original"]
     multi = [case for case in results if case["suite"] == "multi-word"]
-    original_summary, multi_summary = suite_summary(original), suite_summary(multi)
+    collateral = [case for case in results if case["suite"] == "collateral"]
+    original_summary, multi_summary, collateral_summary = suite_summary(original), suite_summary(multi), suite_summary(collateral)
     type_counts = Counter(record["type"] for record in records)
     summary = {"caseCount": len(results), "conceptGroupCount": len(concepts.get("concepts", [])), "intentCount": len(intents.get("intents", [])), "typeCounts": {kind: type_counts[kind] for kind in TYPE_VALUES}, "summaryAnomalyCount": sum(not case["zeroResults"] and (case["summaryHasLargePdfSpacing"] or case["summaryHasLongSeparator"] or not case["summaryHasMatch"]) for case in results), "blankPageResultCount": 0, "sameChapterOverThreeCount": sum(case["sameChapterOverThree"] for case in results), "feeRank": next(case["firstCorrectRank"] for case in original if case["query"] == "保費"), "rateRank": next(case["firstCorrectRank"] for case in original if case["query"] == "手續費率")}
-    report = {"method": {"matching": "query phrase, tokens, concept groups, intent weighting and chapter diversity", "analysisLimit": MAX_RESULTS, "topResultsIncluded": TOP_RESULTS}, "baseline": initial, "phase1": phase1, "phase2": phase2, "original36": original_summary, "multiWord": multi_summary, "summary": summary, "cases": results}
+    report = {"method": {"matching": "query phrase, tokens, concept groups, headings, intent weighting and chapter diversity", "analysisLimit": MAX_RESULTS, "topResultsIncluded": TOP_RESULTS}, "baseline": initial, "phase1": phase1, "phase2": phase2, "original36": original_summary, "multiWord": multi_summary, "collateral": collateral_summary, "summary": summary, "cases": results}
     JSON_REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     MARKDOWN_REPORT.write_text(markdown(report), encoding="utf-8")
     print("SEARCH QUALITY AUDIT PASSED")
-    print(json.dumps({"original36": original_summary, "multiWord": multi_summary, "summary": summary}, ensure_ascii=False))
+    print(json.dumps({"original36": original_summary, "multiWord": multi_summary, "collateral": collateral_summary, "summary": summary}, ensure_ascii=False))
 
 
 if __name__ == "__main__":
