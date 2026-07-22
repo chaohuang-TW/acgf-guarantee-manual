@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """Reproducible audit for the browser-only practical manual search."""
 
 from __future__ import annotations

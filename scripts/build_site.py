@@ -162,6 +162,7 @@ def source_preview_body(page: dict, relative: str, rendering: dict, pdf_url: str
           <figcaption>本頁含複雜表格或正式書表，網頁依原始PDF版面呈現。正式內容仍以原始PDF為準。</figcaption>
         </figure>
         <nav class="preview-actions" aria-label="PDF第{pdf_page}頁預覽操作">
+          <button type="button" class="copy-page-link" data-page-anchor="pdf-page-{pdf_page}">複製本頁連結</button>
           <a href="{e(preview_url)}" target="_blank" rel="noopener noreferrer">放大查看原頁預覽 ↗</a>
           <a href="{e(pdf_url)}" target="_blank" rel="noopener noreferrer">開啟原始PDF此頁 ↗</a>
           <a href="{e(full_pdf_url)}" target="_blank" rel="noopener noreferrer">開啟完整PDF ↗</a>
@@ -180,10 +181,10 @@ def page_card(page: dict, relative: str, heading_level: int = 2) -> str:
         actions = ""
         body = source_preview_body(page, relative, rendering, pdf_url)
     elif rendering["mode"] == "blank-page":
-        actions = f'<div class="page-actions"><a href="{e(pdf_url)}" target="_blank" rel="noopener noreferrer">開啟原始PDF此頁 ↗</a></div>'
+        actions = f'<div class="page-actions"><button type="button" class="copy-page-link" data-page-anchor="pdf-page-{pdf_page}">複製本頁連結</button><a href="{e(pdf_url)}" target="_blank" rel="noopener noreferrer">開啟原始PDF此頁 ↗</a></div>'
         body = blank_page_body()
     else:
-        actions = f'<div class="page-actions"><a href="{e(pdf_url)}" target="_blank" rel="noopener noreferrer">開啟原始PDF此頁 ↗</a></div>'
+        actions = f'<div class="page-actions"><button type="button" class="copy-page-link" data-page-anchor="pdf-page-{pdf_page}">複製本頁連結</button><a href="{e(pdf_url)}" target="_blank" rel="noopener noreferrer">開啟原始PDF此頁 ↗</a></div>'
         body = text_body(page)
     return f"""
       <section class="page-card" id="pdf-page-{pdf_page}">
