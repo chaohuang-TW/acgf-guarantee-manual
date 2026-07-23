@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import html
 import json
+import os
 import posixpath
 import re
 import shutil
@@ -28,8 +29,8 @@ PREVIEW_MANIFEST = {
     for item in json.loads((PREVIEW_ROOT / "manifest.json").read_text(encoding="utf-8"))
 }
 
-BASE_PATH = "/acgf-guarantee-manual/"
-ORIGIN = "https://chaohuang-tw.github.io"
+BASE_PATH = os.environ.get("SITE_BASE_PATH", "/acgf-guarantee-manual/")
+ORIGIN = os.environ.get("SITE_ORIGIN", "https://chaohuang-tw.github.io")
 VERSION_ROOT = f"versions/{VERSION['id']}"
 PDF_NAME = VERSION["sourceFile"]
 VERSION_LABEL = VERSION["versionLabel"]
