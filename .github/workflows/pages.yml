@@ -39,6 +39,7 @@ jobs:
       - name: Validate static site
         run: |
           python scripts/audit_content.py
+          python scripts/audit_search_context.py
           python scripts/validate_page_rendering.py
           python scripts/validate_site.py
       - name: Configure Pages

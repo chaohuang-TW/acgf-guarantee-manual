@@ -76,6 +76,8 @@ button, input { font: inherit; }
 .result-snippet { margin-top: .35rem !important; overflow-wrap: anywhere; }
 .result-match-meta { margin-top: .35rem !important; color: var(--muted); font-size: .86rem; font-weight: 600; }
 .result-path, .result-pages { color: var(--muted); font-size: .9rem; }
+.search-context-toggle { margin-top: .55rem; padding: .35rem .65rem; color: var(--navy-800); background: transparent; border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: .9rem; cursor: pointer; }
+.result-context-full { margin-top: .55rem !important; white-space: pre-wrap; }
 .popular { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: 1rem; }
 .popular span { color: var(--muted); }
 .popular button { padding: .35rem .65rem; color: var(--navy-800); background: transparent; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; }

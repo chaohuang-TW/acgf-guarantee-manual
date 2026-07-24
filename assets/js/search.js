@@ -138,6 +138,7 @@
     const exactForm = requestedForm && new RegExp(`^格式\\s*${requestedForm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:：|\\s|$)`, "i").test(title);
     const covered = [];
     const matchedTerms = new Set();
+    let bodyMatches = false;
     let score = 0;
     for (const concept of queryInfo.concepts) {
       const originalInTitle = titleNormalized.includes(concept.token);
@@ -150,6 +151,7 @@
       const expansionInBody = fieldMatches(body, concept.terms);
       const hasMatch = originalInTitle || originalInBreadcrumb || originalInHeadings || originalInBody || expansionInTitle.length || expansionInBreadcrumb.length || expansionInHeadings.length || expansionInBody.length;
       if (!hasMatch) continue;
+      if (originalInBody || expansionInBody.length) bodyMatches = true;
       covered.push(concept);
       [
         ...(originalInTitle ? [concept.token] : expansionInTitle),
@@ -179,6 +181,7 @@
       coverage: covered.length,
       coverageTotal: queryInfo.concepts.length,
       titleMatches: [...matchedTerms].some((term) => titleNormalized.includes(term)),
+      bodyMatches,
       matchedTerms: [...matchedTerms],
       coveredTerms: covered.map((concept) => concept.token),
       chapterKey: chapterKey(record),
@@ -225,6 +228,63 @@
     if (!scope) return records;
     const isGroupScope = scope.endsWith("/") || scope.endsWith(":");
     return records.filter((record) => isGroupScope ? String(record.scope || "").startsWith(scope) : record.scope === scope);
+  }
+
+  function contextEligible(record) {
+    return ["chapter", "appendix"].includes(record.type) && Number.isInteger(record.contextStartPdfPage) && Number.isInteger(record.contextEndPdfPage);
+  }
+
+  function continuationNeeded(text) {
+    return /^(?:前項|前款|前目|其|並應|並|另|但|惟|如|若|除|仍|應|得|不得|同意者|不在此限)/.test(cleanSnippetText(text)) || /[、，；：]$/.test(cleanSnippetText(text));
+  }
+
+  function buildContextText(record) {
+    return [record.contextBefore || "", record.text || "", record.contextAfter || ""].filter(Boolean).join("\n");
+  }
+
+  function findLogicalPassage(record, terms, bodyMatches = true) {
+    if (!bodyMatches || !contextEligible(record)) return null;
+    const text = cleanSnippetText(buildContextText(record));
+    const normalized = normalize(text);
+    const positions = terms.map((term) => normalized.indexOf(normalize(term))).filter((position) => position >= 0);
+    if (!positions.length) return null;
+    const position = Math.min(...positions);
+    const before = text.slice(0, position);
+    const after = text.slice(position);
+    const sentenceStart = Math.max(before.lastIndexOf("。"), before.lastIndexOf("！"), before.lastIndexOf("？"));
+    const sentenceEndIndex = [after.indexOf("。"), after.indexOf("！"), after.indexOf("？")].filter((value) => value >= 0).sort((a, b) => a - b)[0];
+    const start = continuationNeeded(record.text) && record.contextBefore ? 0 : Math.max(0, sentenceStart >= 0 ? sentenceStart + 1 : position - 280);
+    const end = Math.min(text.length, sentenceEndIndex === undefined ? position + 620 : position + sentenceEndIndex + 1);
+    const fullText = text.slice(start, Math.min(text.length, Math.max(end, start + 260)));
+    if (fullText.length < 80) return null;
+    return { fullText, preview: fullText.length > 560 ? `${fullText.slice(0, 560)}…` : fullText, expanded: fullText.length > 560, startPdfPage: record.contextStartPdfPage, endPdfPage: record.contextEndPdfPage, startPrintedPage: record.contextStartPrintedPage, endPrintedPage: record.contextEndPrintedPage };
+  }
+
+  function passageSimilarity(left, right) {
+    const grams = (value) => {
+      const text = normalize(value).replace(/\s+/g, "");
+      return new Set(Array.from({ length: Math.max(0, text.length - 1) }, (_, index) => text.slice(index, index + 2)));
+    };
+    const a = grams(left), b = grams(right);
+    if (a.size < 12 || b.size < 12) return 0;
+    const common = [...a].filter((item) => b.has(item)).length;
+    return common / (a.size + b.size - common);
+  }
+
+  function deduplicateAdjacentResults(matches) {
+    const retained = [];
+    for (const match of matches) {
+      const previous = retained.at(-1);
+      const passage = findLogicalPassage(match.record, match.matchedTerms, match.bodyMatches);
+      const previousPassage = previous && findLogicalPassage(previous.record, previous.matchedTerms, previous.bodyMatches);
+      const duplicate = previous && passage && previousPassage
+        && match.record.scope === previous.record.scope && match.record.type === previous.record.type
+        && Math.abs(match.record.pdfPage - previous.record.pdfPage) === 1
+        && match.coveredTerms.join("|") === previous.coveredTerms.join("|")
+        && (passageSimilarity(passage.fullText, previousPassage.fullText) >= 0.58 || normalize(match.record.text) === normalize(previous.record.text));
+      if (!duplicate) retained.push(match);
+    }
+    return retained;
   }
 
   function snippet(rawText, terms) {
@@ -296,10 +356,29 @@
     heading.append(type);
     article.append(heading);
     appendText(article, "p", "result-path", (record.breadcrumb || []).join(" › "));
-    appendText(article, "p", "result-snippet", snippet(record.text, result.matchedTerms));
+    const passage = findLogicalPassage(record, result.matchedTerms, result.bodyMatches);
+    appendText(article, "p", "result-snippet", passage ? passage.preview : snippet(record.text, result.matchedTerms));
+    if (passage?.expanded) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "search-context-toggle";
+      button.textContent = "顯示完整段落";
+      button.setAttribute("aria-expanded", "false");
+      const full = appendText(article, "p", "result-context-full", passage.fullText);
+      full.hidden = true;
+      button.addEventListener("click", () => {
+        full.hidden = !full.hidden;
+        button.setAttribute("aria-expanded", String(!full.hidden));
+        button.textContent = full.hidden ? "顯示完整段落" : "收合完整段落";
+      });
+      article.append(button);
+    }
     const meta = [result.matchedTerms.length ? `命中：${result.matchedTerms.slice(0, 3).join("、")}` : "", result.coveredTerms.length ? `涵蓋：${result.coveredTerms.join("、")}` : ""].filter(Boolean).join("　");
     if (meta) appendText(article, "p", "result-match-meta", meta);
-    appendText(article, "p", "result-pages", `手冊頁：${record.printedPage || "無"}　PDF頁：${record.pdfPage}／203`);
+    const pages = passage && (passage.startPdfPage !== record.pdfPage || passage.endPdfPage !== record.pdfPage)
+      ? `內容涵蓋手冊頁：${passage.startPrintedPage}–${passage.endPrintedPage}　命中頁：手冊頁${record.printedPage || "無"}　PDF頁：${record.pdfPage}／203`
+      : `手冊頁：${record.printedPage || "無"}　PDF頁：${record.pdfPage}／203`;
+    appendText(article, "p", "result-pages", pages);
     return article;
   }
 
@@ -326,7 +405,7 @@
     }
 
     function render() {
-      const filtered = filterMatches(currentMatches, selectedType);
+      const filtered = deduplicateAdjacentResults(filterMatches(currentMatches, selectedType));
       const shown = filtered.slice(0, visibleCount);
       const siteRoot = new URL(document.body.dataset.siteRoot || "./", document.baseURI);
       status.textContent = `找到 ${filtered.length} 筆結果，先顯示 ${shown.length} 筆。`;
@@ -391,7 +470,7 @@
     panel.__manualSearch = { input, run };
   }
 
-  globalThis.ManualSearch = { cleanSnippetText, diversify, filterMatches, filterRecordsByScope, formNumber, queryConcepts, searchRecords, snippet, tokenizeQuery, zeroResultMessage };
+  globalThis.ManualSearch = { buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, searchRecords, snippet, tokenizeQuery, zeroResultMessage };
   if (typeof document !== "undefined") {
     document.querySelectorAll("[data-search]").forEach(attach);
     document.querySelectorAll("[data-keyword]").forEach((button) => button.addEventListener("click", () => {

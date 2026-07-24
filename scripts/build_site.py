@@ -503,6 +503,32 @@ def build_physical_pages_and_search() -> None:
             if headings := SEARCH_HEADINGS.get(url):
                 record["headings"] = headings
             index.append(record)
+
+    records_by_pdf = {record["pdfPage"]: record for record in index}
+
+    def context_eligible(record: dict) -> bool:
+        if record["type"] not in {"chapter", "appendix"} or record["scope"] == "appendix:appendix-18":
+            return False
+        return RESOLVED_RENDERING[record["pdfPage"]]["mode"] == "text"
+
+    for record in index:
+        if not context_eligible(record):
+            continue
+        pdf_page = record["pdfPage"]
+        previous = records_by_pdf.get(pdf_page - 1)
+        following = records_by_pdf.get(pdf_page + 1)
+        previous_ok = previous and context_eligible(previous) and previous["scope"] == record["scope"] and previous["type"] == record["type"]
+        following_ok = following and context_eligible(following) and following["scope"] == record["scope"] and following["type"] == record["type"]
+        if previous_ok:
+            record["contextBefore"] = PAGES[pdf_page - 2]["text"][-800:]
+        if following_ok:
+            record["contextAfter"] = PAGES[pdf_page]["text"][:800]
+        start = previous if previous_ok else record
+        end = following if following_ok else record
+        record["contextStartPdfPage"] = start["pdfPage"]
+        record["contextEndPdfPage"] = end["pdfPage"]
+        record["contextStartPrintedPage"] = start["printedPage"]
+        record["contextEndPrintedPage"] = end["printedPage"]
     data_dir = SITE / "assets" / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     (data_dir / "search-index.json").write_text(json.dumps(index, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
