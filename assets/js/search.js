@@ -9,6 +9,28 @@
 
   const normalize = (value) => String(value || "").normalize("NFKC").toLocaleLowerCase("zh-Hant").replace(/\s+/g, " ").trim();
 
+  function normalizeWithMap(value) {
+    const source = String(value || "");
+    let normalized = "";
+    const offsets = [];
+    let pendingSpace = false;
+    for (let index = 0; index < source.length; index += 1) {
+      const character = source[index].normalize("NFKC").toLocaleLowerCase("zh-Hant");
+      if (/\s/.test(character)) {
+        pendingSpace = normalized.length > 0;
+        continue;
+      }
+      if (pendingSpace) {
+        normalized += " ";
+        offsets.push(index);
+        pendingSpace = false;
+      }
+      normalized += character;
+      offsets.push(index);
+    }
+    return { text: normalized, offsets };
+  }
+
   function isLayoutCharacter(character) {
     return HAN.test(character) || CJK_PUNCTUATION.has(character) || /[０-９]/.test(character);
   }
@@ -239,14 +261,29 @@
   }
 
   function buildContextText(record) {
-    return [record.contextBefore || "", record.text || "", record.contextAfter || ""].filter(Boolean).join("\n");
+    const raw = [
+      { pdfPage: record.contextStartPdfPage, printedPage: record.contextStartPrintedPage, source: "before", text: record.contextBefore || "" },
+      { pdfPage: record.pdfPage, printedPage: record.printedPage, source: "current", text: record.text || "" },
+      { pdfPage: record.contextEndPdfPage, printedPage: record.contextEndPrintedPage, source: "after", text: record.contextAfter || "" },
+    ].filter((segment) => segment.text);
+    let offset = 0;
+    const segments = raw.map((segment) => {
+      const text = cleanSnippetText(segment.text);
+      const item = { ...segment, text, start: offset, end: offset + text.length };
+      offset = item.end + 1;
+      return item;
+    });
+    return { segments, text: segments.map((segment) => segment.text).join("\n"), current: segments.find((segment) => segment.source === "current") };
   }
 
   function findLogicalPassage(record, terms, bodyMatches = true) {
     if (!bodyMatches || !contextEligible(record)) return null;
-    const text = cleanSnippetText(buildContextText(record));
-    const normalized = normalize(text);
-    const positions = terms.map((term) => normalized.indexOf(normalize(term))).filter((position) => position >= 0);
+    const context = buildContextText(record);
+    const text = context.text;
+    const current = context.current;
+    if (!current) return null;
+    const currentNormalized = normalizeWithMap(current.text);
+    const positions = terms.map((term) => currentNormalized.text.indexOf(normalize(term))).filter((position) => position >= 0).map((position) => current.start + currentNormalized.offsets[position]);
     if (!positions.length) return null;
     const position = Math.min(...positions);
     const before = text.slice(0, position);
@@ -257,7 +294,16 @@
     const end = Math.min(text.length, sentenceEndIndex === undefined ? position + 620 : position + sentenceEndIndex + 1);
     const fullText = text.slice(start, Math.min(text.length, Math.max(end, start + 260)));
     if (fullText.length < 80) return null;
-    return { fullText, preview: fullText.length > 560 ? `${fullText.slice(0, 560)}…` : fullText, expanded: fullText.length > 560, startPdfPage: record.contextStartPdfPage, endPdfPage: record.contextEndPdfPage, startPrintedPage: record.contextStartPrintedPage, endPrintedPage: record.contextEndPrintedPage };
+    const used = context.segments.filter((segment) => segment.end > start && segment.start < start + fullText.length);
+    const first = used[0] || current;
+    const last = used.at(-1) || current;
+    return { fullText, preview: fullText.length > 560 ? `${fullText.slice(0, 560)}…` : fullText, expanded: fullText.length > 560, startPdfPage: first.pdfPage, endPdfPage: last.pdfPage, startPrintedPage: first.printedPage, endPrintedPage: last.printedPage, anchorPdfPage: first.pdfPage };
+  }
+
+  function resultTarget(record, passage) {
+    const target = record.readingUrl || record.url;
+    const anchor = passage?.anchorPdfPage || record.pdfPage;
+    return `${target}#pdf-page-${anchor}`;
   }
 
   function passageSimilarity(left, right) {
@@ -274,14 +320,10 @@
   function deduplicateAdjacentResults(matches) {
     const retained = [];
     for (const match of matches) {
-      const previous = retained.at(-1);
       const passage = findLogicalPassage(match.record, match.matchedTerms, match.bodyMatches);
+      const previous = retained.find((item) => item.record.scope === match.record.scope && item.record.type === match.record.type && Math.abs(item.record.pdfPage - match.record.pdfPage) === 1 && item.coveredTerms.join("|") === match.coveredTerms.join("|"));
       const previousPassage = previous && findLogicalPassage(previous.record, previous.matchedTerms, previous.bodyMatches);
-      const duplicate = previous && passage && previousPassage
-        && match.record.scope === previous.record.scope && match.record.type === previous.record.type
-        && Math.abs(match.record.pdfPage - previous.record.pdfPage) === 1
-        && match.coveredTerms.join("|") === previous.coveredTerms.join("|")
-        && (passageSimilarity(passage.fullText, previousPassage.fullText) >= 0.58 || normalize(match.record.text) === normalize(previous.record.text));
+      const duplicate = previous && passage && previousPassage && (passageSimilarity(passage.fullText, previousPassage.fullText) >= 0.58 || normalize(match.record.text) === normalize(previous.record.text));
       if (!duplicate) retained.push(match);
     }
     return retained;
@@ -347,7 +389,8 @@
     article.className = "search-result";
     const heading = document.createElement("h3");
     const link = document.createElement("a");
-    link.href = new URL(record.url, siteRoot).href;
+    const passage = findLogicalPassage(record, result.matchedTerms, result.bodyMatches);
+    link.href = new URL(resultTarget(record, passage), siteRoot).href;
     link.textContent = record.title;
     heading.append(link);
     const type = document.createElement("span");
@@ -356,7 +399,6 @@
     heading.append(type);
     article.append(heading);
     appendText(article, "p", "result-path", (record.breadcrumb || []).join(" › "));
-    const passage = findLogicalPassage(record, result.matchedTerms, result.bodyMatches);
     appendText(article, "p", "result-snippet", passage ? passage.preview : snippet(record.text, result.matchedTerms));
     if (passage?.expanded) {
       const button = document.createElement("button");
@@ -379,6 +421,13 @@
       ? `內容涵蓋手冊頁：${passage.startPrintedPage}–${passage.endPrintedPage}　命中頁：手冊頁${record.printedPage || "無"}　PDF頁：${record.pdfPage}／203`
       : `手冊頁：${record.printedPage || "無"}　PDF頁：${record.pdfPage}／203`;
     appendText(article, "p", "result-pages", pages);
+    if (record.readingUrl && record.readingUrl !== record.url) {
+      const exact = document.createElement("a");
+      exact.className = "result-exact-page";
+      exact.href = new URL(`${record.url}#pdf-page-${record.pdfPage}`, siteRoot).href;
+      exact.textContent = "僅查看命中頁";
+      article.append(exact);
+    }
     return article;
   }
 
@@ -470,7 +519,7 @@
     panel.__manualSearch = { input, run };
   }
 
-  globalThis.ManualSearch = { buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, searchRecords, snippet, tokenizeQuery, zeroResultMessage };
+  globalThis.ManualSearch = { buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, snippet, tokenizeQuery, zeroResultMessage };
   if (typeof document !== "undefined") {
     document.querySelectorAll("[data-search]").forEach(attach);
     document.querySelectorAll("[data-keyword]").forEach((button) => button.addEventListener("click", () => {

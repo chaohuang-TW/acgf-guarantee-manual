@@ -479,6 +479,32 @@ def classify_page(page: dict) -> tuple[str, list[str], str, str]:
     return (f'{item["code"]}：{item["title"]}', [parent, item["code"]], f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html', "form")
 
 
+def reading_url_for_page(page: dict) -> str:
+    """Return the verified multi-page reading unit that contains this PDF page."""
+    printed = int(page["printedPage"]) if page["printedPage"] else None
+    if printed is None:
+        return f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html'
+    if printed <= 46:
+        part = next(part for part, end in zip(TOC["parts"], [23, 35, 44, 46]) if printed <= end)
+        part_end = {"part-1": 23, "part-2": 35, "part-3": 44, "part-4": 46}[part["id"]]
+        # Some adjacent TOC entries begin on the same printed page.  Use the
+        # exact ranges used by build_parts(), so every reading target actually
+        # contains the physical-page anchor instead of pointing at an empty
+        # preceding section page.
+        section = next(
+            item for item, end in unit_ranges(part["sections"], part_end)
+            if item["printedPage"] <= printed <= end
+        )
+        return f'{VERSION_ROOT}/chapters/{part["id"]}/{section["id"]}.html'
+    if printed <= 116:
+        item = max((item for item in TOC["appendices"] if item["printedPage"] <= printed), key=lambda item: item["printedPage"])
+        return f'{VERSION_ROOT}/appendices/{item["id"]}.html'
+    source = TOC["forms"] if printed <= 174 else TOC["specialForms"]
+    item = max((item for item in source if item["printedPage"] <= printed), key=lambda item: item["printedPage"])
+    base = f'{VERSION_ROOT}/forms/special' if printed > 174 else f'{VERSION_ROOT}/forms'
+    return f'{base}/{slug_code(item["code"])}.html'
+
+
 def build_physical_pages_and_search() -> None:
     index = []
     for page in PAGES:
@@ -494,6 +520,7 @@ def build_physical_pages_and_search() -> None:
                 "title": title,
                 "breadcrumb": crumbs,
                 "url": url,
+                "readingUrl": reading_url_for_page(page),
                 "printedPage": page["printedPage"],
                 "pdfPage": page["pdfPage"],
                 "text": page["searchText"],

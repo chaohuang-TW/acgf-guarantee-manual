@@ -27,6 +27,7 @@ jobs:
           python scripts/audit_content.py
           python scripts/audit_search_quality.py
           python scripts/audit_search_context.py
+          python scripts/audit_search_targets.py
         env:
           SITE_ORIGIN: https://acgf-guarantee-manual-tw.web.app
           SITE_BASE_PATH: /

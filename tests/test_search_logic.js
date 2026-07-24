@@ -7,7 +7,7 @@ const css = fs.readFileSync("assets/css/site.css", "utf8");
 const context = { console };
 context.globalThis = context;
 vm.runInNewContext(source, context, { filename: "search.js" });
-const { buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, filterMatches, filterRecordsByScope, findLogicalPassage, queryConcepts, searchRecords, tokenizeQuery, zeroResultMessage } = context.ManualSearch;
+const { buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, filterMatches, filterRecordsByScope, findLogicalPassage, queryConcepts, resultTarget, searchRecords, tokenizeQuery, zeroResultMessage } = context.ManualSearch;
 const concepts = JSON.parse(fs.readFileSync("data/search-concepts.json", "utf8"));
 const intents = JSON.parse(fs.readFileSync("data/search-intents.json", "utf8"));
 const index = JSON.parse(fs.readFileSync("site/assets/data/search-index.json", "utf8"));
@@ -46,17 +46,37 @@ assert.equal(searchRecords(index, "代償 應備文件", concepts, intents).matc
 
 assert.equal(index.length, 196);
 const continuationRecord = index.find((record) => record.pdfPage === 22);
+const subrogation = index.find((record) => record.pdfPage === 44);
 assert.equal(continuationRecord.contextBefore.includes("同意者"), false);
 assert.equal(continuationRecord.contextStartPdfPage, 21);
-assert.equal(buildContextText(continuationRecord).includes("同意者，不在此限"), true);
+assert.equal(buildContextText(continuationRecord).text.includes("同意者，不在此限"), true);
 assert.equal(continuationNeeded(continuationRecord.text), true);
 assert.equal(findLogicalPassage(continuationRecord, ["擔保品"], true).startPdfPage, 21);
+const onlyCurrentPassage = findLogicalPassage(subrogation, ["代位清償"], true);
+assert.equal(onlyCurrentPassage.startPdfPage, 44);
+assert.equal(onlyCurrentPassage.endPdfPage, 44);
+const crossPageFixture = {
+  type: "chapter", pdfPage: 44, printedPage: "36", contextStartPdfPage: 43, contextStartPrintedPage: "35", contextEndPdfPage: 45, contextEndPrintedPage: "37",
+  contextBefore: "前頁無關文字。", text: "本頁條文說明代位清償的必要條件與程序，內容仍需延續至下一頁，並說明受託機構應先完成必要查核，且須保存完整授信與債權資料", contextAfter: "，並由受託機構依規定檢具文件後提出申請，始得依本手冊程序辦理；相關佐證應妥善留存並供後續核對。下一條獨立規定。"
+};
+const crossPagePassage = findLogicalPassage(crossPageFixture, ["代位清償"], true);
+assert.equal(crossPagePassage.startPdfPage, 44);
+assert.equal(crossPagePassage.endPdfPage, 45);
+assert.equal(crossPagePassage.anchorPdfPage, 44);
 assert.equal(findLogicalPassage(index.find((record) => record.pdfPage === 178), ["擔保品"], true), null);
+assert.equal(subrogation.readingUrl, "versions/115-04/chapters/part-3/subrogation-requirements.html");
+assert.equal(resultTarget(subrogation, { anchorPdfPage: 44 }), "versions/115-04/chapters/part-3/subrogation-requirements.html#pdf-page-44");
+assert.equal(resultTarget(index.find((record) => record.pdfPage === 21), { anchorPdfPage: 21 }), "versions/115-04/chapters/part-1/guarantee-application.html#pdf-page-21");
+assert.equal(resultTarget(index.find((record) => record.pdfPage === 178), { anchorPdfPage: 178 }), "versions/115-04/forms/form-25a.html#pdf-page-178");
+assert.equal(resultTarget(index.find((record) => record.pdfPage === 60), { anchorPdfPage: 60 }), "versions/115-04/appendices/appendix-02.html#pdf-page-60");
+assert.equal(resultTarget(index.find((record) => record.pdfPage === 5), { anchorPdfPage: 5 }), "versions/115-04/pages/page-005.html#pdf-page-5");
+assert.equal(index.every((record) => record.readingUrl), true);
 const duplicateFixtures = [
   { record: { type: "chapter", scope: "chapter:test", pdfPage: 10, contextStartPdfPage: 9, contextEndPdfPage: 11, text: "第一條 擔保品應依規定辦理，並應確認價值、權利設定與保證人責任，受託機構應保存相關文件及紀錄。", contextAfter: "第一條 擔保品應依規定辦理，並應確認價值、權利設定與保證人責任，受託機構應保存相關文件及紀錄。" }, matchedTerms: ["擔保品"], coveredTerms: ["擔保品"], bodyMatches: true },
+  { record: { type: "chapter", scope: "chapter:other", pdfPage: 50, text: "其他章節的獨立規定，內容足以作為不同結果保留。" }, matchedTerms: ["其他"], coveredTerms: ["其他"], bodyMatches: true },
   { record: { type: "chapter", scope: "chapter:test", pdfPage: 11, contextStartPdfPage: 10, contextEndPdfPage: 12, text: "第一條 擔保品應依規定辦理，並應確認價值、權利設定與保證人責任，受託機構應保存相關文件及紀錄。", contextAfter: "第一條 擔保品應依規定辦理，並應確認價值、權利設定與保證人責任，受託機構應保存相關文件及紀錄。" }, matchedTerms: ["擔保品"], coveredTerms: ["擔保品"], bodyMatches: true }
 ];
-assert.equal(deduplicateAdjacentResults(duplicateFixtures).length, 1);
+assert.equal(deduplicateAdjacentResults(duplicateFixtures).length, 2);
 for (const type of ["chapter", "appendix", "form", "lookup-table", "front-matter"]) assert.equal(index.some((record) => record.type === type), true);
 assert.equal(index.find((record) => record.pdfPage === 28).type, "chapter");
 assert.equal(index.find((record) => record.pdfPage === 122).type, "lookup-table");
