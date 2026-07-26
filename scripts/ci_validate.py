@@ -35,6 +35,7 @@ def main() -> None:
     for script in [
         "audit_content.py",
         "audit_reading_units.py",
+        "audit_full_manual_boundaries.py",
         "audit_search_quality.py",
         "audit_search_context.py",
         "audit_search_targets.py",

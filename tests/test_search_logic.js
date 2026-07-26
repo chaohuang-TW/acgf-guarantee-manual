@@ -7,7 +7,7 @@ const css = fs.readFileSync("assets/css/site.css", "utf8");
 const context = { console };
 context.globalThis = context;
 vm.runInNewContext(source, context, { filename: "search.js" });
-const { buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, filterMatches, filterRecordsByScope, findLogicalPassage, queryConcepts, resultTarget, searchRecords, selectReadingSegment, tokenizeQuery, zeroResultMessage } = context.ManualSearch;
+const { bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, filterMatches, filterRecordsByScope, findLogicalPassage, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage } = context.ManualSearch;
 const concepts = JSON.parse(fs.readFileSync("data/search-concepts.json", "utf8"));
 const intents = JSON.parse(fs.readFileSync("data/search-intents.json", "utf8"));
 const index = JSON.parse(fs.readFileSync("site/assets/data/search-index.json", "utf8"));
@@ -54,10 +54,45 @@ assert.deepEqual(sharedPage46.readingSegments.map((segment) => segment.id), [
 const interestResult = searchRecords(index, "代償利息", concepts, intents).matches.find(({ record }) => record.pdfPage === 46);
 assert.equal(interestResult.segment.id, "subrogation-scope");
 assert.equal(resultTarget(interestResult.record, null, interestResult.segment), "versions/115-04/chapters/part-3/subrogation-scope.html#pdf-page-46");
+assert.equal(interestResult.segment.text.includes("無執行實益"), false);
+assert.equal(interestResult.segment.text.includes("格式 25Ａ"), false);
+assert.equal(snippet(interestResult.segment.text, interestResult.matchedTerms).includes("代償利息"), true);
+assert.equal(searchRecords(index, "法定訴訟費用", concepts, intents).matches.find(({ record }) => record.pdfPage === 46).segment.id, "subrogation-scope");
 const documentsResult = searchRecords(index, "代位清償應檢送文件", concepts, intents).matches.find(({ record }) => record.pdfPage === 46);
 assert.equal(documentsResult.segment.id, "subrogation-documents");
 assert.equal(resultTarget(documentsResult.record, null, documentsResult.segment), "versions/115-04/chapters/part-3/subrogation-documents.html#pdf-page-46");
 assert.equal(selectReadingSegment(sharedPage46, queryConcepts("無執行實益", concepts)).id, "subrogation-requirements");
+const format25aResults = searchRecords(index, "格式25A", concepts, intents).matches;
+assert.equal(format25aResults[0].record.url, "versions/115-04/pages/page-178.html");
+assert.equal(format25aResults.find(({ record }) => record.pdfPage === 46).segment.id, "subrogation-documents");
+const sharedPage32 = index.find((record) => record.pdfPage === 32);
+assert.equal(selectReadingSegment(sharedPage32, queryConcepts("內容變更事項", concepts)).id, "guarantee-changes");
+assert.equal(selectReadingSegment(sharedPage32, queryConcepts("終止保證", concepts)).id, "guarantee-termination");
+const sharedPage43 = index.find((record) => record.pdfPage === 43);
+assert.equal(selectReadingSegment(sharedPage43, queryConcepts("其他有合理理由", concepts)).id, "overdue-guarantee");
+assert.equal(selectReadingSegment(sharedPage43, queryConcepts("第二年起保證手續費", concepts)).id, "release-liability");
+
+const sharedFixture = {
+  type: "chapter",
+  pdfPage: 999,
+  printedPage: "測試",
+  title: "測試共享頁",
+  breadcrumb: ["測試"],
+  text: "第一段共同詞規定。第二段共同詞規定。",
+  url: "versions/test/page.html",
+  readingUrl: "versions/test/first.html",
+  scope: "chapter:test/first",
+  readingSegments: [
+    { id: "first", title: "第一段", breadcrumb: ["測試", "第一段"], scope: "chapter:test/first", readingUrl: "versions/test/first.html", startOffset: 0, endOffset: 9, text: "第一段共同詞規定。" },
+    { id: "second", title: "第二段", breadcrumb: ["測試", "第二段"], scope: "chapter:test/second", readingUrl: "versions/test/second.html", startOffset: 9, endOffset: 18, text: "第二段共同詞規定。" },
+  ],
+};
+assert.equal(selectReadingSegment(sharedFixture, queryConcepts("完全未命中", concepts)), null);
+assert.equal(selectReadingSegments(sharedFixture, queryConcepts("完全未命中", concepts)).length, 0);
+const sharedFixtureResults = searchRecords([sharedFixture], "共同詞", concepts, intents).matches;
+assert.deepEqual(JSON.parse(JSON.stringify(sharedFixtureResults.map(({ segment }) => segment.id))), ["first", "second"]);
+assert.equal(deduplicateAdjacentResults(sharedFixtureResults).length, 2);
+assert.equal(bodyMatchOffsets(sharedFixture.readingSegments[1].text, queryConcepts("共同詞", concepts))[0].rawOffset > 0, true);
 const continuationRecord = index.find((record) => record.pdfPage === 22);
 const subrogation = index.find((record) => record.pdfPage === 44);
 assert.equal(continuationRecord.contextBefore.includes("同意者"), false);

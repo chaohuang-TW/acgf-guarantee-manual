@@ -92,27 +92,111 @@
     return { phrase, words, concepts: items };
   }
 
-  function selectReadingSegment(record, queryInfo) {
-    const segments = record.readingSegments || [];
-    if (!segments.length) return null;
-    const score = (segment) => {
+  function compactNormalizeWithMap(value) {
+    const source = String(value || "");
+    let text = "";
+    const offsets = [];
+    for (let index = 0; index < source.length; index += 1) {
+      for (const character of source[index].normalize("NFKC").toLocaleLowerCase("zh-Hant")) {
+        if (/\s/.test(character)) continue;
+        text += character;
+        offsets.push(index);
+      }
+    }
+    return { text, offsets };
+  }
+
+  function bodyMatchOffsets(body, queryInfo) {
+    const mapped = compactNormalizeWithMap(body);
+    const candidates = [];
+    const add = (term, priority, direct, source) => {
+      const normalized = compactNormalizeWithMap(term).text;
+      if (!normalized) return;
+      const existing = candidates.find((candidate) => candidate.normalized === normalized);
+      if (!existing || priority < existing.priority) {
+        if (existing) candidates.splice(candidates.indexOf(existing), 1);
+        candidates.push({ term, normalized, priority, direct, source });
+      }
+    };
+    add(queryInfo.phrase, 0, true, "exact-phrase");
+    queryInfo.words.forEach((term) => add(term, 1, true, "original-term"));
+    queryInfo.concepts.forEach((concept) => {
+      add(concept.terms[0], 2, false, "concept-canonical");
+      concept.terms.slice(1).forEach((term) => add(term, 3, false, "concept-expansion"));
+    });
+    const matches = [];
+    for (const candidate of candidates) {
+      let start = 0;
+      while (start < mapped.text.length) {
+        const position = mapped.text.indexOf(candidate.normalized, start);
+        if (position < 0) break;
+        matches.push({
+          ...candidate,
+          normalizedOffset: position,
+          rawOffset: mapped.offsets[position],
+        });
+        start = position + Math.max(1, candidate.normalized.length);
+      }
+    }
+    return matches.sort((left, right) => left.priority - right.priority || left.rawOffset - right.rawOffset);
+  }
+
+  function metadataSegment(record, queryInfo) {
+    const terms = [...new Set([queryInfo.phrase, ...queryInfo.words])].filter(Boolean);
+    const ranked = (record.readingSegments || []).map((segment, index) => {
       const title = normalize(segment.title);
       const breadcrumb = normalize((segment.breadcrumb || []).join(" › "));
-      const text = normalize(segment.text);
-      let value = text.includes(queryInfo.phrase) ? 500 : 0;
-      if (title.includes(queryInfo.phrase)) value += 700;
-      if (breadcrumb.includes(queryInfo.phrase)) value += 300;
-      for (const concept of queryInfo.concepts) {
-        if (text.includes(concept.token)) value += 160;
-        else if (concept.terms.some((term) => text.includes(term))) value += 80;
-        if (title.includes(concept.token)) value += 240;
-        else if (concept.terms.some((term) => title.includes(term))) value += 120;
+      let score = 0;
+      for (const term of terms) {
+        if (title === term) score += 500;
+        else if (title.includes(term)) score += 350;
+        if (breadcrumb.includes(term)) score += 200;
       }
-      return value;
-    };
-    return segments
-      .map((segment, index) => ({ segment, index, score: score(segment) }))
-      .sort((left, right) => right.score - left.score || left.index - right.index)[0].segment;
+      return { segment, index, score, terms: terms.filter((term) => title.includes(term) || breadcrumb.includes(term)) };
+    }).filter((item) => item.score > 0);
+    ranked.sort((left, right) => right.score - left.score || left.index - right.index);
+    return ranked[0] || null;
+  }
+
+  function selectReadingSegments(record, queryInfo) {
+    const segments = record.readingSegments || [];
+    if (!segments.length) return [];
+    const located = segments.flatMap((segment) => bodyMatchOffsets(segment.text, queryInfo).map((match) => ({
+      ...match,
+      rawOffset: segment.startOffset + match.rawOffset,
+      segment,
+    }))).sort((left, right) => left.priority - right.priority || left.rawOffset - right.rawOffset);
+    if (located.length) {
+      const directSegments = segments.map((segment) => ({
+        segment,
+        matches: located.filter((match) => match.segment.id === segment.id && match.direct),
+      })).filter((item) => item.matches.length);
+      const selected = directSegments.length > 1
+        ? directSegments
+        : [{
+            segment: (directSegments[0]?.segment || located[0].segment),
+            matches: directSegments[0]?.matches || located.filter((match) => match.segment.id === located[0].segment.id && match.priority === located[0].priority),
+          }];
+      return selected.map(({ segment, matches }) => ({
+        segment,
+        direct: matches.some((match) => match.direct),
+        terms: [...new Set(matches.map((match) => match.term))],
+        offsets: matches.map((match) => match.rawOffset),
+        source: "body-offset",
+      }));
+    }
+    const metadata = metadataSegment(record, queryInfo);
+    return metadata ? [{
+      segment: metadata.segment,
+      direct: false,
+      terms: metadata.terms,
+      offsets: [],
+      source: "metadata",
+    }] : [];
+  }
+
+  function selectReadingSegment(record, queryInfo) {
+    return selectReadingSegments(record, queryInfo)[0]?.segment || null;
   }
 
   function formNumber(query) {
@@ -183,17 +267,23 @@
     const exactForm = requestedForm && new RegExp(`^格式\\s*${requestedForm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:：|\\s|$)`, "i").test(title);
     const covered = [];
     const matchedTerms = new Set();
+    const offsetMatches = record.readingSegments?.length ? bodyMatchOffsets(body, queryInfo) : [];
     let bodyMatches = false;
     let score = 0;
     for (const concept of queryInfo.concepts) {
       const originalInTitle = titleNormalized.includes(concept.token);
       const originalInBreadcrumb = breadcrumbNormalized.includes(concept.token);
       const originalInHeadings = headingsNormalized.includes(concept.token);
-      const originalInBody = bodyNormalized.includes(concept.token);
+      const originalInBody = bodyNormalized.includes(concept.token) || offsetMatches.some((match) => match.direct && compactNormalizeWithMap(match.term).text === compactNormalizeWithMap(concept.token).text);
       const expansionInTitle = fieldMatches(title, concept.terms);
       const expansionInBreadcrumb = fieldMatches(breadcrumb, concept.terms);
       const expansionInHeadings = fieldMatches(headings, concept.terms);
       const expansionInBody = fieldMatches(body, concept.terms);
+      if (!expansionInBody.length) {
+        offsetMatches
+          .filter((match) => concept.terms.some((term) => compactNormalizeWithMap(term).text === compactNormalizeWithMap(match.term).text))
+          .forEach((match) => expansionInBody.push(match.term));
+      }
       const hasMatch = originalInTitle || originalInBreadcrumb || originalInHeadings || originalInBody || expansionInTitle.length || expansionInBreadcrumb.length || expansionInHeadings.length || expansionInBody.length;
       if (!hasMatch) continue;
       if (originalInBody || expansionInBody.length) bodyMatches = true;
@@ -217,9 +307,11 @@
     score += proximityScore(body, covered);
     score += intentScore(record, queryInfo, intents);
     if (record.type === "front-matter" && !isExplicitFrontMatterQuery(queryInfo.phrase)) score -= 400;
+    const segmentMatches = selectReadingSegments(record, queryInfo);
     return {
       record,
-      segment: selectReadingSegment(record, queryInfo),
+      segment: segmentMatches[0]?.segment || null,
+      segmentMatches,
       index,
       baseScore: score,
       exactForm: Boolean(exactForm),
@@ -263,7 +355,16 @@
     if (!queryInfo.phrase) return { queryInfo, intents: [], matches: [] };
     const intents = activeIntents(queryInfo, rawIntents);
     const matches = records.map((record, index) => recordSearchResult(record, index, queryInfo, intents)).filter(Boolean);
-    return { queryInfo, intents, matches: diversify(matches) };
+    const ranked = diversify(matches);
+    const expanded = ranked.flatMap((match) => {
+      if (match.segmentMatches.length <= 1) return [match];
+      return match.segmentMatches.map((selection) => ({
+        ...match,
+        segment: selection.segment,
+        matchedTerms: selection.terms.length ? selection.terms : match.matchedTerms,
+      }));
+    });
+    return { queryInfo, intents, matches: expanded };
   }
 
   function filterMatches(matches, selectedType) {
@@ -346,7 +447,16 @@
     for (const match of matches) {
       const passage = findLogicalPassage(match.record, match.matchedTerms, match.bodyMatches);
       const matchScope = match.segment?.scope || match.record.scope;
-      const previous = retained.find((item) => (item.segment?.scope || item.record.scope) === matchScope && item.record.type === match.record.type && Math.abs(item.record.pdfPage - match.record.pdfPage) === 1 && item.coveredTerms.join("|") === match.coveredTerms.join("|"));
+      const identity = match.segment
+        ? `${match.segment.id}|${match.segment.readingUrl}|${matchScope}`
+        : `${match.record.readingUrl || match.record.url}|${matchScope}`;
+      const previous = retained.find((item) => {
+        const itemScope = item.segment?.scope || item.record.scope;
+        const itemIdentity = item.segment
+          ? `${item.segment.id}|${item.segment.readingUrl}|${itemScope}`
+          : `${item.record.readingUrl || item.record.url}|${itemScope}`;
+        return itemIdentity === identity && item.record.type === match.record.type && Math.abs(item.record.pdfPage - match.record.pdfPage) === 1 && item.coveredTerms.join("|") === match.coveredTerms.join("|");
+      });
       const previousPassage = previous && findLogicalPassage(previous.record, previous.matchedTerms, previous.bodyMatches);
       const duplicate = previous && passage && previousPassage && (passageSimilarity(passage.fullText, previousPassage.fullText) >= 0.58 || normalize(match.record.text) === normalize(previous.record.text));
       if (!duplicate) retained.push(match);
@@ -546,7 +656,7 @@
     panel.__manualSearch = { input, run };
   }
 
-  globalThis.ManualSearch = { buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, snippet, tokenizeQuery, zeroResultMessage };
+  globalThis.ManualSearch = { bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage };
   if (typeof document !== "undefined") {
     document.querySelectorAll("[data-search]").forEach(attach);
     document.querySelectorAll("[data-keyword]").forEach((button) => button.addEventListener("click", () => {
