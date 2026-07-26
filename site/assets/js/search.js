@@ -255,8 +255,10 @@
   }
 
   function recordSearchResult(record, index, queryInfo, intents) {
-    const title = record.title || "";
-    const breadcrumb = (record.breadcrumb || []).join(" › ");
+    const segmentMatches = selectReadingSegments(record, queryInfo);
+    const primarySegment = segmentMatches[0]?.segment || null;
+    const title = primarySegment?.title || record.title || "";
+    const breadcrumb = (primarySegment?.breadcrumb || record.breadcrumb || []).join(" › ");
     const headings = (record.headings || []).join(" › ");
     const body = record.text || "";
     const titleNormalized = normalize(title);
@@ -307,7 +309,6 @@
     score += proximityScore(body, covered);
     score += intentScore(record, queryInfo, intents);
     if (record.type === "front-matter" && !isExplicitFrontMatterQuery(queryInfo.phrase)) score -= 400;
-    const segmentMatches = selectReadingSegments(record, queryInfo);
     return {
       record,
       segment: segmentMatches[0]?.segment || null,

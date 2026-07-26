@@ -68,6 +68,8 @@ assert.equal(format25aResults.find(({ record }) => record.pdfPage === 46).segmen
 const sharedPage32 = index.find((record) => record.pdfPage === 32);
 assert.equal(selectReadingSegment(sharedPage32, queryConcepts("內容變更事項", concepts)).id, "guarantee-changes");
 assert.equal(selectReadingSegment(sharedPage32, queryConcepts("終止保證", concepts)).id, "guarantee-termination");
+assert.equal(searchRecords(index, "內容變更事項", concepts, intents).matches[0].segment.id, "guarantee-changes");
+assert.equal(searchRecords(index, "終止保證", concepts, intents).matches[0].segment.id, "guarantee-termination");
 const sharedPage43 = index.find((record) => record.pdfPage === 43);
 assert.equal(selectReadingSegment(sharedPage43, queryConcepts("其他有合理理由", concepts)).id, "overdue-guarantee");
 assert.equal(selectReadingSegment(sharedPage43, queryConcepts("第二年起保證手續費", concepts)).id, "release-liability");
