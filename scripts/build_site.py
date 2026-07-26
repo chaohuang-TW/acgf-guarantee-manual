@@ -13,6 +13,7 @@ from pathlib import Path, PurePosixPath
 
 from page_rendering import load_page_rendering
 from display_text import normalize_display_text
+from reading_units import load_resolved_units, units_by_pdf
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
@@ -21,6 +22,9 @@ VERSION = json.loads((ROOT / "data" / "version.json").read_text(encoding="utf-8"
 VERSIONS = json.loads((ROOT / "data" / "versions.json").read_text(encoding="utf-8"))
 TOC = json.loads((ROOT / "data" / "toc.json").read_text(encoding="utf-8"))
 SEARCH_HEADINGS = json.loads((ROOT / "data" / "search-headings.json").read_text(encoding="utf-8"))
+READING_UNITS = load_resolved_units()
+READING_UNITS_BY_ID = {unit["id"]: unit for unit in READING_UNITS}
+READING_UNITS_BY_PDF = units_by_pdf(READING_UNITS)
 TEMPLATES = {path.stem: path.read_text(encoding="utf-8") for path in (ROOT / "templates").glob("*.html")}
 PAGE_RENDERING, _, RESOLVED_RENDERING = load_page_rendering()
 PREVIEW_ROOT = ROOT / "assets" / "page-previews" / VERSION["id"]
@@ -194,6 +198,49 @@ def page_card(page: dict, relative: str, heading_level: int = 2) -> str:
         {body}
       </section>
     """
+
+
+def reading_fragment_card(page: dict, fragment: dict, relative: str) -> str:
+    """Render a source-faithful slice of a shared physical page."""
+    pdf_page = page["pdfPage"]
+    printed = page["printedPage"] or "無"
+    pdf_url = rel_from(relative, f"downloads/{PDF_NAME}") + f"#page={pdf_page}"
+    physical_url = rel_from(relative, f'{VERSION_ROOT}/pages/page-{pdf_page:03d}.html') + f"#pdf-page-{pdf_page}"
+    display = "".join(f"<p>{e(paragraph)}</p>" for paragraph in normalize_display_text(fragment["text"]))
+    return f"""
+      <section class="page-card reading-fragment" id="pdf-page-{pdf_page}" data-fragment-start="{fragment["startOffset"]}" data-fragment-end="{fragment["endOffset"]}">
+        <h2>手冊頁：{e(printed)} <small>PDF頁：{pdf_page}／{PDF_PAGE_COUNT}</small></h2>
+        <p class="fragment-note">本節內容節錄自此實體頁；完整來源頁仍保留於單頁閱讀入口。</p>
+        <div class="page-actions">
+          <button type="button" class="copy-page-link" data-page-anchor="pdf-page-{pdf_page}">複製本節／本頁連結</button>
+          <a href="{e(pdf_url)}" target="_blank" rel="noopener noreferrer">開啟原始PDF此頁 ↗</a>
+          <a href="{e(physical_url)}">僅查看完整實體頁</a>
+        </div>
+        <div class="display-text">{display}</div>
+        <details class="raw-text-details"><summary>查看本節 PDF 原始文字片段</summary>
+          <div class="layout-note" role="note">下列內容僅切割自本頁既有文字層，未改寫、補句或使用OCR。</div>
+          <pre class="source-text source-text-raw">{e(fragment["text"])}</pre>
+        </details>
+      </section>
+    """
+
+
+def source_meta_for_unit(unit: dict) -> str:
+    pages = [int(fragment["printedPage"]) for fragment in unit["fragments"] if fragment["printedPage"]]
+    start, end = min(pages), max(pages)
+    return f"手冊頁 {start}" if start == end else f"手冊頁 {start}–{end}"
+
+
+def render_reading_unit(unit: dict, relative: str) -> str:
+    cards: list[str] = []
+    pages_by_pdf = {int(page["pdfPage"]): page for page in PAGES}
+    for fragment in unit["fragments"]:
+        page = pages_by_pdf[fragment["pdfPage"]]
+        if fragment["startOffset"] == 0 and fragment["endOffset"] == len(page["text"]):
+            cards.append(page_card(page, relative))
+        else:
+            cards.append(reading_fragment_card(page, fragment, relative))
+    return "".join(cards)
 
 
 def page_range(start_printed: int, end_printed: int) -> list[dict]:
@@ -399,11 +446,14 @@ def build_parts() -> None:
         )
         write(relative, part["title"], main)
 
-        for section, section_end in unit_ranges(part["sections"], part_end):
+        for section in part["sections"]:
+            unit = READING_UNITS_BY_ID[section["id"]]
             section_relative = f'{VERSION_ROOT}/chapters/{part["id"]}/{section["id"]}.html'
-            section_content = [f'<h1>{e(section["title"])}</h1><p class="source-meta">手冊頁 {section["printedPage"]}-{section_end}</p>']
-            for page in page_range(section["printedPage"], section_end):
-                section_content.append(page_card(page, section_relative))
+            section_content = [
+                f'<h1>{e(section["title"])}</h1>',
+                f'<p class="source-meta">{e(source_meta_for_unit(unit))}</p>',
+                render_reading_unit(unit, section_relative),
+            ]
             section_main = fill(
                 TEMPLATES["section"],
                 BREADCRUMB=breadcrumb([("首頁", rel_from(section_relative, "index.html")), ("完整目錄", rel_from(section_relative, VERSION_ROOT + "/index.html")), (part["title"], rel_from(section_relative, relative))], section["title"]),
@@ -485,17 +535,10 @@ def reading_url_for_page(page: dict) -> str:
     if printed is None:
         return f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html'
     if printed <= 46:
-        part = next(part for part, end in zip(TOC["parts"], [23, 35, 44, 46]) if printed <= end)
-        part_end = {"part-1": 23, "part-2": 35, "part-3": 44, "part-4": 46}[part["id"]]
-        # Some adjacent TOC entries begin on the same printed page.  Use the
-        # exact ranges used by build_parts(), so every reading target actually
-        # contains the physical-page anchor instead of pointing at an empty
-        # preceding section page.
-        section = next(
-            item for item, end in unit_ranges(part["sections"], part_end)
-            if item["printedPage"] <= printed <= end
-        )
-        return f'{VERSION_ROOT}/chapters/{part["id"]}/{section["id"]}.html'
+        segments = READING_UNITS_BY_PDF.get(int(page["pdfPage"]), [])
+        if not segments:
+            raise ValueError(f"No logical reading unit for chapter PDF page {page['pdfPage']}")
+        return segments[0]["readingUrl"]
     if printed <= 116:
         item = max((item for item in TOC["appendices"] if item["printedPage"] <= printed), key=lambda item: item["printedPage"])
         return f'{VERSION_ROOT}/appendices/{item["id"]}.html'
@@ -527,6 +570,10 @@ def build_physical_pages_and_search() -> None:
                 "type": page_type,
                 "scope": scope_for_page(page),
             }
+            if page_type == "chapter":
+                record["readingSegments"] = READING_UNITS_BY_PDF[page["pdfPage"]]
+                record["readingUrl"] = record["readingSegments"][0]["readingUrl"]
+                record["scope"] = record["readingSegments"][0]["scope"]
             if headings := SEARCH_HEADINGS.get(url):
                 record["headings"] = headings
             index.append(record)

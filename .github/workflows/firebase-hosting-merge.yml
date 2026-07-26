@@ -21,14 +21,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Build and Validate Site
-        run: |
-          python scripts/build_site.py
-          python scripts/validate_site.py
-          python scripts/validate_page_rendering.py
-          python scripts/audit_content.py
-          python scripts/audit_search_quality.py
-          python scripts/audit_search_context.py
-          python scripts/audit_search_targets.py
+        run: python scripts/ci_validate.py
         env:
           SITE_ORIGIN: https://acgf-guarantee-manual-tw.web.app
           SITE_BASE_PATH: /

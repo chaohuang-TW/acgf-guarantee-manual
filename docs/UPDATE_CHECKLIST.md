@@ -50,8 +50,15 @@
 
 ## E. 驗證
 
+- [ ] 執行reading unit boundary audit。
+- [ ] 執行shared-page section audit。
 - [ ] 執行audit_content.py。
+- [ ] 執行audit_search_context.py。
+- [ ] 執行audit_search_targets.py。
+- [ ] 執行audit_reading_units.py。
 - [ ] 執行validate_site.py。
+- [ ] 執行Node搜尋邏輯測試。
+- [ ] 執行Playwright E2E。
 - [ ] 比對原始PDF。
 - [ ] 抽查至少20個位置。
 - [ ] 核對金額、成數、日期、年限、格式編號。
@@ -72,6 +79,7 @@
 
 - [ ] Commit並push到main。
 - [ ] 等待GitHub Pages成功。
+- [ ] 等待Firebase Hosting正式部署成功。
 - [ ] 實際檢查正式網站。
 - [ ] 建立annotated tag。
 - [ ] Push tag。

@@ -92,6 +92,29 @@
     return { phrase, words, concepts: items };
   }
 
+  function selectReadingSegment(record, queryInfo) {
+    const segments = record.readingSegments || [];
+    if (!segments.length) return null;
+    const score = (segment) => {
+      const title = normalize(segment.title);
+      const breadcrumb = normalize((segment.breadcrumb || []).join(" › "));
+      const text = normalize(segment.text);
+      let value = text.includes(queryInfo.phrase) ? 500 : 0;
+      if (title.includes(queryInfo.phrase)) value += 700;
+      if (breadcrumb.includes(queryInfo.phrase)) value += 300;
+      for (const concept of queryInfo.concepts) {
+        if (text.includes(concept.token)) value += 160;
+        else if (concept.terms.some((term) => text.includes(term))) value += 80;
+        if (title.includes(concept.token)) value += 240;
+        else if (concept.terms.some((term) => title.includes(term))) value += 120;
+      }
+      return value;
+    };
+    return segments
+      .map((segment, index) => ({ segment, index, score: score(segment) }))
+      .sort((left, right) => right.score - left.score || left.index - right.index)[0].segment;
+  }
+
   function formNumber(query) {
     const match = normalize(query).match(/^(?:格式\s*)?(\d+(?:-\d+)?[a-z]?)$/);
     return match ? match[1] : null;
@@ -196,6 +219,7 @@
     if (record.type === "front-matter" && !isExplicitFrontMatterQuery(queryInfo.phrase)) score -= 400;
     return {
       record,
+      segment: selectReadingSegment(record, queryInfo),
       index,
       baseScore: score,
       exactForm: Boolean(exactForm),
@@ -300,8 +324,8 @@
     return { fullText, preview: fullText.length > 560 ? `${fullText.slice(0, 560)}…` : fullText, expanded: fullText.length > 560, startPdfPage: first.pdfPage, endPdfPage: last.pdfPage, startPrintedPage: first.printedPage, endPrintedPage: last.printedPage, anchorPdfPage: first.pdfPage };
   }
 
-  function resultTarget(record, passage) {
-    const target = record.readingUrl || record.url;
+  function resultTarget(record, passage, segment = null) {
+    const target = segment?.readingUrl || record.readingUrl || record.url;
     const anchor = passage?.anchorPdfPage || record.pdfPage;
     return `${target}#pdf-page-${anchor}`;
   }
@@ -321,7 +345,8 @@
     const retained = [];
     for (const match of matches) {
       const passage = findLogicalPassage(match.record, match.matchedTerms, match.bodyMatches);
-      const previous = retained.find((item) => item.record.scope === match.record.scope && item.record.type === match.record.type && Math.abs(item.record.pdfPage - match.record.pdfPage) === 1 && item.coveredTerms.join("|") === match.coveredTerms.join("|"));
+      const matchScope = match.segment?.scope || match.record.scope;
+      const previous = retained.find((item) => (item.segment?.scope || item.record.scope) === matchScope && item.record.type === match.record.type && Math.abs(item.record.pdfPage - match.record.pdfPage) === 1 && item.coveredTerms.join("|") === match.coveredTerms.join("|"));
       const previousPassage = previous && findLogicalPassage(previous.record, previous.matchedTerms, previous.bodyMatches);
       const duplicate = previous && passage && previousPassage && (passageSimilarity(passage.fullText, previousPassage.fullText) >= 0.58 || normalize(match.record.text) === normalize(previous.record.text));
       if (!duplicate) retained.push(match);
@@ -385,21 +410,23 @@
 
   function resultElement(result, siteRoot) {
     const { record } = result;
+    const presentation = result.segment || record;
     const article = document.createElement("article");
     article.className = "search-result";
     const heading = document.createElement("h3");
     const link = document.createElement("a");
-    const passage = findLogicalPassage(record, result.matchedTerms, result.bodyMatches);
-    link.href = new URL(resultTarget(record, passage), siteRoot).href;
-    link.textContent = record.title;
+    const sharedPage = (record.readingSegments || []).length > 1;
+    const passage = sharedPage ? null : findLogicalPassage(record, result.matchedTerms, result.bodyMatches);
+    link.href = new URL(resultTarget(record, passage, result.segment), siteRoot).href;
+    link.textContent = presentation.title;
     heading.append(link);
     const type = document.createElement("span");
     type.className = "result-type";
     type.textContent = TYPE_LABELS[record.type] || "其他";
     heading.append(type);
     article.append(heading);
-    appendText(article, "p", "result-path", (record.breadcrumb || []).join(" › "));
-    appendText(article, "p", "result-snippet", passage ? passage.preview : snippet(record.text, result.matchedTerms));
+    appendText(article, "p", "result-path", (presentation.breadcrumb || record.breadcrumb || []).join(" › "));
+    appendText(article, "p", "result-snippet", passage ? passage.preview : snippet(presentation.text || record.text, result.matchedTerms));
     if (passage?.expanded) {
       const button = document.createElement("button");
       button.type = "button";
@@ -519,7 +546,7 @@
     panel.__manualSearch = { input, run };
   }
 
-  globalThis.ManualSearch = { buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, snippet, tokenizeQuery, zeroResultMessage };
+  globalThis.ManualSearch = { buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, snippet, tokenizeQuery, zeroResultMessage };
   if (typeof document !== "undefined") {
     document.querySelectorAll("[data-search]").forEach(attach);
     document.querySelectorAll("[data-keyword]").forEach((button) => button.addEventListener("click", () => {

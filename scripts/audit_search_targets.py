@@ -26,6 +26,9 @@ def main() -> None:
         html = page_html(reading_url)
         anchor = f'id="pdf-page-{record["pdfPage"]}"'
         assert anchor in html, f"Missing {anchor} in {reading_url}"
+        for segment in record.get("readingSegments", []):
+            segment_html = page_html(segment["readingUrl"])
+            assert anchor in segment_html, f"Missing {anchor} in {segment['readingUrl']}"
 
     records = {record["pdfPage"]: record for record in INDEX}
     expected = {
@@ -41,6 +44,11 @@ def main() -> None:
     subrogation = page_html(records[44]["readingUrl"])
     assert 'id="pdf-page-44"' in subrogation and 'id="pdf-page-45"' in subrogation
     assert records[5]["readingUrl"] == records[5]["url"]
+    assert [item["id"] for item in records[46]["readingSegments"]] == [
+        "subrogation-requirements",
+        "subrogation-scope",
+        "subrogation-documents",
+    ]
     print(f"SEARCH TARGET AUDIT PASSED: {len(INDEX)} reading targets and anchors")
 
 

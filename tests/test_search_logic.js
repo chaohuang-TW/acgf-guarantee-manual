@@ -7,7 +7,7 @@ const css = fs.readFileSync("assets/css/site.css", "utf8");
 const context = { console };
 context.globalThis = context;
 vm.runInNewContext(source, context, { filename: "search.js" });
-const { buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, filterMatches, filterRecordsByScope, findLogicalPassage, queryConcepts, resultTarget, searchRecords, tokenizeQuery, zeroResultMessage } = context.ManualSearch;
+const { buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, filterMatches, filterRecordsByScope, findLogicalPassage, queryConcepts, resultTarget, searchRecords, selectReadingSegment, tokenizeQuery, zeroResultMessage } = context.ManualSearch;
 const concepts = JSON.parse(fs.readFileSync("data/search-concepts.json", "utf8"));
 const intents = JSON.parse(fs.readFileSync("data/search-intents.json", "utf8"));
 const index = JSON.parse(fs.readFileSync("site/assets/data/search-index.json", "utf8"));
@@ -45,6 +45,19 @@ assert.equal(searchRecords(index, "手續費 計算", concepts, intents).matches
 assert.equal(searchRecords(index, "代償 應備文件", concepts, intents).matches[0].record.url, "versions/115-04/pages/page-180.html");
 
 assert.equal(index.length, 196);
+const sharedPage46 = index.find((record) => record.pdfPage === 46);
+assert.deepEqual(sharedPage46.readingSegments.map((segment) => segment.id), [
+  "subrogation-requirements",
+  "subrogation-scope",
+  "subrogation-documents",
+]);
+const interestResult = searchRecords(index, "代償利息", concepts, intents).matches.find(({ record }) => record.pdfPage === 46);
+assert.equal(interestResult.segment.id, "subrogation-scope");
+assert.equal(resultTarget(interestResult.record, null, interestResult.segment), "versions/115-04/chapters/part-3/subrogation-scope.html#pdf-page-46");
+const documentsResult = searchRecords(index, "代位清償應檢送文件", concepts, intents).matches.find(({ record }) => record.pdfPage === 46);
+assert.equal(documentsResult.segment.id, "subrogation-documents");
+assert.equal(resultTarget(documentsResult.record, null, documentsResult.segment), "versions/115-04/chapters/part-3/subrogation-documents.html#pdf-page-46");
+assert.equal(selectReadingSegment(sharedPage46, queryConcepts("無執行實益", concepts)).id, "subrogation-requirements");
 const continuationRecord = index.find((record) => record.pdfPage === 22);
 const subrogation = index.find((record) => record.pdfPage === 44);
 assert.equal(continuationRecord.contextBefore.includes("同意者"), false);

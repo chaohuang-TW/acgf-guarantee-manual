@@ -17,7 +17,7 @@
 ## 正式發布資料
 
 - 首次正式 Release：`v115.04.0`
-- 最新數位修正版：`v115.04.1`
+- 最新數位修正版：`v115.04.2`
 - [版本紀錄頁](https://chaohuang-tw.github.io/acgf-guarantee-manual/versions/)
 - [CHANGELOG](CHANGELOG.md)
 - [新版更新檢核清單](docs/UPDATE_CHECKLIST.md)
@@ -33,8 +33,8 @@ data/         版本、目錄與逐頁文字層資料
 scripts/      擷取、建置與驗證腳本
 templates/    靜態 HTML 樣板
 assets/       本機 CSS 與原生 JavaScript
-site/         GitHub Pages 唯一部署內容
-.github/      GitHub Pages Actions workflow
+site/         GitHub Pages 與 Firebase Hosting 共用的建置輸出
+.github/      GitHub Pages 與 Firebase Hosting Actions workflows
 ```
 
 ## 本機建置
@@ -46,13 +46,17 @@ pip install -r requirements.txt
 python scripts/extract_manual.py
 python scripts/render_page_previews.py
 python scripts/build_site.py
-python scripts/audit_content.py
-python scripts/validate_page_rendering.py
-python scripts/validate_site.py
+python scripts/ci_validate.py
 python3 -m http.server 8000 --directory site
 ```
 
 在瀏覽器開啟 `http://localhost:8000/`。網站使用相對路徑，可在 GitHub Project Pages 子路徑運作。
+
+## 實體頁與邏輯閱讀單元
+
+`data/pages.json` 保存203個完整PDF實體頁，既有單頁網址永久保留。`data/reading-units.json` 則以經核對的章節marker定義四篇正文的16個邏輯閱讀單元；同一PDF頁可依原始文字offset切分給多個章節，但不改寫、摘要或補充內容。建置遇到marker缺漏或歧義會直接失敗。
+
+搜尋排名仍使用196筆實體頁紀錄；搜尋結果依實際命中文字選取對應的logical segment，主連結進入完整閱讀單元，並保留「僅查看命中頁」入口。
 
 ## 更新新版手冊
 
@@ -109,9 +113,9 @@ python3 -m http.server 8000 --directory site
 
 部署前仍須以瀏覽器實測 390、768、1024、1440 像素版面、搜尋互動、深層頁面、PDF 下載、列印樣式、Console 與 Network。
 
-## GitHub Pages 部署
+## 雙站部署
 
-`.github/workflows/pages.yml` 在 `main` 有新 push 時執行，也支援手動觸發。流程先執行驗證，只將 `site/` 上傳為 Pages artifact，再使用 GitHub 官方 Pages Actions 部署；不需要自訂 secret。
+GitHub Repository 是唯一原始碼來源。`main` push 後，GitHub Actions 使用同一個 `scripts/ci_validate.py` 完整驗證，再分別部署至 GitHub Pages 與 Firebase Hosting；不得手動修改任一正式站的建置產物。
 
 ## 版本保存原則
 

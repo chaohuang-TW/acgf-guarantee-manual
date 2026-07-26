@@ -1,0 +1,169 @@
+{
+  "version": "115-04",
+  "units": [
+    {
+      "id": "guarantee-subject",
+      "partId": "part-1",
+      "title": "壹、保證對象、貸款用途、類別、範圍、額度及期限",
+      "startPdfPage": 9,
+      "startMarker": "壹、保證對象、貸款用途、類別、範圍、額度及期限",
+      "endPdfPage": 13,
+      "readingUrl": "versions/115-04/chapters/part-1/guarantee-subject.html",
+      "scope": "chapter:part-1/guarantee-subject"
+    },
+    {
+      "id": "guarantee-ratio",
+      "partId": "part-1",
+      "title": "貳、保證成數",
+      "startPdfPage": 14,
+      "startMarker": "貳、保證成數",
+      "endPdfPage": 16,
+      "readingUrl": "versions/115-04/chapters/part-1/guarantee-ratio.html",
+      "scope": "chapter:part-1/guarantee-ratio"
+    },
+    {
+      "id": "excluded-guarantee",
+      "partId": "part-1",
+      "title": "參、不予保證規定",
+      "startPdfPage": 17,
+      "startMarker": "參、不予保證規定",
+      "endPdfPage": 20,
+      "readingUrl": "versions/115-04/chapters/part-1/excluded-guarantee.html",
+      "scope": "chapter:part-1/excluded-guarantee"
+    },
+    {
+      "id": "guarantee-application",
+      "partId": "part-1",
+      "title": "肆、申請信用保證作業",
+      "startPdfPage": 21,
+      "startMarker": "肆、申請信用保證作業",
+      "endPdfPage": 31,
+      "readingUrl": "versions/115-04/chapters/part-1/guarantee-application.html",
+      "scope": "chapter:part-1/guarantee-application"
+    },
+    {
+      "id": "guarantee-changes",
+      "partId": "part-2",
+      "title": "壹、保證內容變更之處理",
+      "startPdfPage": 32,
+      "startMarker": "壹、保證內容變更之處理",
+      "endPdfPage": 32,
+      "endBeforeMarker": "貳、終止保證之處理",
+      "readingUrl": "versions/115-04/chapters/part-2/guarantee-changes.html",
+      "scope": "chapter:part-2/guarantee-changes"
+    },
+    {
+      "id": "guarantee-termination",
+      "partId": "part-2",
+      "title": "貳、終止保證之處理",
+      "startPdfPage": 32,
+      "startMarker": "貳、終止保證之處理",
+      "endPdfPage": 32,
+      "readingUrl": "versions/115-04/chapters/part-2/guarantee-termination.html",
+      "scope": "chapter:part-2/guarantee-termination"
+    },
+    {
+      "id": "credit-deterioration",
+      "partId": "part-2",
+      "title": "參、保證貸款信用惡化之處理",
+      "startPdfPage": 33,
+      "startMarker": "參、保證貸款信用惡化之處理",
+      "endPdfPage": 34,
+      "readingUrl": "versions/115-04/chapters/part-2/credit-deterioration.html",
+      "scope": "chapter:part-2/credit-deterioration"
+    },
+    {
+      "id": "pre-negotiation",
+      "partId": "part-2",
+      "title": "肆、保證貸款債務人聲請前置協商（調解）之處理",
+      "startPdfPage": 35,
+      "startMarker": "肆、保證貸款債務人聲請前置協商（調解）之處理",
+      "endPdfPage": 36,
+      "readingUrl": "versions/115-04/chapters/part-2/pre-negotiation.html",
+      "scope": "chapter:part-2/pre-negotiation"
+    },
+    {
+      "id": "overdue-guarantee",
+      "partId": "part-2",
+      "title": "伍、保證貸款到期未獲清償之處理",
+      "startPdfPage": 37,
+      "startMarker": "伍、保證貸款到期未獲清償之處理",
+      "endPdfPage": 43,
+      "endBeforeMarker": "陸、解除保證責任",
+      "readingUrl": "versions/115-04/chapters/part-2/overdue-guarantee.html",
+      "scope": "chapter:part-2/overdue-guarantee"
+    },
+    {
+      "id": "release-liability",
+      "partId": "part-2",
+      "title": "陸、解除保證責任",
+      "startPdfPage": 43,
+      "startMarker": "陸、解除保證責任",
+      "endPdfPage": 43,
+      "readingUrl": "versions/115-04/chapters/part-2/release-liability.html",
+      "scope": "chapter:part-2/release-liability"
+    },
+    {
+      "id": "subrogation-requirements",
+      "partId": "part-3",
+      "title": "壹、代位清償要件",
+      "startPdfPage": 44,
+      "startMarker": "壹、代位清償要件",
+      "endPdfPage": 46,
+      "endBeforeMarker": "貳、代位清償範圍",
+      "readingUrl": "versions/115-04/chapters/part-3/subrogation-requirements.html",
+      "scope": "chapter:part-3/subrogation-requirements"
+    },
+    {
+      "id": "subrogation-scope",
+      "partId": "part-3",
+      "title": "貳、代位清償範圍",
+      "startPdfPage": 46,
+      "startMarker": "貳、代位清償範圍",
+      "endPdfPage": 46,
+      "endBeforeMarker": "參、代位清償應檢送文件",
+      "readingUrl": "versions/115-04/chapters/part-3/subrogation-scope.html",
+      "scope": "chapter:part-3/subrogation-scope"
+    },
+    {
+      "id": "subrogation-documents",
+      "partId": "part-3",
+      "title": "參、代位清償應檢送文件",
+      "startPdfPage": 46,
+      "startMarker": "參、代位清償應檢送文件",
+      "endPdfPage": 46,
+      "readingUrl": "versions/115-04/chapters/part-3/subrogation-documents.html",
+      "scope": "chapter:part-3/subrogation-documents"
+    },
+    {
+      "id": "subrogation-processing",
+      "partId": "part-3",
+      "title": "肆、本基金對代位清償案件之處理",
+      "startPdfPage": 47,
+      "startMarker": "肆、本基金對代位清償案件之處理",
+      "endPdfPage": 47,
+      "readingUrl": "versions/115-04/chapters/part-3/subrogation-processing.html",
+      "scope": "chapter:part-3/subrogation-processing"
+    },
+    {
+      "id": "exemption-processing",
+      "partId": "part-3",
+      "title": "伍、本基金免責之處理",
+      "startPdfPage": 48,
+      "startMarker": "伍、本基金免責之處理",
+      "endPdfPage": 52,
+      "readingUrl": "versions/115-04/chapters/part-3/exemption-processing.html",
+      "scope": "chapter:part-3/exemption-processing"
+    },
+    {
+      "id": "debt-recovery",
+      "partId": "part-4",
+      "title": "代位清償後之債權追索",
+      "startPdfPage": 53,
+      "startMarker": "第四篇 代位清償後之債權追索",
+      "endPdfPage": 54,
+      "readingUrl": "versions/115-04/chapters/part-4/debt-recovery.html",
+      "scope": "chapter:part-4/debt-recovery"
+    }
+  ]
+}
