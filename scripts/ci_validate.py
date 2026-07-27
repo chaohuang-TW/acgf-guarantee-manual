@@ -32,6 +32,7 @@ def main() -> None:
     install.append("chromium")
     run(*install)
     run(python, "scripts/build_site.py")
+    run(python, "-m", "unittest", "tests.test_source_preview_boundaries")
     for script in [
         "audit_content.py",
         "audit_reading_units.py",

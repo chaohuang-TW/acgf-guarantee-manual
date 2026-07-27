@@ -232,6 +232,13 @@ def main() -> None:
             assert f'id="pdf-page-{pdf_page}"' in document, (
                 f'{row["readingUrl"]} missing PDF page {pdf_page}'
             )
+        # For source-preview items, ensure no extra pages are rendered (strict consistency)
+        if "source-preview" in row["renderingMode"]:
+            import re
+            rendered_pages = set(map(int, re.findall(r'id="pdf-page-(\d+)"', document)))
+            expected_pages = set(range(row["startPdfPage"], row["endPdfPage"] + 1))
+            if rendered_pages != expected_pages:
+                raise ValueError(f'{row["readingUrl"]} renders pages {rendered_pages}, but audit says {expected_pages}')
     output = render_report(appendices, forms, special_forms)
     if args.write_report:
         REPORT.write_text(output, encoding="utf-8")

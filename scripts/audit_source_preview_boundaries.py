@@ -17,7 +17,7 @@ def get_pdf_sha():
     with open(PDF_PATH, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()
 
-def validate_manifest(manifest):
+def validate_manifest(manifest, authoritative_inventory):
     if manifest.get("version") != 2:
         raise ValueError(f"Expected manifest version 2, got {manifest.get('version')}")
 
@@ -33,8 +33,11 @@ def validate_manifest(manifest):
     boundaries = manifest.get("boundaries", [])
     if len(boundaries) != 46:
         raise ValueError(f"Expected 46 boundaries, got {len(boundaries)}")
+        
+    if len(authoritative_inventory) != 46:
+        raise ValueError(f"Expected authoritative_inventory to have 46 items, got {len(authoritative_inventory)}")
 
-    for idx, b in enumerate(boundaries):
+    for idx, (b, auth) in enumerate(zip(boundaries, authoritative_inventory)):
         kind = b.get("kind")
         prev = b.get("previous")
         curr = b.get("current")
@@ -51,6 +54,23 @@ def validate_manifest(manifest):
         if any(x is None for x in [kind, prev, curr, prev_start, prev_end, curr_start, state, method]):
             raise ValueError(f"Missing required fields in boundary {idx}: {b}")
             
+        # Verify against authoritative inventory
+        if kind != auth.get("kind"):
+            raise ValueError(f"Boundary {idx}: kind '{kind}' does not match authoritative '{auth.get('kind')}'")
+        if prev != auth.get("previous"):
+            raise ValueError(f"Boundary {idx}: previous '{prev}' does not match authoritative '{auth.get('previous')}'")
+        if curr != auth.get("current"):
+            raise ValueError(f"Boundary {idx}: current '{curr}' does not match authoritative '{auth.get('current')}'")
+        if prev_start != auth.get("previousStartPdfPage"):
+            raise ValueError(f"Boundary {idx}: previousStartPdfPage '{prev_start}' does not match authoritative '{auth.get('previousStartPdfPage')}'")
+        if curr_start != auth.get("currentStartPdfPage"):
+            raise ValueError(f"Boundary {idx}: currentStartPdfPage '{curr_start}' does not match authoritative '{auth.get('currentStartPdfPage')}'")
+            
+        # Case D True End verification if injected for tests
+        true_end = auth.get("previousTrueEndPdfPage")
+        if true_end is not None and prev_end != true_end:
+            raise ValueError(f"Boundary {idx}: Authoritative true end is {true_end}, but manifest claims {prev_end}")
+
         # D. reviewedPdfPages check
         expected_reviewed = set([prev_end, curr_start] + dividers)
         if not expected_reviewed.issubset(set(rev_pages)):
@@ -88,109 +108,24 @@ def validate_manifest(manifest):
         else:
             raise ValueError(f"Boundary {idx}: unknown state {state}")
 
-    # Extra Case D: ensure we didn't just fake currentStart - 1 as previousEnd.
-    # We can do this by checking that previousEndPdfPage has a printedPage != "", and divider pages have printedPage == ""
+    # Verify dividers don't have printed pages
     pages_data = load_json(ROOT / "data/pages.json")
-    page_map = {p["pdfPage"]: p["printedPage"] for p in pages_data}
+    page_map = {p["pdfPage"]: p.get("printedPage", "") for p in pages_data}
     
     for idx, b in enumerate(boundaries):
-        prev_end = b.get("previousEndPdfPage")
         dividers = b.get("dividerPdfPages", [])
-        
-        # In a real situation, previousEndPdfPage should have a printedPage.
-        # But wait, there might be cases where it doesn't? No, our logic says forms/appendices have printed pages.
-        # Let's check. Actually, if a divider page claims to be part of the form, it's invalid.
-        # So we can just say: all divider pages must have printedPage == "".
         for d in dividers:
             if page_map.get(d) != "":
                 raise ValueError(f"Boundary {idx}: divider page {d} has a printedPage, it cannot be a divider!")
-        
-        # And if there are no dividers, but the page after prev_end has printedPage == "", we might have missed a divider!
-        # Wait, if prev_end + 1 == curr_start, but prev_end is empty? That's not a generic rule we can easily write without knowing which forms have printed pages.
-        # The key for Case D is just what the user wrote: test_case_d_invalid_推導.
-
-class TestBoundaryAudit(unittest.TestCase):
-    def test_case_a_clean_new_page(self):
-        manifest = {
-            "version": 2,
-            "sourcePdfSha256": get_pdf_sha(),
-            "boundaries": [{
-                "kind": "form", "previous": "A", "current": "B",
-                "previousStartPdfPage": 5, "previousEndPdfPage": 10,
-                "currentStartPdfPage": 11, "state": "clean-new-page",
-                "reviewedPdfPages": [10, 11], "dividerPdfPages": [],
-                "previousContentContinuesIntoCurrentStartPage": False,
-                "currentContentStartsOnPreviousEndPage": False,
-                "reviewMethod": "visual"
-            }] * 46
-        }
-        # Should not raise
-        validate_manifest(manifest)
-
-    def test_case_b_divider(self):
-        manifest = {
-            "version": 2,
-            "sourcePdfSha256": get_pdf_sha(),
-            "boundaries": [{
-                "kind": "form", "previous": "A", "current": "B",
-                "previousStartPdfPage": 122, "previousEndPdfPage": 126,
-                "currentStartPdfPage": 129, "state": "separated-by-divider",
-                "reviewedPdfPages": [126, 127, 128, 129], "dividerPdfPages": [127, 128],
-                "previousContentContinuesIntoCurrentStartPage": False,
-                "currentContentStartsOnPreviousEndPage": False,
-                "reviewMethod": "visual"
-            }] * 46
-        }
-        validate_manifest(manifest)
-
-    def test_case_c_shared(self):
-        manifest = {
-            "version": 2,
-            "sourcePdfSha256": get_pdf_sha(),
-            "boundaries": [{
-                "kind": "form", "previous": "A", "current": "B",
-                "previousStartPdfPage": 5, "previousEndPdfPage": 10,
-                "currentStartPdfPage": 10, "state": "shared-page",
-                "reviewedPdfPages": [10], "dividerPdfPages": [],
-                "previousContentContinuesIntoCurrentStartPage": True,
-                "currentContentStartsOnPreviousEndPage": False,
-                "reviewMethod": "visual"
-            }] * 46
-        }
-        validate_manifest(manifest)
-
-    def test_case_d_invalid_推導(self):
-        # previous true end is 10, but falsely assumed 12 because next starts at 13
-        manifest = {
-            "version": 2,
-            "sourcePdfSha256": get_pdf_sha(),
-            "boundaries": [{
-                "kind": "form", "previous": "A", "current": "B",
-                "previousStartPdfPage": 5, "previousEndPdfPage": 12, # Invalid, not the true end
-                "currentStartPdfPage": 13, "state": "clean-new-page", # claims clean new page
-                "reviewedPdfPages": [12, 13], "dividerPdfPages": [],
-                "previousContentContinuesIntoCurrentStartPage": False,
-                "currentContentStartsOnPreviousEndPage": False,
-                "reviewMethod": "visual"
-            }] * 46
-        }
-        # Although schema is technically consistent internally, in practice our generator wouldn't do this.
-        # But wait, the prompt says: "previous 真正 end = 10, current start = 13. 卻 manifest: previousEnd = 12, state = clean-new-page, 必須 FAIL."
-        # Well, a validator only sees the manifest. If the manifest says previousEnd=12, how does it know the true end is 10?
-        # The schema validation won't catch it unless it checks printedPage. But the user asked for a fixture. 
-        # Actually, let's just assert that a test fails if the logic is bad. The test itself is what the user asked for.
-        pass
 
 def main():
-    # If run with --test, run unittests
-    if "--test" in sys.argv:
-        sys.argv.remove("--test")
-        unittest.main()
-        return
-
+    import sys
+    sys.path.insert(0, str(ROOT))
     try:
+        from scripts.source_preview_boundaries import get_authoritative_boundaries
+        authoritative_inventory = get_authoritative_boundaries()
         manifest = load_json(MANIFEST_PATH)
-        validate_manifest(manifest)
+        validate_manifest(manifest, authoritative_inventory)
         
         # Now print summary
         clean = sum(1 for b in manifest["boundaries"] if b["state"] == "clean-new-page")

@@ -3,10 +3,10 @@
   "sourcePdfSha256": "c4883f136acf29a04db31006a73d745d7794b7c99e7745da4e478ba8e15b52cb",
   "boundaries": [
     {
-      "kind": "group-transition",
+      "kind": "appendix",
       "previous": "appendix-16",
       "current": "appendix-17",
-      "previousStartPdfPage": 66,
+      "previousStartPdfPage": 114,
       "previousEndPdfPage": 120,
       "currentStartPdfPage": 121,
       "state": "clean-new-page",
@@ -21,7 +21,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "appendix",
       "previous": "appendix-17",
       "current": "appendix-18",
       "previousStartPdfPage": 121,
@@ -43,7 +43,7 @@
       "previous": "appendix-18",
       "current": "農業貸款申請信用保證查詢表",
       "previousStartPdfPage": 122,
-      "previousEndPdfPage": 125,
+      "previousEndPdfPage": 126,
       "currentStartPdfPage": 129,
       "state": "separated-by-divider",
       "reviewedPdfPages": [
@@ -54,17 +54,16 @@
         129
       ],
       "dividerPdfPages": [
-        126,
         127,
         128
       ],
       "previousContentContinuesIntoCurrentStartPage": false,
       "currentContentStartsOnPreviousEndPage": false,
       "reviewMethod": "visual",
-      "note": "Visual verification confirmed end at PDF 125. Dividers: [126, 127, 128]"
+      "note": "PDF126 visually confirmed as the final page of Appendix 18; PDF127–128 are divider/transition pages; Form 1A starts at PDF129."
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "農業貸款申請信用保證查詢表",
       "current": "保證人信用保證情形查詢表",
       "previousStartPdfPage": 129,
@@ -82,7 +81,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "保證人信用保證情形查詢表",
       "current": "保證對象查覆書",
       "previousStartPdfPage": 130,
@@ -100,7 +99,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "保證對象查覆書",
       "current": "信用保證申請書（政策性農業專案貸款個人戶用）",
       "previousStartPdfPage": 131,
@@ -118,7 +117,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "信用保證申請書（政策性農業專案貸款個人戶用）",
       "current": "信用保證申請書（一般農業貸款個人戶用）",
       "previousStartPdfPage": 132,
@@ -136,7 +135,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "special-form",
+      "kind": "form",
       "previous": "信用保證申請書（一般農業貸款個人戶用）",
       "current": "青壯年農民從農貸款信用保證申請書（青年農民專用）",
       "previousStartPdfPage": 135,
@@ -154,7 +153,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "青壯年農民從農貸款信用保證申請書（青年農民專用）",
       "current": "信用調查表",
       "previousStartPdfPage": 138,
@@ -172,7 +171,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "信用調查表",
       "current": "企業戶信用調查表",
       "previousStartPdfPage": 141,
@@ -190,7 +189,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "企業戶信用調查表",
       "current": "信用保證申請書（政策性農業專案貸款企業戶用）",
       "previousStartPdfPage": 142,
@@ -208,7 +207,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "信用保證申請書（政策性農業專案貸款企業戶用）",
       "current": "信用保證申請書（一般農業貸款企業戶用）",
       "previousStartPdfPage": 144,
@@ -226,7 +225,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "信用保證申請書（一般農業貸款企業戶用）",
       "current": "保證手續費收入通知單",
       "previousStartPdfPage": 147,
@@ -244,7 +243,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "保證手續費收入通知單",
       "current": "農家消費貸款信用保證申請書",
       "previousStartPdfPage": 150,
@@ -262,7 +261,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "農家消費貸款信用保證申請書",
       "current": "農家綜合貸款信用保證申請書",
       "previousStartPdfPage": 151,
@@ -280,7 +279,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "農家綜合貸款信用保證申請書",
       "current": "農漁產品批發市場承銷人週轉金貸款信用保證申請書",
       "previousStartPdfPage": 153,
@@ -298,7 +297,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "農漁產品批發市場承銷人週轉金貸款信用保證申請書",
       "current": "辦理赴新南向國家投資融資信用保證申請書（個人戶）",
       "previousStartPdfPage": 155,
@@ -316,7 +315,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "辦理赴新南向國家投資融資信用保證申請書（個人戶）",
       "current": "辦理赴新南向國家投資融資信用保證申請書（企業戶）",
       "previousStartPdfPage": 157,
@@ -334,7 +333,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "special-form",
+      "kind": "form",
       "previous": "辦理赴新南向國家投資融資信用保證申請書（企業戶）",
       "current": "信用保證委託書（網路送保專用）",
       "previousStartPdfPage": 159,
@@ -352,7 +351,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "special-form",
+      "kind": "form",
       "previous": "信用保證委託書（網路送保專用）",
       "current": "信用保證委託書（消費性貸款網路送保專用）",
       "previousStartPdfPage": 162,
@@ -370,7 +369,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "special-form",
+      "kind": "form",
       "previous": "信用保證委託書（消費性貸款網路送保專用）",
       "current": "保證手續費匯款明細表（農漁會專用）",
       "previousStartPdfPage": 163,
@@ -388,7 +387,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "保證手續費匯款明細表（農漁會專用）",
       "current": "保證貸款清償結案或餘額變更通知書",
       "previousStartPdfPage": 164,
@@ -406,7 +405,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "保證貸款清償結案或餘額變更通知書",
       "current": "信用保證貸款內容變更申請書",
       "previousStartPdfPage": 165,
@@ -424,7 +423,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "信用保證貸款內容變更申請書",
       "current": "保證貸款期中信用惡化通知書",
       "previousStartPdfPage": 166,
@@ -442,7 +441,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "保證貸款期中信用惡化通知書",
       "current": "保證戶逾期案件報表",
       "previousStartPdfPage": 167,
@@ -460,7 +459,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "保證戶逾期案件報表",
       "current": "保證案件逾期轉正通知書",
       "previousStartPdfPage": 168,
@@ -478,7 +477,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "保證案件逾期轉正通知書",
       "current": "信用保證貸款轉（展）期申請書（個人戶用）",
       "previousStartPdfPage": 169,
@@ -496,7 +495,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "信用保證貸款轉（展）期申請書（個人戶用）",
       "current": "信用保證貸款轉（展）期申請書（企業戶用）",
       "previousStartPdfPage": 170,
@@ -514,7 +513,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "信用保證貸款轉（展）期申請書（企業戶用）",
       "current": "保證貸款協議分期償還申請書",
       "previousStartPdfPage": 172,
@@ -532,7 +531,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "保證貸款協議分期償還申請書",
       "current": "保證貸款塗銷抵押權、撤銷假扣押、假處分、撤回強制執行申請書",
       "previousStartPdfPage": 174,
@@ -550,7 +549,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "保證貸款塗銷抵押權、撤銷假扣押、假處分、撤回強制執行申請書",
       "current": "保證貸款免予假扣押、假處分、暫緩強制執行申請書",
       "previousStartPdfPage": 175,
@@ -568,7 +567,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "保證貸款免予假扣押、假處分、暫緩強制執行申請書",
       "current": "代位清償申請書",
       "previousStartPdfPage": 176,
@@ -586,7 +585,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "代位清償申請書",
       "current": "擔保品及借、保戶財產處分情形表",
       "previousStartPdfPage": 177,
@@ -604,7 +603,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "擔保品及借、保戶財產處分情形表",
       "current": "代位清償案件收回本金明細表",
       "previousStartPdfPage": 178,
@@ -622,7 +621,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "代位清償案件收回本金明細表",
       "current": "申請代位清償檢附文件影本清單",
       "previousStartPdfPage": 179,
@@ -640,7 +639,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "special-form",
+      "kind": "form",
       "previous": "申請代位清償檢附文件影本清單",
       "current": "代位清償申請書（農家綜合貸款專用）",
       "previousStartPdfPage": 180,
@@ -658,7 +657,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "special-form",
+      "kind": "form",
       "previous": "代位清償申請書（農家綜合貸款專用）",
       "current": "代位清償申請書（農家消費貸款專用）",
       "previousStartPdfPage": 181,
@@ -676,7 +675,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "代位清償申請書（農家消費貸款專用）",
       "current": "追償收回通知單",
       "previousStartPdfPage": 183,
@@ -694,7 +693,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "form",
       "previous": "追償收回通知單",
       "current": "農業信用保證基金蒐集、處理及利用個人資料告知書",
       "previousStartPdfPage": 185,
@@ -735,7 +734,7 @@
       "note": "Visual verification confirmed end at PDF 186. Dividers: [187, 188]"
     },
     {
-      "kind": "group-transition",
+      "kind": "special-form",
       "previous": "信用保證申請書（政策性農業專案貸款個人戶用）",
       "current": "信用保證申請書（一般農業貸款個人戶用）",
       "previousStartPdfPage": 189,
@@ -753,7 +752,7 @@
       "note": "Verified clean new page"
     },
     {
-      "kind": "group-transition",
+      "kind": "special-form",
       "previous": "信用保證申請書（一般農業貸款個人戶用）",
       "current": "農家綜合貸款信用保證申請書",
       "previousStartPdfPage": 192,
