@@ -1,328 +1,851 @@
 {
-  "version": 1,
+  "version": 2,
   "sourcePdfSha256": "c4883f136acf29a04db31006a73d745d7794b7c99e7745da4e478ba8e15b52cb",
   "boundaries": [
     {
+      "kind": "group-transition",
       "previous": "appendix-16",
       "current": "appendix-17",
+      "previousStartPdfPage": 66,
       "previousEndPdfPage": 120,
       "currentStartPdfPage": 121,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        120,
+        121
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "appendix-17",
       "current": "appendix-18",
+      "previousStartPdfPage": 121,
       "previousEndPdfPage": 121,
       "currentStartPdfPage": 122,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        121,
+        122
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "appendix-18",
       "current": "農業貸款申請信用保證查詢表",
-      "previousEndPdfPage": 128,
+      "previousStartPdfPage": 122,
+      "previousEndPdfPage": 125,
       "currentStartPdfPage": 129,
-      "state": "clean-new-page"
+      "state": "separated-by-divider",
+      "reviewedPdfPages": [
+        125,
+        126,
+        127,
+        128,
+        129
+      ],
+      "dividerPdfPages": [
+        126,
+        127,
+        128
+      ],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Visual verification confirmed end at PDF 125. Dividers: [126, 127, 128]"
     },
     {
+      "kind": "group-transition",
       "previous": "農業貸款申請信用保證查詢表",
       "current": "保證人信用保證情形查詢表",
+      "previousStartPdfPage": 129,
       "previousEndPdfPage": 129,
       "currentStartPdfPage": 130,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        129,
+        130
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "保證人信用保證情形查詢表",
       "current": "保證對象查覆書",
+      "previousStartPdfPage": 130,
       "previousEndPdfPage": 130,
       "currentStartPdfPage": 131,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        130,
+        131
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "保證對象查覆書",
       "current": "信用保證申請書（政策性農業專案貸款個人戶用）",
+      "previousStartPdfPage": 131,
       "previousEndPdfPage": 131,
       "currentStartPdfPage": 132,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        131,
+        132
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "信用保證申請書（政策性農業專案貸款個人戶用）",
       "current": "信用保證申請書（一般農業貸款個人戶用）",
+      "previousStartPdfPage": 132,
       "previousEndPdfPage": 134,
       "currentStartPdfPage": 135,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        134,
+        135
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "special-form",
       "previous": "信用保證申請書（一般農業貸款個人戶用）",
       "current": "青壯年農民從農貸款信用保證申請書（青年農民專用）",
+      "previousStartPdfPage": 135,
       "previousEndPdfPage": 137,
       "currentStartPdfPage": 138,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        137,
+        138
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "青壯年農民從農貸款信用保證申請書（青年農民專用）",
       "current": "信用調查表",
+      "previousStartPdfPage": 138,
       "previousEndPdfPage": 140,
       "currentStartPdfPage": 141,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        140,
+        141
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "信用調查表",
       "current": "企業戶信用調查表",
+      "previousStartPdfPage": 141,
       "previousEndPdfPage": 141,
       "currentStartPdfPage": 142,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        141,
+        142
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "企業戶信用調查表",
       "current": "信用保證申請書（政策性農業專案貸款企業戶用）",
+      "previousStartPdfPage": 142,
       "previousEndPdfPage": 143,
       "currentStartPdfPage": 144,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        143,
+        144
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "信用保證申請書（政策性農業專案貸款企業戶用）",
       "current": "信用保證申請書（一般農業貸款企業戶用）",
+      "previousStartPdfPage": 144,
       "previousEndPdfPage": 146,
       "currentStartPdfPage": 147,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        146,
+        147
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "信用保證申請書（一般農業貸款企業戶用）",
       "current": "保證手續費收入通知單",
+      "previousStartPdfPage": 147,
       "previousEndPdfPage": 149,
       "currentStartPdfPage": 150,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        149,
+        150
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "保證手續費收入通知單",
       "current": "農家消費貸款信用保證申請書",
+      "previousStartPdfPage": 150,
       "previousEndPdfPage": 150,
       "currentStartPdfPage": 151,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        150,
+        151
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "農家消費貸款信用保證申請書",
       "current": "農家綜合貸款信用保證申請書",
+      "previousStartPdfPage": 151,
       "previousEndPdfPage": 152,
       "currentStartPdfPage": 153,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        152,
+        153
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "農家綜合貸款信用保證申請書",
       "current": "農漁產品批發市場承銷人週轉金貸款信用保證申請書",
+      "previousStartPdfPage": 153,
       "previousEndPdfPage": 154,
       "currentStartPdfPage": 155,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        154,
+        155
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "農漁產品批發市場承銷人週轉金貸款信用保證申請書",
       "current": "辦理赴新南向國家投資融資信用保證申請書（個人戶）",
+      "previousStartPdfPage": 155,
       "previousEndPdfPage": 156,
       "currentStartPdfPage": 157,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        156,
+        157
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "辦理赴新南向國家投資融資信用保證申請書（個人戶）",
       "current": "辦理赴新南向國家投資融資信用保證申請書（企業戶）",
+      "previousStartPdfPage": 157,
       "previousEndPdfPage": 158,
       "currentStartPdfPage": 159,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        158,
+        159
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "special-form",
       "previous": "辦理赴新南向國家投資融資信用保證申請書（企業戶）",
       "current": "信用保證委託書（網路送保專用）",
+      "previousStartPdfPage": 159,
       "previousEndPdfPage": 161,
       "currentStartPdfPage": 162,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        161,
+        162
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "special-form",
       "previous": "信用保證委託書（網路送保專用）",
       "current": "信用保證委託書（消費性貸款網路送保專用）",
+      "previousStartPdfPage": 162,
       "previousEndPdfPage": 162,
       "currentStartPdfPage": 163,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        162,
+        163
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "special-form",
       "previous": "信用保證委託書（消費性貸款網路送保專用）",
       "current": "保證手續費匯款明細表（農漁會專用）",
+      "previousStartPdfPage": 163,
       "previousEndPdfPage": 163,
       "currentStartPdfPage": 164,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        163,
+        164
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "保證手續費匯款明細表（農漁會專用）",
       "current": "保證貸款清償結案或餘額變更通知書",
+      "previousStartPdfPage": 164,
       "previousEndPdfPage": 164,
       "currentStartPdfPage": 165,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        164,
+        165
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "保證貸款清償結案或餘額變更通知書",
       "current": "信用保證貸款內容變更申請書",
+      "previousStartPdfPage": 165,
       "previousEndPdfPage": 165,
       "currentStartPdfPage": 166,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        165,
+        166
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "信用保證貸款內容變更申請書",
       "current": "保證貸款期中信用惡化通知書",
+      "previousStartPdfPage": 166,
       "previousEndPdfPage": 166,
       "currentStartPdfPage": 167,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        166,
+        167
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "保證貸款期中信用惡化通知書",
       "current": "保證戶逾期案件報表",
+      "previousStartPdfPage": 167,
       "previousEndPdfPage": 167,
       "currentStartPdfPage": 168,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        167,
+        168
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "保證戶逾期案件報表",
       "current": "保證案件逾期轉正通知書",
+      "previousStartPdfPage": 168,
       "previousEndPdfPage": 168,
       "currentStartPdfPage": 169,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        168,
+        169
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "保證案件逾期轉正通知書",
       "current": "信用保證貸款轉（展）期申請書（個人戶用）",
+      "previousStartPdfPage": 169,
       "previousEndPdfPage": 169,
       "currentStartPdfPage": 170,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        169,
+        170
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "信用保證貸款轉（展）期申請書（個人戶用）",
       "current": "信用保證貸款轉（展）期申請書（企業戶用）",
+      "previousStartPdfPage": 170,
       "previousEndPdfPage": 171,
       "currentStartPdfPage": 172,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        171,
+        172
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "信用保證貸款轉（展）期申請書（企業戶用）",
       "current": "保證貸款協議分期償還申請書",
+      "previousStartPdfPage": 172,
       "previousEndPdfPage": 173,
       "currentStartPdfPage": 174,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        173,
+        174
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "保證貸款協議分期償還申請書",
       "current": "保證貸款塗銷抵押權、撤銷假扣押、假處分、撤回強制執行申請書",
+      "previousStartPdfPage": 174,
       "previousEndPdfPage": 174,
       "currentStartPdfPage": 175,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        174,
+        175
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "保證貸款塗銷抵押權、撤銷假扣押、假處分、撤回強制執行申請書",
       "current": "保證貸款免予假扣押、假處分、暫緩強制執行申請書",
+      "previousStartPdfPage": 175,
       "previousEndPdfPage": 175,
       "currentStartPdfPage": 176,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        175,
+        176
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "保證貸款免予假扣押、假處分、暫緩強制執行申請書",
       "current": "代位清償申請書",
+      "previousStartPdfPage": 176,
       "previousEndPdfPage": 176,
       "currentStartPdfPage": 177,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        176,
+        177
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "代位清償申請書",
       "current": "擔保品及借、保戶財產處分情形表",
+      "previousStartPdfPage": 177,
       "previousEndPdfPage": 177,
       "currentStartPdfPage": 178,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        177,
+        178
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "擔保品及借、保戶財產處分情形表",
       "current": "代位清償案件收回本金明細表",
+      "previousStartPdfPage": 178,
       "previousEndPdfPage": 178,
       "currentStartPdfPage": 179,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        178,
+        179
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "代位清償案件收回本金明細表",
       "current": "申請代位清償檢附文件影本清單",
+      "previousStartPdfPage": 179,
       "previousEndPdfPage": 179,
       "currentStartPdfPage": 180,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        179,
+        180
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "special-form",
       "previous": "申請代位清償檢附文件影本清單",
       "current": "代位清償申請書（農家綜合貸款專用）",
+      "previousStartPdfPage": 180,
       "previousEndPdfPage": 180,
       "currentStartPdfPage": 181,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        180,
+        181
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "special-form",
       "previous": "代位清償申請書（農家綜合貸款專用）",
       "current": "代位清償申請書（農家消費貸款專用）",
+      "previousStartPdfPage": 181,
       "previousEndPdfPage": 182,
       "currentStartPdfPage": 183,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        182,
+        183
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "代位清償申請書（農家消費貸款專用）",
       "current": "追償收回通知單",
+      "previousStartPdfPage": 183,
       "previousEndPdfPage": 184,
       "currentStartPdfPage": 185,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        184,
+        185
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "追償收回通知單",
       "current": "農業信用保證基金蒐集、處理及利用個人資料告知書",
+      "previousStartPdfPage": 185,
       "previousEndPdfPage": 185,
       "currentStartPdfPage": 186,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        185,
+        186
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "農業信用保證基金蒐集、處理及利用個人資料告知書",
       "current": "信用保證申請書（政策性農業專案貸款個人戶用）",
-      "previousEndPdfPage": 188,
+      "previousStartPdfPage": 186,
+      "previousEndPdfPage": 186,
       "currentStartPdfPage": 189,
-      "state": "clean-new-page"
+      "state": "separated-by-divider",
+      "reviewedPdfPages": [
+        186,
+        187,
+        188,
+        189
+      ],
+      "dividerPdfPages": [
+        187,
+        188
+      ],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Visual verification confirmed end at PDF 186. Dividers: [187, 188]"
     },
     {
+      "kind": "group-transition",
       "previous": "信用保證申請書（政策性農業專案貸款個人戶用）",
       "current": "信用保證申請書（一般農業貸款個人戶用）",
+      "previousStartPdfPage": 189,
       "previousEndPdfPage": 191,
       "currentStartPdfPage": 192,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        191,
+        192
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "group-transition",
       "previous": "信用保證申請書（一般農業貸款個人戶用）",
       "current": "農家綜合貸款信用保證申請書",
+      "previousStartPdfPage": 192,
       "previousEndPdfPage": 194,
       "currentStartPdfPage": 195,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        194,
+        195
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "special-form",
       "previous": "農家綜合貸款信用保證申請書",
       "current": "加強辦理農業放款信用保證申請書（政策性農業專案貸款專用）",
-      "previousEndPdfPage": 198,
+      "previousStartPdfPage": 195,
+      "previousEndPdfPage": 196,
       "currentStartPdfPage": 199,
-      "state": "clean-new-page"
+      "state": "separated-by-divider",
+      "reviewedPdfPages": [
+        196,
+        197,
+        198,
+        199
+      ],
+      "dividerPdfPages": [
+        197,
+        198
+      ],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Visual verification confirmed end at PDF 196. Dividers: [197, 198]"
     },
     {
+      "kind": "special-form",
       "previous": "加強辦理農業放款信用保證申請書（政策性農業專案貸款專用）",
       "current": "加強辦理農業放款保證案件彙總表（政策性農業專案貸款專用）",
+      "previousStartPdfPage": 199,
       "previousEndPdfPage": 199,
       "currentStartPdfPage": 200,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        199,
+        200
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "special-form",
       "previous": "加強辦理農業放款保證案件彙總表（政策性農業專案貸款專用）",
       "current": "加強辦理農業放款信用保證申請書（統一農（漁）貸及一般農業貸款專用）",
+      "previousStartPdfPage": 200,
       "previousEndPdfPage": 200,
       "currentStartPdfPage": 201,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        200,
+        201
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     },
     {
+      "kind": "special-form",
       "previous": "加強辦理農業放款信用保證申請書（統一農（漁）貸及一般農業貸款專用）",
       "current": "加強辦理農業放款保證案件彙總表（統一農（漁）貸及一般農業貸款專用）",
+      "previousStartPdfPage": 201,
       "previousEndPdfPage": 201,
       "currentStartPdfPage": 202,
-      "state": "clean-new-page"
+      "state": "clean-new-page",
+      "reviewedPdfPages": [
+        201,
+        202
+      ],
+      "dividerPdfPages": [],
+      "previousContentContinuesIntoCurrentStartPage": false,
+      "currentContentStartsOnPreviousEndPage": false,
+      "reviewMethod": "visual",
+      "note": "Verified clean new page"
     }
   ]
 }

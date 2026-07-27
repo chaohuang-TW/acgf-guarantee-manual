@@ -1,22 +1,53 @@
 # Source Preview Boundary Verification
 
-## 稽核目的
-為了徹底排除「上一個 logical item 其實延伸到下一個 item 的起始 physical page，但因 `nextPrintedPage - 1` 推導方式而未被發現」的盲點，我們針對所有 `source-preview` 類型的文件（附錄、一般書表、專用書表）進行了全人工視覺驗證。
-
-## 稽核方法
-本機制禁止使用 OCR 或是基於 PDF 文字層的順序猜測，而是：
-1. 提取出所有 `source-preview` 類型的相鄰項目邊界 (共 46 個邊界)。
-2. 自動將上一個項目的推斷結束頁 (`previousEndPdfPage`) 與下一個項目的起始頁 (`currentStartPdfPage`) 截圖並並列。
-3. 由人工 (或 AI 視覺能力) 進行肉眼查核，判斷實體頁面上是否發生多個單元共用 (shared-page) 的情況。
-4. 驗證結果被鎖定在 `data/source-preview-boundaries.json` 中，包含 `version: 1` 及其所屬的 `sourcePdfSha256`。
-
 ## 稽核結果
-經過 46 個邊界的逐一肉眼檢視：
-- **全部 46 個邊界均為 `clean-new-page`**。
-- 不存在任何 `source-preview` 項目與上/下一項目共用實體頁面 (`shared-page`) 的情況。
-- 每個項目的內容均被明確的換頁或是空白分隔頁所隔開。
+本報告由 Boundary Audit 2.0 系統自動依據 `data/source-preview-boundaries.json` 產生，呈現所有 46 個 source-preview 項目的邊界查核結果。
 
-## CI 自動化防護
-新增了 `scripts/audit_source_preview_boundaries.py` 腳本，加入 CI 流程。
-- 若未來 PDF 版本 (`sha256`) 變更，腳本將自動拋出錯誤，強制要求重新進行人工視覺驗證並更新 manifest。
-- 若 `data/toc.json` 被更動導致邊界對應不上，腳本也會自動拋出錯誤，確保 `source-preview` 的邊界定義絕對安全，再也不受制於 `nextPrintedPage - 1` 的盲點。
+| previous | current | previous end PDF | divider PDF | current start PDF | state | reviewed pages | note |
+|---|---|---|---|---|---|---|---|
+| appendix-16 | appendix-17 | 120 | [] | 121 | clean-new-page | [120, 121] | Verified clean new page |
+| appendix-17 | appendix-18 | 121 | [] | 122 | clean-new-page | [121, 122] | Verified clean new page |
+| appendix-18 | 農業貸款申請信用保證查詢表 | 125 | [126, 127, 128] | 129 | separated-by-divider | [125, 126, 127, 128, 129] | Visual verification confirmed end at PDF 125. Dividers: [126, 127, 128] |
+| 農業貸款申請信用保證查詢表 | 保證人信用保證情形查詢表 | 129 | [] | 130 | clean-new-page | [129, 130] | Verified clean new page |
+| 保證人信用保證情形查詢表 | 保證對象查覆書 | 130 | [] | 131 | clean-new-page | [130, 131] | Verified clean new page |
+| 保證對象查覆書 | 信用保證申請書（政策性農業專案貸款個人戶用） | 131 | [] | 132 | clean-new-page | [131, 132] | Verified clean new page |
+| 信用保證申請書（政策性農業專案貸款個人戶用） | 信用保證申請書（一般農業貸款個人戶用） | 134 | [] | 135 | clean-new-page | [134, 135] | Verified clean new page |
+| 信用保證申請書（一般農業貸款個人戶用） | 青壯年農民從農貸款信用保證申請書（青年農民專用） | 137 | [] | 138 | clean-new-page | [137, 138] | Verified clean new page |
+| 青壯年農民從農貸款信用保證申請書（青年農民專用） | 信用調查表 | 140 | [] | 141 | clean-new-page | [140, 141] | Verified clean new page |
+| 信用調查表 | 企業戶信用調查表 | 141 | [] | 142 | clean-new-page | [141, 142] | Verified clean new page |
+| 企業戶信用調查表 | 信用保證申請書（政策性農業專案貸款企業戶用） | 143 | [] | 144 | clean-new-page | [143, 144] | Verified clean new page |
+| 信用保證申請書（政策性農業專案貸款企業戶用） | 信用保證申請書（一般農業貸款企業戶用） | 146 | [] | 147 | clean-new-page | [146, 147] | Verified clean new page |
+| 信用保證申請書（一般農業貸款企業戶用） | 保證手續費收入通知單 | 149 | [] | 150 | clean-new-page | [149, 150] | Verified clean new page |
+| 保證手續費收入通知單 | 農家消費貸款信用保證申請書 | 150 | [] | 151 | clean-new-page | [150, 151] | Verified clean new page |
+| 農家消費貸款信用保證申請書 | 農家綜合貸款信用保證申請書 | 152 | [] | 153 | clean-new-page | [152, 153] | Verified clean new page |
+| 農家綜合貸款信用保證申請書 | 農漁產品批發市場承銷人週轉金貸款信用保證申請書 | 154 | [] | 155 | clean-new-page | [154, 155] | Verified clean new page |
+| 農漁產品批發市場承銷人週轉金貸款信用保證申請書 | 辦理赴新南向國家投資融資信用保證申請書（個人戶） | 156 | [] | 157 | clean-new-page | [156, 157] | Verified clean new page |
+| 辦理赴新南向國家投資融資信用保證申請書（個人戶） | 辦理赴新南向國家投資融資信用保證申請書（企業戶） | 158 | [] | 159 | clean-new-page | [158, 159] | Verified clean new page |
+| 辦理赴新南向國家投資融資信用保證申請書（企業戶） | 信用保證委託書（網路送保專用） | 161 | [] | 162 | clean-new-page | [161, 162] | Verified clean new page |
+| 信用保證委託書（網路送保專用） | 信用保證委託書（消費性貸款網路送保專用） | 162 | [] | 163 | clean-new-page | [162, 163] | Verified clean new page |
+| 信用保證委託書（消費性貸款網路送保專用） | 保證手續費匯款明細表（農漁會專用） | 163 | [] | 164 | clean-new-page | [163, 164] | Verified clean new page |
+| 保證手續費匯款明細表（農漁會專用） | 保證貸款清償結案或餘額變更通知書 | 164 | [] | 165 | clean-new-page | [164, 165] | Verified clean new page |
+| 保證貸款清償結案或餘額變更通知書 | 信用保證貸款內容變更申請書 | 165 | [] | 166 | clean-new-page | [165, 166] | Verified clean new page |
+| 信用保證貸款內容變更申請書 | 保證貸款期中信用惡化通知書 | 166 | [] | 167 | clean-new-page | [166, 167] | Verified clean new page |
+| 保證貸款期中信用惡化通知書 | 保證戶逾期案件報表 | 167 | [] | 168 | clean-new-page | [167, 168] | Verified clean new page |
+| 保證戶逾期案件報表 | 保證案件逾期轉正通知書 | 168 | [] | 169 | clean-new-page | [168, 169] | Verified clean new page |
+| 保證案件逾期轉正通知書 | 信用保證貸款轉（展）期申請書（個人戶用） | 169 | [] | 170 | clean-new-page | [169, 170] | Verified clean new page |
+| 信用保證貸款轉（展）期申請書（個人戶用） | 信用保證貸款轉（展）期申請書（企業戶用） | 171 | [] | 172 | clean-new-page | [171, 172] | Verified clean new page |
+| 信用保證貸款轉（展）期申請書（企業戶用） | 保證貸款協議分期償還申請書 | 173 | [] | 174 | clean-new-page | [173, 174] | Verified clean new page |
+| 保證貸款協議分期償還申請書 | 保證貸款塗銷抵押權、撤銷假扣押、假處分、撤回強制執行申請書 | 174 | [] | 175 | clean-new-page | [174, 175] | Verified clean new page |
+| 保證貸款塗銷抵押權、撤銷假扣押、假處分、撤回強制執行申請書 | 保證貸款免予假扣押、假處分、暫緩強制執行申請書 | 175 | [] | 176 | clean-new-page | [175, 176] | Verified clean new page |
+| 保證貸款免予假扣押、假處分、暫緩強制執行申請書 | 代位清償申請書 | 176 | [] | 177 | clean-new-page | [176, 177] | Verified clean new page |
+| 代位清償申請書 | 擔保品及借、保戶財產處分情形表 | 177 | [] | 178 | clean-new-page | [177, 178] | Verified clean new page |
+| 擔保品及借、保戶財產處分情形表 | 代位清償案件收回本金明細表 | 178 | [] | 179 | clean-new-page | [178, 179] | Verified clean new page |
+| 代位清償案件收回本金明細表 | 申請代位清償檢附文件影本清單 | 179 | [] | 180 | clean-new-page | [179, 180] | Verified clean new page |
+| 申請代位清償檢附文件影本清單 | 代位清償申請書（農家綜合貸款專用） | 180 | [] | 181 | clean-new-page | [180, 181] | Verified clean new page |
+| 代位清償申請書（農家綜合貸款專用） | 代位清償申請書（農家消費貸款專用） | 182 | [] | 183 | clean-new-page | [182, 183] | Verified clean new page |
+| 代位清償申請書（農家消費貸款專用） | 追償收回通知單 | 184 | [] | 185 | clean-new-page | [184, 185] | Verified clean new page |
+| 追償收回通知單 | 農業信用保證基金蒐集、處理及利用個人資料告知書 | 185 | [] | 186 | clean-new-page | [185, 186] | Verified clean new page |
+| 農業信用保證基金蒐集、處理及利用個人資料告知書 | 信用保證申請書（政策性農業專案貸款個人戶用） | 186 | [187, 188] | 189 | separated-by-divider | [186, 187, 188, 189] | Visual verification confirmed end at PDF 186. Dividers: [187, 188] |
+| 信用保證申請書（政策性農業專案貸款個人戶用） | 信用保證申請書（一般農業貸款個人戶用） | 191 | [] | 192 | clean-new-page | [191, 192] | Verified clean new page |
+| 信用保證申請書（一般農業貸款個人戶用） | 農家綜合貸款信用保證申請書 | 194 | [] | 195 | clean-new-page | [194, 195] | Verified clean new page |
+| 農家綜合貸款信用保證申請書 | 加強辦理農業放款信用保證申請書（政策性農業專案貸款專用） | 196 | [197, 198] | 199 | separated-by-divider | [196, 197, 198, 199] | Visual verification confirmed end at PDF 196. Dividers: [197, 198] |
+| 加強辦理農業放款信用保證申請書（政策性農業專案貸款專用） | 加強辦理農業放款保證案件彙總表（政策性農業專案貸款專用） | 199 | [] | 200 | clean-new-page | [199, 200] | Verified clean new page |
+| 加強辦理農業放款保證案件彙總表（政策性農業專案貸款專用） | 加強辦理農業放款信用保證申請書（統一農（漁）貸及一般農業貸款專用） | 200 | [] | 201 | clean-new-page | [200, 201] | Verified clean new page |
+| 加強辦理農業放款信用保證申請書（統一農（漁）貸及一般農業貸款專用） | 加強辦理農業放款保證案件彙總表（統一農（漁）貸及一般農業貸款專用） | 201 | [] | 202 | clean-new-page | [201, 202] | Verified clean new page |

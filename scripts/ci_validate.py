@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BASELINE = Path("/tmp/search-index-before.json")
+BASELINE = ROOT / "scratch/search-index-before.json"
 
 
 def run(*command: str) -> None:
@@ -44,7 +44,7 @@ def main() -> None:
         "validate_site.py",
     ]:
         run(python, f"scripts/{script}")
-    run(node, "tests/test_search_logic.js")
+    run(node, "tests/test_search_logic.cjs")
     run(python, "scripts/e2e_reading_units.py")
     print("CI VALIDATION PASSED")
 

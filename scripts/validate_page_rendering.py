@@ -216,7 +216,7 @@ def main() -> int:
     search = json.loads(search_path.read_text(encoding="utf-8")) if search_path.is_file() else []
     if len(search) != 196:
         errors.append("search index count is not 196")
-    baseline = Path("/tmp/search-index-before.json")
+    baseline = ROOT / "scratch/search-index-before.json"
     if baseline.is_file() and baseline.read_bytes() != search_path.read_bytes():
         errors.append("search index differs from pre-build baseline")
 

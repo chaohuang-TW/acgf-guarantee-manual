@@ -8,18 +8,16 @@
 
 ## 統計
 
-- 附錄：18
-- 一般信用保證書表：37
-- 專用書表：7
-- Shared appendix pages：無
-- Shared normal-form pages：無
-- Shared special-form pages：無
-- Text-mode shared pages：無
-- Source-preview/layoutOnly shared pages：無
-- 需要新增 logical slicing 的頁面：無
-- 需要 shared-page metadata 且不可文字裁切的頁面：無
-
 全量結果顯示 62 個項目均有非空且順向的實體頁範圍，起始 marker 在各自受限頁面中唯一；未發現附錄、一般書表或專用書表共用同一實體頁，因此保持現有整頁呈現與資料模型，不建立不必要的 offset fragments。
+
+### Source Preview 邊界驗證結果
+- clean-new-page boundary 數量: 43
+- separated-by-divider boundary 數量: 3
+- shared-page boundary 數量: 0
+- divider PDF pages: [126, 127, 128, 187, 188, 197, 198]
+- unresolved = 0
+
+* 純文字共用實體頁之起始 PDF：`[]`
 
 ## 附錄一至附錄十八
 
@@ -42,7 +40,7 @@
 | appendix-15 附錄十五、財團法人農業信用保證基金申請信用保證案件辦理票信債信查詢注意事項 | 112 | 113 | `附錄十五、財團法人農業信用保證基金申請信用保證案件辦理票信債信查詢注意事項` | 0 | 是 | text | 否 | 否 | 是 |
 | appendix-16 附錄十六、財團法人農業信用保證基金代位清償作業要點 | 114 | 120 | `附錄十六、財團法人農業信用保證基金代位清償作業要點` | 0 | 是 | text | 否 | 否 | 是 |
 | appendix-17 附錄十七、財團法人農業信用保證基金受理農業貸款保證範圍一覽表 | 121 | 121 | `附錄十七、財團法人農業信用保證基金受理農業貸款保證範圍一覽表` | 0 | 是 | source-preview | 否 | 否 | 是 |
-| appendix-18 附錄十八、農業信用保證手續費一次總繳簡捷查索表 | 122 | 126 | `附錄十八、農業信用保證手續費一次總繳簡捷查索表` | 0 | 是 | source-preview | 否 | 否 | 是 |
+| appendix-18 附錄十八、農業信用保證手續費一次總繳簡捷查索表 | 122 | 125 | `附錄十八、農業信用保證手續費一次總繳簡捷查索表` | 0 | 是 | source-preview | 否 | 否 | 是 |
 
 ## 一般信用保證書表
 
