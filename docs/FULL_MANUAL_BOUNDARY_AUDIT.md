@@ -1,8 +1,10 @@
-# 全手冊邏輯邊界稽核
+# 全手冊邏輯邊界稽核 (Boundary Audit 2.0)
 
-本報告以 `data/toc.json`、`data/pages.json` 與 `data/page-rendering.json` 為來源，逐項在受限制的起始 PDF 頁內以 NFKC 並移除排版空白後的 marker 定位。Marker 不存在、不唯一、範圍反轉或單元為空時，稽核會直接失敗。
+本報告與 `docs/SOURCE_PREVIEW_BOUNDARY_VERIFICATION.md` 共同構成全手冊邊界雙重稽核機制 (Boundary Audit 2.0)。
 
-本輪遵循「先全量稽核，再只修真正有問題的邊界」。正式書表、專用書表、附錄十七及附錄十八的 source preview 不以文字 offset 裁切。
+針對純文字單元 (text-mode)，本機制以 `data/toc.json`、`data/pages.json` 與 `data/page-rendering.json` 為來源，逐項在受限制的起始 PDF 頁內以 NFKC 並移除排版空白後的 marker 定位，確認是否存在 `shared-page`，若有則進行 logical slicing 裁切。
+
+針對書表及附錄中原圖呈現單元 (source-preview)，我們捨棄了會產生盲點的 `nextPrintedPage - 1` 推導方式，改採全人工視覺查核 (詳見 `docs/SOURCE_PREVIEW_BOUNDARY_VERIFICATION.md` 與 `data/source-preview-boundaries.json`)，並以此確保這類單元不會不當截斷或共用。本報告中的 source-preview 項目 `shared` 狀態將直接繼承 manifest 記載。
 
 ## 統計
 
