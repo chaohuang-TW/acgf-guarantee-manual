@@ -127,5 +127,21 @@ class TestBoundaryAudit(unittest.TestCase):
             
         self.assertIn("Authoritative true end", str(context.exception))
 
+class TestRendererScaling(unittest.TestCase):
+    def test_calculate_scaled_size_portrait(self):
+        from scripts.render_source_preview_boundary_review import calculate_scaled_size
+        new_w, new_h = calculate_scaled_size(1000, 1500, 400, 600)
+        self.assertEqual((new_w, new_h), (400, 600))
+        # Test aspect ratio constraint by height
+        new_w, new_h = calculate_scaled_size(1000, 1500, 500, 600)
+        self.assertEqual((new_w, new_h), (400, 600))
+
+    def test_calculate_scaled_size_landscape(self):
+        from scripts.render_source_preview_boundary_review import calculate_scaled_size
+        new_w, new_h = calculate_scaled_size(1500, 1000, 400, 600)
+        # constrained by width 400
+        # height should be 1000 * (400/1500) = 267
+        self.assertEqual((new_w, new_h), (400, 267))
+
 if __name__ == '__main__':
     unittest.main()

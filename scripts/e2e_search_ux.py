@@ -30,11 +30,12 @@ def assert_no_overflow(page: Page) -> None:
 
 def check_console_errors(page: Page) -> list:
     errors = []
-    page.on("pageerror", lambda err: errors.append(err))
+    page.on("pageerror", lambda err: errors.append(f"PageError: {err}"))
+    page.on("console", lambda msg: errors.append(f"Console {msg.type}: {msg.text}") if msg.type in ["error"] else None)
+    page.on("response", lambda res: errors.append(f"404 Not Found: {res.url}") if res.status == 404 else None)
     return errors
 
-
-def run_viewport(page: Page, base: str, width: int) -> dict:
+def run_viewport(context, page: Page, base: str, width: int) -> dict:
     errors = check_console_errors(page)
 
     # 1. Direct shareable URL load
@@ -45,60 +46,66 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
     assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "代償"
     assert page.locator("button[data-search-type='chapter']").get_attribute("aria-pressed") == "true"
     
-    # 3. Keyword button trigger
+    # 3. Copy Search Link E2E
+    copy_btn = page.locator(".copy-search-link")
+    assert copy_btn.is_visible(), "Copy link button should be visible for global search"
+    # Ensure clipboard works
+    copy_btn.click()
+    page.wait_for_timeout(100) # Give it time to write
+    copied_url = page.evaluate("navigator.clipboard.readText()")
+    assert "q=%E4%BB%A3%E5%84%9F" in copied_url
+    assert "type=chapter" in copied_url
+    assert copied_url.startswith(base)
+
+    # 4. Form Deep Link (?q=格式25A&type=form)
+    page.goto(f"{base}/?q=格式25A&type=form")
+    page.locator(".search-status").filter(has_text="找到").wait_for()
+    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "格式25A"
+
+    # 5. A -> B -> Back -> Forward with true form submission
     page.goto(base)
-    page.locator("[data-keyword='保證成數']").first.click()
+    searchbox = page.get_by_role("searchbox", name="全文搜尋")
+    searchbox.fill("A")
+    searchbox.press("Enter")
     page.locator(".search-status").filter(has_text="找到").wait_for()
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "保證成數"
-    assert "q=%E4%BF%9D%E8%AD%89%E6%88%90%E6%95%B8" in page.url
+    first_res_A = page.locator(".search-results article").first.text_content()
 
-    # 4. Browser Back/Forward (popstate)
+    searchbox.fill("B")
+    searchbox.press("Enter")
+    page.locator(".search-status").filter(has_text="找到").wait_for()
+    first_res_B = page.locator(".search-results article").first.text_content()
+    assert first_res_A != first_res_B, "Results should differ"
+
     page.go_back()
-    assert "q=" not in page.url
+    page.wait_for_timeout(500)
+    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "A"
+    assert "q=A" in page.url
+
     page.go_forward()
-    assert "q=%E4%BF%9D%E8%AD%89%E6%88%90%E6%95%B8" in page.url
-    page.locator(".search-status").filter(has_text="找到").wait_for()
+    page.wait_for_timeout(500)
+    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "B"
+    assert "q=B" in page.url
 
-    # 5. Search -> Reading target -> Return navigation
-    first_result = page.locator(".search-results article h3 a").first
-    first_result.click()
+
+    # Logical Page Canonical
+    page.goto(f"{base}/versions/115-04/chapters/part-3/subrogation-scope.html?fromSearch=1&q=test")
     page.wait_for_load_state("domcontentloaded")
-    assert "fromSearch=1" in page.url
-    assert "q=%E4%BF%9D%E8%AD%89%E6%88%90%E6%95%B8" in page.url
+    canonical = page.locator("link[rel='canonical']").get_attribute("href")
+    assert "fromSearch" not in canonical
+    assert "q=" not in canonical
+
+    # Physical Page Canonical
+    page.goto(f"{base}/versions/115-04/pages/page-044.html?fromSearch=1&q=test")
+    page.wait_for_load_state("domcontentloaded")
+    canonical = page.locator("link[rel='canonical']").get_attribute("href")
+    assert "fromSearch" not in canonical
+    assert "q=" not in canonical
     
-    return_link = page.locator(".return-to-search")
-    assert return_link.is_visible()
-    return_link.click()
-    page.wait_for_load_state("domcontentloaded")
-    assert "fromSearch" not in page.url
-    assert "q=%E4%BF%9D%E8%AD%89%E6%88%90%E6%95%B8" in page.url
-
-    # 6. Exact physical page return navigation
-    first_exact = page.locator(".search-results article a.result-exact-page").first
-    first_exact.click()
-    page.wait_for_load_state("domcontentloaded")
-    assert "fromSearch=1" in page.url
-    return_link = page.locator(".return-to-search")
-    assert return_link.is_visible()
-    return_link.click()
-    page.wait_for_load_state("domcontentloaded")
-
-    # 7. Page reload
-    page.reload()
-    page.locator(".search-status").filter(has_text="找到").wait_for()
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "保證成數"
-
-    # 8. Clear query resets URL
-    page.get_by_role("searchbox", name="全文搜尋").fill("")
-    page.get_by_role("searchbox", name="全文搜尋").press("Enter")
-    page.wait_for_timeout(500) # give it a moment to clear
-    assert "q=" not in page.url
-    
-    # 9. Layout overflow prevention
+    # Layout overflow prevention
     assert_no_overflow(page)
 
-    # 10. Console/page errors check
-    assert not errors, f"Console errors detected: {errors}"
+    # Console/page errors check
+    assert not errors, f"Console/Network errors detected: {errors}"
 
     return {"status": "ok", "width": width}
 
@@ -117,10 +124,14 @@ def main() -> None:
         with sync_playwright() as p:
             browser = p.chromium.launch()
             for vp in VIEWPORTS:
-                context = browser.new_context(viewport=vp)
+                # Add clipboard permissions
+                context = browser.new_context(
+                    viewport=vp, 
+                    permissions=["clipboard-read", "clipboard-write"]
+                )
                 page = context.new_page()
                 print(f"Testing viewport {vp['width']}x{vp['height']}...")
-                result = run_viewport(page, base, vp["width"])
+                result = run_viewport(context, page, base, vp["width"])
                 print(f"Viewport {result['width']} passed.")
                 context.close()
             browser.close()

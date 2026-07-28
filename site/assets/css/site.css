@@ -267,3 +267,14 @@ button, input { font: inherit; }
   .footer-grid { display: block; }
   a { color: #000; text-decoration: none; }
 }
+
+.copy-search-link {
+  margin-left: 1rem;
+}
+
+.return-to-search {
+  display: inline-block;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  color: #0056b3;
+}

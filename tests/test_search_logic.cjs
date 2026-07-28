@@ -180,3 +180,4 @@ assert.equal(searchStateUrl({ q: "", type: "all" }, "https://example.com/path"),
 assert.equal(decorateResultUrlWithSearchState("https://example.com/page.html", { q: "test", type: "all" }), "https://example.com/page.html?fromSearch=1&q=test");
 assert.equal(decorateResultUrlWithSearchState("https://example.com/page.html#hash", { q: "test", type: "form" }), "https://example.com/page.html?fromSearch=1&q=test&type=form#hash");
 assert.equal(decorateResultUrlWithSearchState("https://example.com/page.html", { q: "", type: "all" }), "https://example.com/page.html");
+assert.equal(decorateResultUrlWithSearchState("https://example.com/page.html", null), "https://example.com/page.html");

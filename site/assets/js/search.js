@@ -640,12 +640,12 @@
     copyButton.type = "button";
     copyButton.className = "copy-search-link";
     copyButton.textContent = "複製搜尋連結";
-    copyButton.style.marginLeft = "1rem";
     copyButton.hidden = true;
     copyButton.addEventListener("click", async () => {
       const originalText = copyButton.textContent;
       try {
-        const text = searchStateUrl({ q: input.value, type: selectedType }, window.location.href);
+        const siteRoot = new URL(document.body.dataset.siteRoot || "./", document.baseURI).href;
+        const text = searchStateUrl({ q: input.value, type: selectedType }, siteRoot);
         if (navigator.clipboard && navigator.clipboard.writeText) {
           await navigator.clipboard.writeText(text);
         } else if (globalThis.SiteUtils && globalThis.SiteUtils.fallbackCopyText) {
@@ -679,8 +679,9 @@
       const shown = filtered.slice(0, visibleCount);
       const siteRoot = new URL(document.body.dataset.siteRoot || "./", document.baseURI);
       status.textContent = `找到 ${filtered.length} 筆結果，先顯示 ${shown.length} 筆。`;
-      copyButton.hidden = false;
-      results.replaceChildren(...shown.map((result) => resultElement(result, siteRoot, { q: input.value, type: selectedType })));
+      copyButton.hidden = selectedScope !== "all";
+      const stateToPass = selectedScope === "all" ? { q: input.value, type: selectedType } : null;
+      results.replaceChildren(...shown.map((result) => resultElement(result, siteRoot, stateToPass)));
       if (moreButton) moreButton.hidden = shown.length >= filtered.length;
     }
 
@@ -733,8 +734,21 @@
       }
     }
 
-    form.addEventListener("submit", (event) => { event.preventDefault(); window.clearTimeout(timer); run("push"); });
-    input.addEventListener("input", () => { window.clearTimeout(timer); timer = window.setTimeout(() => run("replace"), 250); });
+    let lastRunQuery = null;
+    form.addEventListener("submit", (event) => { 
+      event.preventDefault(); 
+      window.clearTimeout(timer); 
+      lastRunQuery = input.value;
+      run("push"); 
+    });
+    input.addEventListener("input", () => { 
+      window.clearTimeout(timer); 
+      timer = window.setTimeout(() => { 
+        if (input.value === lastRunQuery) return;
+        lastRunQuery = input.value;
+        run("replace"); 
+      }, 250); 
+    });
     for (const button of filterButtons) button.addEventListener("click", () => {
       selectedType = button.dataset.searchType;
       for (const option of filterButtons) option.setAttribute("aria-pressed", String(option === button));
@@ -801,10 +815,6 @@
       const siteRoot = new URL(document.body.dataset.siteRoot || "./", document.baseURI).href;
       returnLink.href = searchStateUrl(state, siteRoot) + "#manual-search";
       returnLink.textContent = `← 返回「${state.q}」搜尋結果`;
-      returnLink.style.display = "inline-block";
-      returnLink.style.margin = "1rem 0";
-      returnLink.style.fontSize = "0.9rem";
-      returnLink.style.color = "#0056b3";
 
       const main = document.querySelector("main");
       const breadcrumb = document.querySelector(".breadcrumb");

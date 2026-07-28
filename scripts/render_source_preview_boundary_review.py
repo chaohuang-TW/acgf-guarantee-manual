@@ -5,6 +5,10 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
 
+def calculate_scaled_size(original_width, original_height, max_w, max_h):
+    scale = min(max_w / original_width, max_h / original_height, 1.0)
+    return round(original_width * scale), round(original_height * scale)
+
 def render_review(output_path, title, pdf_pages):
     imgs = []
     labels = []
@@ -18,11 +22,14 @@ def render_review(output_path, title, pdf_pages):
             imgs.append(None)
             labels.append(f"PDF {n} (MISSING)")
             
-    resize_w = 400
-    resize_h = int(resize_w * 1.414)
+    MAX_W = 400
+    MAX_H = 600
     
-    canvas_w = max((resize_w + 10) * len(pdf_pages) + 10, 800)
-    canvas_h = resize_h + 100
+    cell_w = MAX_W + 10
+    cell_h = MAX_H + 100
+    
+    canvas_w = max(cell_w * len(pdf_pages) + 10, 800)
+    canvas_h = cell_h
     
     canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
     draw = ImageDraw.Draw(canvas)
@@ -30,11 +37,14 @@ def render_review(output_path, title, pdf_pages):
     draw.text((20, 20), title, fill="black")
     
     for i, img in enumerate(imgs):
-        x = 10 + i * (resize_w + 10)
+        x = 10 + i * cell_w
         y = 80
         if img:
-            img = img.resize((resize_w, resize_h))
-            canvas.paste(img, (x, y))
+            new_w, new_h = calculate_scaled_size(img.width, img.height, MAX_W, MAX_H)
+            img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+            offset_x = x + (MAX_W - new_w) // 2
+            offset_y = y + (MAX_H - new_h) // 2
+            canvas.paste(img, (offset_x, offset_y))
             draw.text((x, 60), labels[i], fill="blue")
         else:
             draw.text((x, 60), labels[i], fill="red")
