@@ -47,16 +47,16 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
     
     # 3. Keyword button trigger
     page.goto(base)
-    page.locator("[data-keyword='利息']").first.click()
+    page.locator("[data-keyword='保證成數']").first.click()
     page.locator(".search-status").filter(has_text="找到").wait_for()
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "利息"
-    assert "q=%E5%88%A9%E6%81%AF" in page.url
+    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "保證成數"
+    assert "q=%E4%BF%9D%E8%AD%89%E6%88%90%E6%95%B8" in page.url
 
     # 4. Browser Back/Forward (popstate)
     page.go_back()
     assert "q=" not in page.url
     page.go_forward()
-    assert "q=%E5%88%A9%E6%81%AF" in page.url
+    assert "q=%E4%BF%9D%E8%AD%89%E6%88%90%E6%95%B8" in page.url
     page.locator(".search-status").filter(has_text="找到").wait_for()
 
     # 5. Search -> Reading target -> Return navigation
@@ -64,14 +64,14 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
     first_result.click()
     page.wait_for_load_state("domcontentloaded")
     assert "fromSearch=1" in page.url
-    assert "q=%E5%88%A9%E6%81%AF" in page.url
+    assert "q=%E4%BF%9D%E8%AD%89%E6%88%90%E6%95%B8" in page.url
     
     return_link = page.locator(".return-to-search")
     assert return_link.is_visible()
     return_link.click()
     page.wait_for_load_state("domcontentloaded")
     assert "fromSearch" not in page.url
-    assert "q=%E5%88%A9%E6%81%AF" in page.url
+    assert "q=%E4%BF%9D%E8%AD%89%E6%88%90%E6%95%B8" in page.url
 
     # 6. Exact physical page return navigation
     first_exact = page.locator(".search-results article a.result-exact-page").first
@@ -86,7 +86,7 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
     # 7. Page reload
     page.reload()
     page.locator(".search-status").filter(has_text="找到").wait_for()
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "利息"
+    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "保證成數"
 
     # 8. Clear query resets URL
     page.get_by_role("searchbox", name="全文搜尋").fill("")
