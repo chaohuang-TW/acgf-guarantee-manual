@@ -6,6 +6,11 @@ from __future__ import annotations
 import http.server
 import threading
 from pathlib import Path
+import urllib.parse
+
+def clean_url(u: str) -> str:
+    parsed = urllib.parse.urlparse(u)
+    return f"{parsed.path}#{parsed.fragment}" if parsed.fragment else parsed.path
 
 from playwright.sync_api import Page, sync_playwright
 
@@ -43,7 +48,7 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
     assert_no_overflow(page)
 
     interest = search(page, base, "代償利息")
-    assert (interest.get_attribute("href") or "").endswith(
+    assert clean_url(interest.get_attribute("href") or "").endswith(
         "/chapters/part-3/subrogation-scope.html#pdf-page-46"
     )
     toggle = page.locator(".search-context-toggle")
@@ -55,7 +60,7 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
         assert first_toggle.get_attribute("aria-expanded") == "false"
     interest.click()
     page.wait_for_load_state("domcontentloaded")
-    assert page.url.endswith("/chapters/part-3/subrogation-scope.html#pdf-page-46")
+    assert clean_url(page.url).endswith("/chapters/part-3/subrogation-scope.html#pdf-page-46")
     assert "代償利息之計算方式" in page.locator(".manual-content").inner_text()
     assert_no_overflow(page)
 
@@ -68,14 +73,14 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
     assert "/chapters/part-3/subrogation-requirements.html" in page.url
     page.go_back()
     page.wait_for_load_state("domcontentloaded")
-    assert page.url.endswith("/chapters/part-3/subrogation-scope.html#pdf-page-46")
+    assert clean_url(page.url).endswith("/chapters/part-3/subrogation-scope.html#pdf-page-46")
 
     search(page, base, "代償利息")
     exact_page = page.locator(".search-results article:first-of-type .result-exact-page")
     assert exact_page.count() == 1
     exact_page.click()
     page.wait_for_load_state("domcontentloaded")
-    assert page.url.endswith("/pages/page-046.html#pdf-page-46")
+    assert clean_url(page.url).endswith("/pages/page-046.html#pdf-page-46")
     assert "代償利息之計算方式" in page.locator(".page-card").inner_text()
     page.go_back()
     page.wait_for_load_state("domcontentloaded")
@@ -83,7 +88,7 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
     assert page.get_by_role("searchbox", name="全文搜尋").is_visible()
 
     changes = search(page, base, "內容變更事項")
-    assert (changes.get_attribute("href") or "").endswith(
+    assert clean_url(changes.get_attribute("href") or "").endswith(
         "/chapters/part-2/guarantee-changes.html#pdf-page-32"
     )
     changes.click()
@@ -99,15 +104,15 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
     assert main_toc.count() == 1
     main_toc.click()
     page.wait_for_load_state("domcontentloaded")
-    assert page.url.endswith("/versions/115-04/index.html")
+    assert clean_url(page.url).endswith("/versions/115-04/index.html")
 
     form = search(page, base, "格式25A")
-    assert (form.get_attribute("href") or "").endswith(
+    assert clean_url(form.get_attribute("href") or "").endswith(
         "/forms/form-25a.html#pdf-page-178"
     )
     form.click()
     page.wait_for_load_state("domcontentloaded")
-    assert page.url.endswith("/forms/form-25a.html#pdf-page-178")
+    assert clean_url(page.url).endswith("/forms/form-25a.html#pdf-page-178")
     assert page.locator(".source-preview-image").count() == 1
     assert_no_overflow(page)
     return {"width": width, "expandedToggle": bool(toggle.count())}

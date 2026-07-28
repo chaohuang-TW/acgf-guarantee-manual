@@ -709,10 +709,10 @@
       status.textContent = "搜尋中…";
       try {
         const [records, concepts, intents] = await Promise.all([loadIndex(), loadConcepts(), loadIntents()]);
-        currentMatches = searchRecords(query, records, concepts, intents);
-        if (selectedScope !== "all") currentMatches = filterRecordsByScope(currentMatches, selectedScope);
-        if (currentMatches.length) currentMatches = diversify(currentMatches);
-        if (!currentMatches.length && selectedScope !== "all") {
+        const scopedRecords = selectedScope === "local" ? filterRecordsByScope(records, localScope) : records;
+        const searched = searchRecords(scopedRecords, query, concepts, intents);
+        currentMatches = searched.matches;
+        if (!currentMatches.length && selectedScope === "local") {
           status.textContent = `${localScopeLabel}未找到相關內容。`;
           results.replaceChildren();
           if (searchAllButton) searchAllButton.hidden = false;
