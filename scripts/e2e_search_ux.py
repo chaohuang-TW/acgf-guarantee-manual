@@ -66,10 +66,10 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     title = first_form_res.locator("h3").text_content()
     if "格式25A" not in title:
         assert "25A" in title
-        assert "書表" in first_form_res.text_content()
-        first_href = first_form_res.locator("h3 a").get_attribute("href")
-        assert "/forms/form-25a.html" in first_href
-        assert "PDF頁：178／203" in first_form_res.text_content()
+    assert "書表" in first_form_res.text_content()
+    first_href = first_form_res.locator("h3 a").get_attribute("href")
+    assert "/forms/form-25a.html" in first_href
+    assert "PDF頁：178／203" in first_form_res.text_content()
 
     # ---------------------------------------------------------
     # Case 3: Copy Search Link完整Journey
