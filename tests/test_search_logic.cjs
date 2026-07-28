@@ -4,7 +4,7 @@ const vm = require("node:vm");
 
 const source = fs.readFileSync("assets/js/search.js", "utf8");
 const css = fs.readFileSync("assets/css/site.css", "utf8");
-const context = { console };
+const context = { console, URL };
 context.globalThis = context;
 vm.runInNewContext(source, context, { filename: "search.js" });
 const { bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, filterMatches, filterRecordsByScope, findLogicalPassage, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage } = context.ManualSearch;
@@ -165,3 +165,18 @@ assert.equal(css.includes(".search-result mark"), false);
 assert.equal(css.includes("#ffe39a"), false);
 
 console.log("SEARCH LOGIC TESTS PASSED");
+
+const { readSearchStateFromUrl, searchStateUrl, decorateResultUrlWithSearchState } = context.ManualSearch;
+
+assert.deepEqual(JSON.parse(JSON.stringify(readSearchStateFromUrl("https://example.com/"))), { q: "", type: "all" });
+assert.deepEqual(JSON.parse(JSON.stringify(readSearchStateFromUrl("https://example.com/?q=test"))), { q: "test", type: "all" });
+assert.deepEqual(JSON.parse(JSON.stringify(readSearchStateFromUrl("https://example.com/?q=test&type=form"))), { q: "test", type: "form" });
+assert.deepEqual(JSON.parse(JSON.stringify(readSearchStateFromUrl("https://example.com/?q=test&type=invalid"))), { q: "test", type: "all" });
+
+assert.equal(searchStateUrl({ q: "test", type: "all" }, "https://example.com/path"), "https://example.com/path?q=test");
+assert.equal(searchStateUrl({ q: "test", type: "form" }, "https://example.com/path"), "https://example.com/path?q=test&type=form");
+assert.equal(searchStateUrl({ q: "", type: "all" }, "https://example.com/path"), "https://example.com/path");
+
+assert.equal(decorateResultUrlWithSearchState("https://example.com/page.html", { q: "test", type: "all" }), "https://example.com/page.html?fromSearch=1&q=test");
+assert.equal(decorateResultUrlWithSearchState("https://example.com/page.html#hash", { q: "test", type: "form" }), "https://example.com/page.html?fromSearch=1&q=test&type=form#hash");
+assert.equal(decorateResultUrlWithSearchState("https://example.com/page.html", { q: "", type: "all" }), "https://example.com/page.html");

@@ -55,6 +55,7 @@ PRINTED_TO_PDF = {int(page["printedPage"]): page["pdfPage"] for page in PAGES if
 # extractable text layer. This mapping comes from the surrounding printed pages
 # and the original table of contents; no page text is invented.
 PRINTED_TO_PDF[116] = 126
+PDF_TO_PRINTED = {v: k for k, v in PRINTED_TO_PDF.items()}
 
 
 def pdf_for_printed(number: int) -> int:
@@ -162,7 +163,7 @@ def source_preview_body(page: dict, relative: str, rendering: dict, pdf_url: str
     return f"""
         <figure class="source-preview">
           <a class="source-preview-link" href="{e(preview_url)}" target="_blank" rel="noopener noreferrer" aria-label="放大查看原始PDF第{pdf_page}頁預覽">
-            <img class="source-preview-image" src="{e(preview_url)}" alt="原始PDF第{pdf_page}頁預覽：{e(rendering['label'])}" width="{manifest['width']}" height="{manifest['height']}" loading="lazy" decoding="async">
+            <img class="source-preview-image" src="{e(preview_url)}" alt="原始PDF第{pdf_page}頁預覽：{e(rendering['label'])}" width="{manifest['width']}" height="{manifest['height']}" style="object-fit: contain;" loading="lazy" decoding="async">
           </a>
           <figcaption>本頁含複雜表格或正式書表，網頁依原始PDF版面呈現。正式內容仍以原始PDF為準。</figcaption>
         </figure>
@@ -178,8 +179,10 @@ def source_preview_body(page: dict, relative: str, rendering: dict, pdf_url: str
 
 
 def page_card(page: dict, relative: str, heading_level: int = 2) -> str:
-    printed = page["printedPage"] or "無"
     pdf_page = page["pdfPage"]
+    printed = page["printedPage"] or "無"
+    if printed == "無" and pdf_page in PDF_TO_PRINTED:
+        printed = str(PDF_TO_PRINTED[pdf_page])
     pdf_url = rel_from(relative, f"downloads/{PDF_NAME}") + f"#page={pdf_page}"
     rendering = resolve_page_rendering(page)
     if rendering["mode"] == "source-preview":

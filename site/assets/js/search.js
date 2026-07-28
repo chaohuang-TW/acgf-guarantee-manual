@@ -2,6 +2,55 @@
   "use strict";
 
   const TYPE_LABELS = { chapter: "正文", appendix: "附錄", form: "書表", "lookup-table": "查索表", "front-matter": "其他" };
+  const VALID_TYPES = ["all", "chapter", "appendix", "form", "lookup-table", "front-matter"];
+
+  function readSearchStateFromUrl(urlStr) {
+    const url = new URL(urlStr);
+    let q = url.searchParams.get("q");
+    if (q === null) return { q: "", type: "all" };
+    let type = url.searchParams.get("type") || "all";
+    if (!VALID_TYPES.includes(type)) type = "all";
+    return { q, type };
+  }
+
+  function writeSearchStateToUrl(state, replace = false) {
+    const url = new URL(window.location.href);
+    if (!state.q) {
+      url.searchParams.delete("q");
+      url.searchParams.delete("type");
+    } else {
+      url.searchParams.set("q", state.q);
+      if (state.type && state.type !== "all") {
+        url.searchParams.set("type", state.type);
+      } else {
+        url.searchParams.delete("type");
+      }
+    }
+    const method = replace ? history.replaceState : history.pushState;
+    method.call(history, null, "", url.href);
+  }
+
+  function searchStateUrl(state, baseUri) {
+    const url = new URL(baseUri);
+    if (state.q) {
+      url.searchParams.set("q", state.q);
+      if (state.type && state.type !== "all") {
+        url.searchParams.set("type", state.type);
+      }
+    }
+    return url.href;
+  }
+
+  function decorateResultUrlWithSearchState(urlStr, searchState) {
+    if (!searchState || !searchState.q) return urlStr;
+    const url = new URL(urlStr);
+    url.searchParams.set("fromSearch", "1");
+    url.searchParams.set("q", searchState.q);
+    if (searchState.type && searchState.type !== "all") {
+      url.searchParams.set("type", searchState.type);
+    }
+    return url.href;
+  }
   const HAN = /[\u3400-\u9fff]/u;
   const CJK_PUNCTUATION = new Set("，。；：！？、】【（）「」『』【】《》〈〉／/%％﹪、○");
   const ITEM_START = /^(?:[壹貳參肆伍陸柒捌玖拾][、．.]|[一二三四五六七八九十][、．.]|[（(][一二三四五六七八九十0-9０-９]+[）)]|[０-９0-9]+[、.．]|※|備註：|附註：|第[一二三四五六七八九十0-9０-９]+[篇章節])/;
@@ -519,7 +568,7 @@
     return element;
   }
 
-  function resultElement(result, siteRoot) {
+  function resultElement(result, siteRoot, searchState) {
     const { record } = result;
     const presentation = result.segment || record;
     const article = document.createElement("article");
@@ -528,7 +577,7 @@
     const link = document.createElement("a");
     const sharedPage = (record.readingSegments || []).length > 1;
     const passage = sharedPage ? null : findLogicalPassage(record, result.matchedTerms, result.bodyMatches);
-    link.href = new URL(resultTarget(record, passage, result.segment), siteRoot).href;
+    link.href = decorateResultUrlWithSearchState(new URL(resultTarget(record, passage, result.segment), siteRoot).href, searchState);
     link.textContent = presentation.title;
     heading.append(link);
     const type = document.createElement("span");
@@ -562,7 +611,7 @@
     if (record.readingUrl && record.readingUrl !== record.url) {
       const exact = document.createElement("a");
       exact.className = "result-exact-page";
-      exact.href = new URL(`${record.url}#pdf-page-${record.pdfPage}`, siteRoot).href;
+      exact.href = decorateResultUrlWithSearchState(new URL(`${record.url}#pdf-page-${record.pdfPage}`, siteRoot).href, searchState);
       exact.textContent = "僅查看命中頁";
       article.append(exact);
     }
@@ -587,6 +636,40 @@
     let currentMatches = [];
     let timer;
 
+    const copyButton = document.createElement("button");
+    copyButton.type = "button";
+    copyButton.className = "copy-search-link";
+    copyButton.textContent = "複製搜尋連結";
+    copyButton.style.marginLeft = "1rem";
+    copyButton.hidden = true;
+    copyButton.addEventListener("click", async () => {
+      const originalText = copyButton.textContent;
+      try {
+        const text = searchStateUrl({ q: input.value, type: selectedType }, window.location.href);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else if (globalThis.SiteUtils && globalThis.SiteUtils.fallbackCopyText) {
+          await globalThis.SiteUtils.fallbackCopyText(text);
+        } else {
+          throw new Error("No clipboard available");
+        }
+        copyButton.textContent = "已複製";
+        setTimeout(() => { copyButton.textContent = originalText; }, 2000);
+      } catch (err) {}
+    });
+    if (status.parentNode) {
+      status.parentNode.insertBefore(copyButton, status.nextSibling);
+    }
+
+    const initialState = readSearchStateFromUrl(window.location.href);
+    if (initialState.q && selectedScope === "all") {
+      input.value = initialState.q;
+      selectedType = initialState.type;
+      for (const option of filterButtons) {
+        option.setAttribute("aria-pressed", String(option.dataset.searchType === selectedType));
+      }
+    }
+
     function updateScopeButtons() {
       for (const option of scopeButtons) option.setAttribute("aria-pressed", String(option.dataset.searchScope === selectedScope));
     }
@@ -596,11 +679,12 @@
       const shown = filtered.slice(0, visibleCount);
       const siteRoot = new URL(document.body.dataset.siteRoot || "./", document.baseURI);
       status.textContent = `找到 ${filtered.length} 筆結果，先顯示 ${shown.length} 筆。`;
-      results.replaceChildren(...shown.map((result) => resultElement(result, siteRoot)));
+      copyButton.hidden = false;
+      results.replaceChildren(...shown.map((result) => resultElement(result, siteRoot, { q: input.value, type: selectedType })));
       if (moreButton) moreButton.hidden = shown.length >= filtered.length;
     }
 
-    async function run() {
+    async function run(historyMode = "push") {
       const query = input.value;
       visibleCount = resultLimit;
       if (moreButton) moreButton.hidden = true;
@@ -608,56 +692,95 @@
       if (!normalize(query)) {
         status.textContent = "請輸入搜尋文字。";
         results.replaceChildren();
+        copyButton.hidden = true;
+        if (selectedScope === "all" && historyMode !== "skip") {
+          writeSearchStateToUrl({ q: "", type: "all" }, historyMode === "replace");
+          document.title = window.__originalTitle || document.title;
+        }
         return;
+      }
+      if (selectedScope === "all" && historyMode !== "skip") {
+        writeSearchStateToUrl({ q: query, type: selectedType }, historyMode === "replace");
+      }
+      if (selectedScope === "all") {
+        window.__originalTitle = window.__originalTitle || document.title;
+        document.title = `${normalize(query)}｜搜尋｜農業信用保證業務作業手冊`;
       }
       status.textContent = "搜尋中…";
       try {
         const [records, concepts, intents] = await Promise.all([loadIndex(), loadConcepts(), loadIntents()]);
-        const scopedRecords = selectedScope === "local" ? filterRecordsByScope(records, localScope) : records;
-        const searched = searchRecords(scopedRecords, query, concepts, intents);
-        currentMatches = searched.matches;
-        if (!currentMatches.length && selectedScope === "local") {
+        currentMatches = searchRecords(query, records, concepts, intents);
+        if (selectedScope !== "all") currentMatches = filterRecordsByScope(currentMatches, selectedScope);
+        if (currentMatches.length) currentMatches = diversify(currentMatches);
+        if (!currentMatches.length && selectedScope !== "all") {
           status.textContent = `${localScopeLabel}未找到相關內容。`;
           results.replaceChildren();
           if (searchAllButton) searchAllButton.hidden = false;
+          copyButton.hidden = true;
           return;
         }
         if (!currentMatches.length) {
           status.textContent = zeroResultMessage(query);
           results.replaceChildren();
+          copyButton.hidden = true;
           return;
         }
         render();
       } catch (error) {
         status.textContent = "搜尋索引目前無法載入，請稍後再試或查閱完整PDF。";
         results.replaceChildren();
+        copyButton.hidden = true;
       }
     }
 
-    form.addEventListener("submit", (event) => { event.preventDefault(); window.clearTimeout(timer); run(); });
-    input.addEventListener("input", () => { window.clearTimeout(timer); timer = window.setTimeout(run, 250); });
+    form.addEventListener("submit", (event) => { event.preventDefault(); window.clearTimeout(timer); run("push"); });
+    input.addEventListener("input", () => { window.clearTimeout(timer); timer = window.setTimeout(() => run("replace"), 250); });
     for (const button of filterButtons) button.addEventListener("click", () => {
       selectedType = button.dataset.searchType;
       for (const option of filterButtons) option.setAttribute("aria-pressed", String(option === button));
       visibleCount = resultLimit;
-      if (currentMatches.length) render();
-      else run();
+      if (currentMatches.length) {
+         if (selectedScope === "all" && normalize(input.value)) writeSearchStateToUrl({ q: input.value, type: selectedType }, false);
+         render();
+      } else {
+         run("push");
+      }
     });
     for (const button of scopeButtons) button.addEventListener("click", () => {
       selectedScope = button.dataset.searchScope;
       updateScopeButtons();
-      run();
+      run("push");
     });
     if (moreButton) moreButton.addEventListener("click", () => { visibleCount += resultLimit; render(); });
     if (searchAllButton) searchAllButton.addEventListener("click", () => {
       selectedScope = "all";
       updateScopeButtons();
-      run();
+      run("push");
     });
-    panel.__manualSearch = { input, run };
+
+    window.addEventListener("popstate", () => {
+      if (selectedScope !== "all") return;
+      const state = readSearchStateFromUrl(window.location.href);
+      if (input.value !== state.q || selectedType !== state.type) {
+        input.value = state.q;
+        selectedType = state.type;
+        for (const option of filterButtons) {
+          option.setAttribute("aria-pressed", String(option.dataset.searchType === selectedType));
+        }
+        run("skip");
+      }
+    });
+
+    panel.__manualSearch = { input, run, setScopeAll: () => {
+      selectedScope = "all";
+      selectedType = "all";
+      updateScopeButtons();
+      for (const option of filterButtons) option.setAttribute("aria-pressed", String(option.dataset.searchType === "all"));
+    } };
+    if (initialState.q && selectedScope === "all") run("skip");
   }
 
-  globalThis.ManualSearch = { bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage };
+  globalThis.ManualSearch = { bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, readSearchStateFromUrl, writeSearchStateToUrl, searchStateUrl, decorateResultUrlWithSearchState };
   if (typeof document !== "undefined") {
     document.querySelectorAll("[data-search]").forEach(attach);
     document.querySelectorAll("[data-keyword]").forEach((button) => button.addEventListener("click", () => {
@@ -665,8 +788,31 @@
       const search = panel?.__manualSearch;
       if (!search) return;
       search.input.value = button.dataset.keyword;
+      if (search.setScopeAll) search.setScopeAll();
       search.input.focus();
-      search.run();
+      search.run("push");
     }));
+
+    const state = readSearchStateFromUrl(window.location.href);
+    const fromSearch = new URL(window.location.href).searchParams.get("fromSearch");
+    if (fromSearch && state.q) {
+      const returnLink = document.createElement("a");
+      returnLink.className = "return-to-search";
+      const siteRoot = new URL(document.body.dataset.siteRoot || "./", document.baseURI).href;
+      returnLink.href = searchStateUrl(state, siteRoot) + "#manual-search";
+      returnLink.textContent = `← 返回「${state.q}」搜尋結果`;
+      returnLink.style.display = "inline-block";
+      returnLink.style.margin = "1rem 0";
+      returnLink.style.fontSize = "0.9rem";
+      returnLink.style.color = "#0056b3";
+
+      const main = document.querySelector("main");
+      const breadcrumb = document.querySelector(".breadcrumb");
+      if (breadcrumb && breadcrumb.parentNode) {
+        breadcrumb.parentNode.insertBefore(returnLink, breadcrumb.nextSibling);
+      } else if (main) {
+        main.prepend(returnLink);
+      }
+    }
   }
 })();

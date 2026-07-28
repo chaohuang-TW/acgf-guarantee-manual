@@ -90,6 +90,7 @@
     });
   }
 
+  globalThis.SiteUtils = { fallbackCopyText };
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => {
