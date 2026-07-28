@@ -21,6 +21,7 @@ def run(*command: str) -> None:
 def main() -> None:
     current_index = ROOT / "site/assets/data/search-index.json"
     if current_index.is_file():
+        BASELINE.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(current_index, BASELINE)
     python = sys.executable
     node = os.environ.get("NODE_BINARY") or shutil.which("node")
