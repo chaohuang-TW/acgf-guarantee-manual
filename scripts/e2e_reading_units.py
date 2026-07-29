@@ -93,7 +93,7 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
     )
     changes.click()
     page.wait_for_load_state("domcontentloaded")
-    changes_text = page.locator(".manual-content").inner_text()
+    changes_text = page.locator(".manual-content .display-text").inner_text()
     assert "內容變更事項" in changes_text
     assert "貳、終止保證之處理" not in changes_text
     assert "24-23" not in page.locator("body").inner_text()
@@ -130,7 +130,7 @@ def main() -> None:
     matrix: list[dict] = []
     try:
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch()
+            browser = playwright.chromium.launch(channel="chrome")
             for viewport in VIEWPORTS:
                 page = browser.new_page(viewport=viewport)
                 page.on(

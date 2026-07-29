@@ -297,6 +297,24 @@ def local_part_nav(part: dict, relative: str, current_section: str | None = None
     return f'<details open><summary>{e(part["title"])}</summary><ol>{"".join(links)}</ol></details>'
 
 
+def reading_pagination(current_id: str, sequence: list[tuple[str, str, str]], relative: str) -> str:
+    index = next((i for i, (id_, _, _) in enumerate(sequence) if id_ == current_id), -1)
+    if index == -1:
+        return ""
+    links = []
+    if index > 0:
+        _, title, target = sequence[index - 1]
+        links.append(f'<a class="nav-prev" href="{e(rel_from(relative, target))}">上一節：{e(title)}</a>')
+    else:
+        links.append('<span class="nav-prev empty"></span>')
+    if index < len(sequence) - 1:
+        _, title, target = sequence[index + 1]
+        links.append(f'<a class="nav-next" href="{e(rel_from(relative, target))}">下一節：{e(title)}</a>')
+    else:
+        links.append('<span class="nav-next empty"></span>')
+    return f'<nav class="reading-pagination" aria-label="章節導覽">{"".join(links)}</nav>'
+
+
 def scope_for_page(page: dict) -> str:
     """Return a stable reading-unit key derived from the existing TOC structure."""
     printed = int(page["printedPage"]) if page["printedPage"] else None
@@ -435,6 +453,12 @@ def build_version_index() -> None:
 
 
 def build_parts() -> None:
+    chapters_seq = []
+    for part in TOC["parts"]:
+        for section in part["sections"]:
+            target = f"{VERSION_ROOT}/chapters/{part['id']}/{section['id']}.html"
+            chapters_seq.append((section["id"], section["title"], target))
+
     part_ends = [23, 35, 44, 46]
     for part, part_end in zip(TOC["parts"], part_ends):
         relative = f'{VERSION_ROOT}/chapters/{part["id"]}/index.html'
@@ -452,10 +476,12 @@ def build_parts() -> None:
         for section in part["sections"]:
             unit = READING_UNITS_BY_ID[section["id"]]
             section_relative = f'{VERSION_ROOT}/chapters/{part["id"]}/{section["id"]}.html'
+            pagination = reading_pagination(section["id"], chapters_seq, section_relative)
             section_content = [
                 f'<h1>{e(section["title"])}</h1>',
                 f'<p class="source-meta">{e(source_meta_for_unit(unit))}</p>',
                 render_reading_unit(unit, section_relative),
+                pagination,
             ]
             section_main = fill(
                 TEMPLATES["section"],
@@ -467,6 +493,11 @@ def build_parts() -> None:
 
 
 def build_appendices() -> None:
+    appendices_seq = []
+    for item in TOC["appendices"]:
+        target = f"{VERSION_ROOT}/appendices/{item['id']}.html"
+        appendices_seq.append((item["id"], item["title"], target))
+
     relative = f"{VERSION_ROOT}/appendices/index.html"
     rows = []
     for item in TOC["appendices"]:
@@ -478,14 +509,15 @@ def build_appendices() -> None:
 
     for item, end in unit_ranges(TOC["appendices"], 116):
         item_relative = f'{VERSION_ROOT}/appendices/{item["id"]}.html'
+        pagination = reading_pagination(item["id"], appendices_seq, item_relative)
         note = '<div class="layout-note"><strong>本表版面請以原始PDF為準</strong><p>文字層僅供全文搜尋，不據此重建欄列或數字位置。</p></div>' if item.get("layoutOnly") else ""
         cards = "".join(page_card(page, item_relative) for page in page_range(item["printedPage"], end))
-        content = f'<h1>{e(item["title"])}</h1><p class="source-meta">手冊頁 {item["printedPage"]}-{end}</p>{note}{cards}'
+        content = f'<h1>{e(item["title"])}</h1><p class="source-meta">手冊頁 {item["printedPage"]}-{end}</p>{note}{cards}{pagination}'
         main = fill(TEMPLATES["section"], BREADCRUMB=breadcrumb([("首頁", rel_from(item_relative, "index.html")), ("完整目錄", rel_from(item_relative, VERSION_ROOT + "/index.html")), ("附錄", rel_from(item_relative, relative))], item["title"]), LOCAL_NAV='<p><a href="index.html">返回附錄目錄</a></p>', CONTENT=content)
         write(item_relative, item["title"], main)
 
 
-def build_forms(items: list[dict], special: bool = False) -> None:
+def build_forms(items: list[dict], forms_seq: list[tuple[str, str, str]], special: bool = False) -> None:
     base = f"{VERSION_ROOT}/forms/special" if special else f"{VERSION_ROOT}/forms"
     relative = f"{base}/index.html"
     rows = []
@@ -506,9 +538,10 @@ def build_forms(items: list[dict], special: bool = False) -> None:
     final = 186 if special else 174
     for item, end in unit_ranges(items, final):
         item_relative = f'{base}/{slug_code(item["code"])}.html'
+        pagination = reading_pagination(item["code"], forms_seq, item_relative)
         note = '<div class="layout-note"><strong>正式書表版面請以原始PDF為準</strong><p>下列擷取文字僅供搜尋與輔助查閱，未重新設計為線上表單。</p></div>'
         cards = "".join(page_card(page, item_relative) for page in page_range(item["printedPage"], end))
-        content = f'<h1>{e(item["code"])}：{e(item["title"])}</h1><p class="source-meta">手冊頁 {item["printedPage"]}-{end}</p>{note}{cards}'
+        content = f'<h1>{e(item["code"])}：{e(item["title"])}</h1><p class="source-meta">手冊頁 {item["printedPage"]}-{end}</p>{note}{cards}{pagination}'
         parent_title = "專用書表" if special else "信用保證書表"
         main = fill(TEMPLATES["section"], BREADCRUMB=breadcrumb([("首頁", rel_from(item_relative, "index.html")), ("完整目錄", rel_from(item_relative, VERSION_ROOT + "/index.html")), (parent_title, rel_from(item_relative, relative))], f'{item["code"]}：{item["title"]}'), LOCAL_NAV=f'<p><a href="{e(rel_from(item_relative, relative))}">返回{parent_title}目錄</a></p>', CONTENT=content)
         write(item_relative, f'{item["code"]}：{item["title"]}', main)
@@ -639,8 +672,19 @@ def main() -> None:
     build_version_index()
     build_parts()
     build_appendices()
-    build_forms(TOC["forms"], special=False)
-    build_forms(TOC["specialForms"], special=True)
+    
+    forms_seq = []
+    for item in TOC["forms"]:
+        slug = slug_code(item["code"])
+        target = f"{VERSION_ROOT}/forms/{slug}.html"
+        forms_seq.append((item["code"], f"{item['code']}：{item['title']}", target))
+    for item in TOC["specialForms"]:
+        slug = slug_code(item["code"])
+        target = f"{VERSION_ROOT}/forms/special/{slug}.html"
+        forms_seq.append((item["code"], f"{item['code']}：{item['title']}", target))
+        
+    build_forms(TOC["forms"], forms_seq, special=False)
+    build_forms(TOC["specialForms"], forms_seq, special=True)
     build_physical_pages_and_search()
     build_robots_and_sitemap()
     print(f"Built {len(list(SITE.rglob('*.html')))} HTML pages")

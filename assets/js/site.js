@@ -59,6 +59,9 @@
       const anchor = button.dataset.pageAnchor;
       if (!anchor) return;
       const targetUrl = new URL(window.location.href);
+      targetUrl.searchParams.delete("fromSearch");
+      targetUrl.searchParams.delete("q");
+      targetUrl.searchParams.delete("type");
       targetUrl.hash = `#${anchor}`;
       const textToCopy = targetUrl.href;
 
@@ -90,16 +93,41 @@
     });
   }
 
+  function initSearchLandingCue() {
+    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash;
+    const isFromSearch = params.get("fromSearch") === "1";
+    const q = params.get("q");
+
+    if (isFromSearch && q && hash.startsWith("#pdf-page-")) {
+      const targetElement = document.querySelector(hash);
+      if (targetElement && targetElement.classList.contains("page-card")) {
+        targetElement.classList.add("search-landing-target");
+        const note = document.createElement("div");
+        note.className = "search-landing-note";
+        note.textContent = `依據搜尋「${q}」為您定位至此`;
+        const header = targetElement.querySelector("h2, h3, h4, h5, h6");
+        if (header && header.nextSibling) {
+          targetElement.insertBefore(note, header.nextSibling);
+        } else {
+          targetElement.insertBefore(note, targetElement.firstChild);
+        }
+      }
+    }
+  }
+
   globalThis.SiteUtils = { fallbackCopyText };
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => {
         initBackToTop();
         initCopyPageLinks();
+        initSearchLandingCue();
       });
     } else {
       initBackToTop();
       initCopyPageLinks();
+      initSearchLandingCue();
     }
   }
 })();

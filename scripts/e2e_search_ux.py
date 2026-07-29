@@ -332,7 +332,7 @@ def main() -> None:
         import os
         os.chdir(SITE)
         with sync_playwright() as p:
-            browser = p.chromium.launch()
+            browser = p.chromium.launch(channel="chrome")
             results = []
             for vp in VIEWPORTS:
                 context = browser.new_context(
