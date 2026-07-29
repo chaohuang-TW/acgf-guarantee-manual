@@ -305,13 +305,9 @@ def reading_pagination(current_id: str, sequence: list[tuple[str, str, str]], re
     if index > 0:
         _, title, target = sequence[index - 1]
         links.append(f'<a class="nav-prev" href="{e(rel_from(relative, target))}">上一節：{e(title)}</a>')
-    else:
-        links.append('<span class="nav-prev empty"></span>')
     if index < len(sequence) - 1:
         _, title, target = sequence[index + 1]
         links.append(f'<a class="nav-next" href="{e(rel_from(relative, target))}">下一節：{e(title)}</a>')
-    else:
-        links.append('<span class="nav-next empty"></span>')
     return f'<nav class="reading-pagination" aria-label="章節導覽">{"".join(links)}</nav>'
 
 

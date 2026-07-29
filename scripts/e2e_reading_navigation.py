@@ -29,24 +29,33 @@ def clean_url(u: str) -> str:
     return f"{parsed.path}#{parsed.fragment}" if parsed.fragment else parsed.path
 
 
+def setup_monitoring(page: Page) -> list[str]:
+    errors = []
+    page.on("console", lambda msg: errors.append(f"Console error: {msg.text}") if msg.type == "error" else None)
+    page.on("pageerror", lambda err: errors.append(f"Page error: {err}"))
+    page.on("response", lambda resp: errors.append(f"404: {resp.url}") if resp.status == 404 else None)
+    return errors
+
+
 def assert_no_overflow(page: Page) -> None:
-    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), "Horizontal overflow detected"
 
 
 def test_reading_navigation(page: Page, base: str) -> None:
+    errors = setup_monitoring(page)
+    
     # 1. Chapters: First chapter should have NO prev, but has next
     page.goto(f"{base}/versions/115-04/chapters/part-1/guarantee-subject.html")
-    assert not page.locator(".reading-pagination .nav-prev:not(.empty)").is_visible()
+    assert not page.locator(".reading-pagination .nav-prev").is_visible()
     next_btn = page.locator(".reading-pagination .nav-next")
     assert next_btn.is_visible()
     assert "下一節：貳、保證成數" in next_btn.inner_text()
     assert "fromSearch" not in next_btn.get_attribute("href")
     
     # 2. Appendices: test cross-boundary (should not cross into forms)
-    # The last appendix is appendix-18
     page.goto(f"{base}/versions/115-04/appendices/appendix-18.html")
     assert page.locator(".reading-pagination .nav-prev").is_visible()
-    assert not page.locator(".reading-pagination .nav-next:not(.empty)").is_visible()
+    assert not page.locator(".reading-pagination .nav-next").is_visible()
 
     # 3. Forms & Special Forms Continuity
     # Check "格式 31" to "格式 3A"
@@ -63,10 +72,22 @@ def test_reading_navigation(page: Page, base: str) -> None:
     page.goto(f"{base}/versions/115-04/forms/form-33-1.html")
     next_btn = page.locator(".reading-pagination .nav-next")
     assert "下一節：格式 12" in next_btn.inner_text()
+    
+    # 5. Format 25 series
+    page.goto(f"{base}/versions/115-04/forms/form-25a.html")
+    prev_btn = page.locator(".reading-pagination .nav-prev")
+    next_btn = page.locator(".reading-pagination .nav-next")
+    assert prev_btn.is_visible()
+    assert next_btn.is_visible()
+    
+    assert not errors, f"Navigation journey had errors: {errors}"
+    assert_no_overflow(page)
 
 
 def test_search_landing_cue_and_copy(context, base: str) -> None:
     page = context.new_page()
+    errors = setup_monitoring(page)
+    
     # Mock a search landing
     landing_url = f"{base}/versions/115-04/chapters/part-1/guarantee-subject.html?q=額度&fromSearch=1#pdf-page-11"
     page.goto(landing_url)
@@ -79,7 +100,27 @@ def test_search_landing_cue_and_copy(context, base: str) -> None:
     
     note = target.locator(".search-landing-note")
     expect(note).to_be_visible()
-    assert "依據搜尋「額度」為您定位至此" in note.inner_text()
+    assert "搜尋結果定位至此" in note.inner_text()
+    
+    # Double check no duplicate note
+    assert target.locator(".search-landing-note").count() == 1
+    
+    # Test invalid hash no throw and no cue
+    page.goto("about:blank")
+    page.goto(f"{base}/versions/115-04/chapters/part-1/guarantee-subject.html?q=額度&fromSearch=1#invalid-hash-123")
+    assert page.locator(".search-landing-target").count() == 0
+    assert page.locator(".search-landing-note").count() == 0
+    
+    # Test clean hash (no query params, should have no cue)
+    page.goto("about:blank")
+    page.goto(f"{base}/versions/115-04/chapters/part-1/guarantee-subject.html#pdf-page-11")
+    assert page.locator(".search-landing-target").count() == 0
+    assert page.locator(".search-landing-note").count() == 0
+    
+    # Re-run original landing url to test copy
+    page.goto("about:blank")
+    page.goto(landing_url)
+    target = page.locator("#pdf-page-11")
     
     # Test Copy Link Sanity
     copy_btn = target.locator("button.copy-page-link")
@@ -96,6 +137,19 @@ def test_search_landing_cue_and_copy(context, base: str) -> None:
     assert "q" not in query_params
     assert "type" not in query_params
     assert parsed.fragment == "pdf-page-11"
+    
+    # Test copied URL reopen
+    copied_page = context.new_page()
+    copied_errors = setup_monitoring(copied_page)
+    copied_page.goto(clipboard_text)
+    assert copied_page.locator(".search-landing-target").count() == 0
+    assert copied_page.locator(".search-landing-note").count() == 0
+    assert not copied_errors, f"Copied URL reopen had errors: {copied_errors}"
+    copied_page.close()
+
+    assert not errors, f"Landing Cue journey had errors: {errors}"
+    assert_no_overflow(page)
+    page.close()
 
 
 def main() -> None:
@@ -109,22 +163,24 @@ def main() -> None:
     os.chdir(SITE)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(channel="chrome")
+        # Use standard chromium, not google chrome channel
+        browser = p.chromium.launch()
         
         # Run navigation tests per viewport
         for vp in VIEWPORTS:
             context = browser.new_context(viewport=vp)
+            
+            # Nav tests
             page = context.new_page()
             test_reading_navigation(page, base)
-            assert_no_overflow(page)
+            page.close()
+            
+            # Landing cue tests
+            context.grant_permissions(["clipboard-read", "clipboard-write"])
+            test_search_landing_cue_and_copy(context, base)
+            
             context.close()
             
-        # Run Search Landing Cue test with clipboard permissions
-        context = browser.new_context()
-        context.grant_permissions(["clipboard-read", "clipboard-write"])
-        test_search_landing_cue_and_copy(context, base)
-        context.close()
-        
         browser.close()
         
     server.shutdown()

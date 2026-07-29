@@ -49,6 +49,7 @@ def main() -> None:
     run(node, "tests/test_search_logic.cjs")
     run(python, "scripts/e2e_reading_units.py")
     run(python, "scripts/e2e_search_ux.py")
+    run(python, "scripts/e2e_reading_navigation.py")
     print("CI VALIDATION PASSED")
 
 

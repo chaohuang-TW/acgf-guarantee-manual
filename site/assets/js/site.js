@@ -93,30 +93,58 @@
     });
   }
 
-  function initSearchLandingCue() {
-    const params = new URLSearchParams(window.location.search);
-    const hash = window.location.hash;
-    const isFromSearch = params.get("fromSearch") === "1";
-    const q = params.get("q");
+  function isSearchLandingEligible(urlStr) {
+    try {
+      const url = new URL(urlStr, window.location.origin);
+      return url.searchParams.get("fromSearch") === "1" && !!url.searchParams.get("q");
+    } catch (e) {
+      return false;
+    }
+  }
 
-    if (isFromSearch && q && hash.startsWith("#pdf-page-")) {
-      const targetElement = document.querySelector(hash);
-      if (targetElement && targetElement.classList.contains("page-card")) {
-        targetElement.classList.add("search-landing-target");
-        const note = document.createElement("div");
-        note.className = "search-landing-note";
-        note.textContent = `依據搜尋「${q}」為您定位至此`;
-        const header = targetElement.querySelector("h2, h3, h4, h5, h6");
-        if (header && header.nextSibling) {
-          targetElement.insertBefore(note, header.nextSibling);
-        } else {
-          targetElement.insertBefore(note, targetElement.firstChild);
+  function targetIdFromSearchLanding(urlStr) {
+    try {
+      const url = new URL(urlStr, window.location.origin);
+      const hash = url.hash;
+      if (hash && hash.startsWith("#pdf-page-")) {
+        return hash;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function initSearchLandingCue() {
+    const currentUrl = window.location.href;
+    if (isSearchLandingEligible(currentUrl)) {
+      const hash = targetIdFromSearchLanding(currentUrl);
+      if (hash) {
+        try {
+          const targetElement = document.querySelector(hash);
+          if (targetElement && targetElement.classList.contains("page-card")) {
+            if (targetElement.querySelector(".search-landing-note")) {
+              return;
+            }
+            targetElement.classList.add("search-landing-target");
+            const note = document.createElement("div");
+            note.className = "search-landing-note";
+            note.textContent = "搜尋結果定位至此";
+            const header = targetElement.querySelector("h2, h3, h4, h5, h6");
+            if (header && header.nextSibling) {
+              targetElement.insertBefore(note, header.nextSibling);
+            } else {
+              targetElement.insertBefore(note, targetElement.firstChild);
+            }
+          }
+        } catch (e) {
+          // invalid hash no throw
         }
       }
     }
   }
 
-  globalThis.SiteUtils = { fallbackCopyText };
+  globalThis.SiteUtils = { fallbackCopyText, isSearchLandingEligible, targetIdFromSearchLanding, initSearchLandingCue };
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => {

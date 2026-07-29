@@ -314,20 +314,20 @@ button, input { font: inherit; }
 
 /* Search Landing Cue */
 .search-landing-target {
-  border-left: 4px solid var(--focus);
-  background-color: var(--surface-soft);
+  border-left: 4px solid var(--teal-700);
+  background: var(--surface-soft);
   scroll-margin-top: 100px; /* Offset for sticky headers if any */
 }
 .search-landing-note {
   font-size: 0.85rem;
   color: var(--navy-800);
-  background-color: #fff3cd; /* Soft yellow alert */
+  background: transparent;
   padding: 0.5rem 0.75rem;
-  border-radius: 6px;
   margin-bottom: 1rem;
   display: inline-block;
   font-weight: 500;
-  border: 1px solid #ffeeba;
+  border: 0;
+  border-left: 3px solid var(--teal-700);
 }
 
 @media print {
