@@ -34,6 +34,7 @@ def main() -> None:
     run(*install)
     run(python, "scripts/build_site.py")
     run(python, "-m", "unittest", "tests.test_source_preview_boundaries")
+    run(python, "-m", "unittest", "tests.test_reading_navigation")
     for script in [
         "audit_content.py",
         "audit_reading_units.py",

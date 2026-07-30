@@ -670,13 +670,32 @@ def main() -> None:
     build_appendices()
     
     forms_seq = []
+    
+    # Merge and sort forms by printedPage to match physical sequence
+    combined_forms = []
     for item in TOC["forms"]:
-        slug = slug_code(item["code"])
-        target = f"{VERSION_ROOT}/forms/{slug}.html"
-        forms_seq.append((item["code"], f"{item['code']}：{item['title']}", target))
+        combined_forms.append(("forms", item))
     for item in TOC["specialForms"]:
+        combined_forms.append(("specialForms", item))
+        
+    def form_sort_key(entry):
+        idx, (category, item) = entry
+        page = item.get("printedPage")
+        if page is None:
+            return (float('inf'), idx)
+        try:
+            if isinstance(page, int):
+                return (float(page), idx)
+            return (float(str(page).replace("頁", "").strip()), idx)
+        except ValueError:
+            return (float('inf'), idx)
+            
+    combined_forms_sorted = [x[1] for x in sorted(enumerate(combined_forms), key=form_sort_key)]
+    
+    for category, item in combined_forms_sorted:
         slug = slug_code(item["code"])
-        target = f"{VERSION_ROOT}/forms/special/{slug}.html"
+        target_dir = "forms" if category == "forms" else "forms/special"
+        target = f"{VERSION_ROOT}/{target_dir}/{slug}.html"
         forms_seq.append((item["code"], f"{item['code']}：{item['title']}", target))
         
     build_forms(TOC["forms"], forms_seq, special=False)
