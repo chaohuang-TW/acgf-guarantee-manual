@@ -334,3 +334,20 @@ button, input { font: inherit; }
   .reading-pagination, .search-landing-note { display: none !important; }
   .search-landing-target { border-left: none; background-color: transparent; }
 }
+
+.search-hit {
+  padding: 0.04em 0.16em;
+  border-radius: 0.2em;
+  background-color: #fff0a8;
+  color: inherit;
+  font-weight: 700;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+@media (forced-colors: active) {
+  .search-hit {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+}

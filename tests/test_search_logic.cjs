@@ -159,8 +159,11 @@ for (const query of ["保費", "手續費率", "青農 保證成數", "代償 �
   assert.equal([...counts.values()].every((count) => count <= 3), true, `${query} should be diversified by chapter`);
 }
 
-assert.equal(source.includes("createElement(\"mark\")"), false);
+
+assert.equal(source.includes('createElement("mark")'), true);
+assert.equal(source.includes('mark.textContent'), true);
 assert.equal(source.includes("innerHTML"), false);
+assert.equal(css.includes(".search-hit"), true);
 assert.equal(css.includes(".search-result mark"), false);
 assert.equal(css.includes("#ffe39a"), false);
 

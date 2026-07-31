@@ -514,10 +514,77 @@
     return retained;
   }
 
+
+  function highlightText(text, terms) {
+    const fragment = document.createDocumentFragment();
+    if (!text || !terms || !terms.length) {
+      fragment.appendChild(document.createTextNode(text || ""));
+      return fragment;
+    }
+
+    const mapped = compactNormalizeWithMap(text);
+    if (!mapped.text) {
+      fragment.appendChild(document.createTextNode(text));
+      return fragment;
+    }
+
+    const uniqueTerms = [...new Set(terms.filter(Boolean))];
+    const normalizedTerms = uniqueTerms
+      .map(t => compactNormalizeWithMap(t).text)
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length);
+
+    if (!normalizedTerms.length) {
+      fragment.appendChild(document.createTextNode(text));
+      return fragment;
+    }
+
+    const matches = [];
+    for (const nTerm of normalizedTerms) {
+      let startIndex = 0;
+      while (startIndex < mapped.text.length) {
+        const pos = mapped.text.indexOf(nTerm, startIndex);
+        if (pos < 0) break;
+        const startRaw = mapped.offsets[pos];
+        const endRaw = mapped.offsets[pos + nTerm.length - 1] + 1;
+
+        const overlap = matches.some(m => Math.max(startRaw, m.start) < Math.min(endRaw, m.end));
+        if (!overlap) {
+          matches.push({ start: startRaw, end: endRaw });
+        }
+        startIndex = pos + nTerm.length;
+      }
+    }
+
+    matches.sort((a, b) => a.start - b.start);
+
+    let currentIndex = 0;
+    for (const match of matches) {
+      if (match.start > currentIndex) {
+        fragment.appendChild(document.createTextNode(text.slice(currentIndex, match.start)));
+      }
+      const mark = document.createElement("mark");
+      mark.className = "search-hit";
+      mark.textContent = text.slice(match.start, match.end);
+      fragment.appendChild(mark);
+      currentIndex = match.end;
+    }
+    if (currentIndex < text.length) {
+      fragment.appendChild(document.createTextNode(text.slice(currentIndex)));
+    }
+
+    return fragment;
+  }
+
   function snippet(rawText, terms) {
     const text = cleanSnippetText(rawText);
-    const normalized = normalize(text);
-    const positions = terms.map((term) => normalized.indexOf(normalize(term))).filter((position) => position >= 0);
+    const mapped = compactNormalizeWithMap(text);
+    const positions = terms.map((term) => {
+      const nTerm = compactNormalizeWithMap(term).text;
+      if (!nTerm) return -1;
+      const idx = mapped.text.indexOf(nTerm);
+      return idx >= 0 ? mapped.offsets[idx] : -1;
+    }).filter((position) => position >= 0);
     if (!positions.length) return text.slice(0, 160);
     const position = Math.min(...positions);
     const start = Math.max(0, position - 65);
@@ -578,7 +645,7 @@
     const sharedPage = (record.readingSegments || []).length > 1;
     const passage = sharedPage ? null : findLogicalPassage(record, result.matchedTerms, result.bodyMatches);
     link.href = decorateResultUrlWithSearchState(new URL(resultTarget(record, passage, result.segment), siteRoot).href, searchState);
-    link.textContent = presentation.title;
+    link.appendChild(highlightText(presentation.title, result.matchedTerms));
     heading.append(link);
     const type = document.createElement("span");
     type.className = "result-type";
@@ -586,14 +653,20 @@
     heading.append(type);
     article.append(heading);
     appendText(article, "p", "result-path", (presentation.breadcrumb || record.breadcrumb || []).join(" › "));
-    appendText(article, "p", "result-snippet", passage ? passage.preview : snippet(presentation.text || record.text, result.matchedTerms));
+    const snippetP = document.createElement("p");
+    snippetP.className = "result-snippet";
+    snippetP.appendChild(highlightText(passage ? passage.preview : snippet(presentation.text || record.text, result.matchedTerms), result.matchedTerms));
+    article.appendChild(snippetP);
     if (passage?.expanded) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "search-context-toggle";
       button.textContent = "顯示完整段落";
       button.setAttribute("aria-expanded", "false");
-      const full = appendText(article, "p", "result-context-full", passage.fullText);
+      const full = document.createElement("p");
+      full.className = "result-context-full";
+      full.appendChild(highlightText(passage.fullText, result.matchedTerms));
+      article.appendChild(full);
       full.hidden = true;
       button.addEventListener("click", () => {
         full.hidden = !full.hidden;
@@ -735,19 +808,19 @@
     }
 
     let lastRunQuery = null;
-    form.addEventListener("submit", (event) => { 
-      event.preventDefault(); 
-      window.clearTimeout(timer); 
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      window.clearTimeout(timer);
       lastRunQuery = input.value;
-      run("push"); 
+      run("push");
     });
-    input.addEventListener("input", () => { 
-      window.clearTimeout(timer); 
-      timer = window.setTimeout(() => { 
+    input.addEventListener("input", () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
         if (input.value === lastRunQuery) return;
         lastRunQuery = input.value;
-        run("replace"); 
-      }, 250); 
+        run("replace");
+      }, 250);
     });
     for (const button of filterButtons) button.addEventListener("click", () => {
       selectedType = button.dataset.searchType;
@@ -794,7 +867,7 @@
     if (initialState.q && selectedScope === "all") run("skip");
   }
 
-  globalThis.ManualSearch = { bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, readSearchStateFromUrl, writeSearchStateToUrl, searchStateUrl, decorateResultUrlWithSearchState };
+  globalThis.ManualSearch = { highlightText, bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, readSearchStateFromUrl, writeSearchStateToUrl, searchStateUrl, decorateResultUrlWithSearchState };
   if (typeof document !== "undefined") {
     document.querySelectorAll("[data-search]").forEach(attach);
     document.querySelectorAll("[data-keyword]").forEach((button) => button.addEventListener("click", () => {
