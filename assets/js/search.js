@@ -695,6 +695,7 @@
     const form = panel.querySelector("form");
     const input = panel.querySelector("input[type=search]");
     const status = panel.querySelector(".search-status");
+    const suggestionsList = panel.querySelector(".search-suggestions");
     const results = panel.querySelector(".search-results");
     const filterButtons = [...panel.querySelectorAll("[data-search-type]")];
     const scopeButtons = [...panel.querySelectorAll("[data-search-scope]")];
@@ -747,14 +748,36 @@
       for (const option of scopeButtons) option.setAttribute("aria-pressed", String(option.dataset.searchScope === selectedScope));
     }
 
+    let observer = null;
     function render() {
       const filtered = deduplicateAdjacentResults(filterMatches(currentMatches, selectedType));
       const shown = filtered.slice(0, visibleCount);
       const siteRoot = new URL(document.body.dataset.siteRoot || "./", document.baseURI);
-      status.textContent = `找到 ${filtered.length} 筆結果，先顯示 ${shown.length} 筆。`;
+      status.textContent = `找到 ${filtered.length} 筆結果，已顯示 ${shown.length} 筆。`;
       copyButton.hidden = selectedScope !== "all";
       const stateToPass = selectedScope === "all" ? { q: input.value, type: selectedType } : null;
       results.replaceChildren(...shown.map((result) => resultElement(result, siteRoot, stateToPass)));
+      
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+      
+      if (shown.length < filtered.length) {
+        const sentinel = document.createElement("div");
+        sentinel.className = "search-sentinel";
+        sentinel.style.height = "1px";
+        results.appendChild(sentinel);
+        
+        observer = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting) {
+            visibleCount += resultLimit;
+            render();
+          }
+        }, { rootMargin: "200px" });
+        observer.observe(sentinel);
+      }
+      
       if (moreButton) moreButton.hidden = shown.length >= filtered.length;
     }
 
@@ -797,8 +820,33 @@
           status.textContent = zeroResultMessage(query);
           results.replaceChildren();
           copyButton.hidden = true;
+          
+          filterButtons.forEach(btn => {
+            const type = btn.dataset.searchType;
+            const baseText = type === "all" ? "全部" : TYPE_LABELS[type] || type;
+            btn.textContent = `${baseText} (0)`;
+            if (type !== "all") btn.disabled = true;
+          });
+          
           return;
         }
+        const typeCounts = { all: currentMatches.length };
+        VALID_TYPES.forEach(t => { if (t !== "all") typeCounts[t] = 0; });
+        currentMatches.forEach(match => {
+          if (typeCounts[match.record.type] !== undefined) typeCounts[match.record.type]++;
+        });
+        filterButtons.forEach(btn => {
+           const type = btn.dataset.searchType;
+           const baseText = type === "all" ? "全部" : TYPE_LABELS[type] || type;
+           const count = typeCounts[type] || 0;
+           btn.textContent = `${baseText} (${count})`;
+           if (count === 0 && type !== "all") {
+             btn.disabled = true;
+           } else {
+             btn.disabled = false;
+           }
+        });
+
         render();
       } catch (error) {
         status.textContent = "搜尋索引目前無法載入，請稍後再試或查閱完整PDF。";
@@ -807,7 +855,109 @@
       }
     }
 
+
+    let activeSuggestionIndex = -1;
+    let suggestionsData = [];
+
+    function renderSuggestions(terms) {
+      if (!suggestionsList) return;
+      suggestionsData = terms.slice(0, 8); // Max 8 suggestions
+      if (suggestionsData.length === 0) {
+        suggestionsList.hidden = true;
+        input.setAttribute("aria-expanded", "false");
+        return;
+      }
+      suggestionsList.replaceChildren(...suggestionsData.map((term, idx) => {
+        const li = document.createElement("li");
+        li.textContent = term;
+        li.id = "suggestion-" + idx;
+        li.setAttribute("role", "option");
+        li.setAttribute("aria-selected", "false");
+        li.addEventListener("mousedown", (e) => {
+          e.preventDefault(); // Prevent blur
+          input.value = term;
+          suggestionsList.hidden = true;
+          input.setAttribute("aria-expanded", "false");
+          input.focus();
+          form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+        });
+        return li;
+      }));
+      suggestionsList.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+      activeSuggestionIndex = -1;
+    }
+
+    async function updateSuggestions(query) {
+      const normQuery = normalize(query);
+      if (!normQuery) {
+        renderSuggestions([]);
+        return;
+      }
+      try {
+        const concepts = await loadConcepts();
+        const terms = new Set();
+        concepts.concepts.forEach(concept => {
+          concept.terms.forEach(term => {
+            if (normalize(term).includes(normQuery) && normalize(term) !== normQuery) {
+              terms.add(term);
+            }
+          });
+        });
+        renderSuggestions([...terms]);
+      } catch (err) {
+        renderSuggestions([]);
+      }
+    }
+
+    if (suggestionsList) {
+      input.addEventListener("focus", () => {
+        if (input.value) updateSuggestions(input.value);
+      });
+      input.addEventListener("blur", () => {
+        suggestionsList.hidden = true;
+        input.setAttribute("aria-expanded", "false");
+      });
+      input.addEventListener("keydown", (e) => {
+        if (suggestionsList.hidden) return;
+        const items = suggestionsList.querySelectorAll("li");
+        if (!items.length) return;
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          activeSuggestionIndex = (activeSuggestionIndex + 1) % items.length;
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          activeSuggestionIndex = (activeSuggestionIndex - 1 + items.length) % items.length;
+        } else if (e.key === "Enter" && activeSuggestionIndex >= 0) {
+          e.preventDefault();
+          input.value = suggestionsData[activeSuggestionIndex];
+          suggestionsList.hidden = true;
+          input.setAttribute("aria-expanded", "false");
+          form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+          return;
+        } else if (e.key === "Escape") {
+          suggestionsList.hidden = true;
+          input.setAttribute("aria-expanded", "false");
+          return;
+        } else {
+          return;
+        }
+        
+        items.forEach((li, idx) => {
+          if (idx === activeSuggestionIndex) {
+            li.classList.add("active");
+            li.setAttribute("aria-selected", "true");
+            input.setAttribute("aria-activedescendant", li.id);
+          } else {
+            li.classList.remove("active");
+            li.setAttribute("aria-selected", "false");
+          }
+        });
+      });
+    }
+
     let lastRunQuery = null;
+
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       window.clearTimeout(timer);
@@ -815,6 +965,7 @@
       run("push");
     });
     input.addEventListener("input", () => {
+      if (suggestionsList) updateSuggestions(input.value);
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         if (input.value === lastRunQuery) return;

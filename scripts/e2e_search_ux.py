@@ -238,6 +238,69 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     assert page.locator(".search-results article").first.locator("h3 a").get_attribute("href") == first_logical_href
 
     # ---------------------------------------------------------
+    # UX 4.0: Autocomplete & Typeahead
+    # ---------------------------------------------------------
+    page.goto(base)
+    searchbox = page.get_by_role("searchbox", name="全文搜尋")
+    searchbox.fill("代位")
+    page.wait_for_selector(".search-suggestions li", state="visible")
+    
+    suggestions = page.locator(".search-suggestions li")
+    assert suggestions.count() > 0, "Should show autocomplete suggestions for '代位'"
+    
+    # Keyboard navigation
+    searchbox.press("ArrowDown")
+    active_suggestion = page.locator(".search-suggestions li.active")
+    assert active_suggestion.count() == 1, "Should highlight one suggestion on ArrowDown"
+    assert searchbox.get_attribute("aria-activedescendant") == active_suggestion.get_attribute("id")
+    
+    searchbox.press("Enter")
+    page.locator(".search-status").filter(has_text="找到").wait_for()
+    assert searchbox.input_value() == active_suggestion.text_content(), "Enter should fill searchbox with selected suggestion and search"
+    assert page.locator(".search-suggestions").is_hidden(), "Suggestions should be hidden after Enter"
+
+    # ---------------------------------------------------------
+    # UX 4.0: Dynamic Filter Badges
+    # ---------------------------------------------------------
+    chapter_btn = page.locator("button[data-search-type='chapter']")
+    assert "(" in chapter_btn.text_content(), "Filter buttons should have a badge count"
+    
+    # Empty filter should be disabled
+    searchbox.fill("完全不會找到的字串測試容錯機制")
+    searchbox.press("Enter")
+    page.wait_for_function('document.querySelector(".search-status").textContent.includes("找不到")')
+    assert chapter_btn.is_disabled(), "Chapter button should be disabled when it has 0 results"
+    
+    # ---------------------------------------------------------
+    # UX 4.0: Fuzzy Search (Typo Tolerance via concept expansion)
+    # ---------------------------------------------------------
+    searchbox.fill("帶償")
+    searchbox.press("Enter")
+    page.locator(".search-status").filter(has_text="找到").wait_for()
+    
+    first_fuzzy_res = page.locator(".search-results article").first
+    assert first_fuzzy_res.locator("mark.search-hit").count() > 0, "Should highlight hits even when fuzzy matching via '帶償'"
+
+    # ---------------------------------------------------------
+    # UX 4.0: Infinite Scroll (Virtualization)
+    # ---------------------------------------------------------
+    searchbox.fill("保證") # Very common word to trigger > 50 results
+    searchbox.press("Enter")
+    page.locator(".search-status").filter(has_text="找到").wait_for()
+    
+    initial_articles = page.locator(".search-results article").count()
+    assert initial_articles <= 50, f"Should limit initial render, got {initial_articles}"
+    
+    # Scroll to bottom to trigger intersection observer
+    page.locator(".search-sentinel").scroll_into_view_if_needed()
+    page.wait_for_function('document.querySelectorAll(".search-results article").length > 50', timeout=2000)
+    
+    scrolled_articles = page.locator(".search-results article").count()
+    assert scrolled_articles > 50, "Should automatically load more results on scroll"
+
+
+
+    # ---------------------------------------------------------
     # Case 9: Local Search Reality Assertion
     # ---------------------------------------------------------
     # No local-search UI is currently generated; local-scope runtime code is not exercised by production HTML.

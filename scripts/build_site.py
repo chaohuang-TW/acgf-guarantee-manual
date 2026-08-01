@@ -89,8 +89,9 @@ def search_box(compact: bool = False, panel_id: str = "") -> str:
       <div{id_attribute} class="{class_name}" data-search data-search-limit="50">
         <form role="search" novalidate>
           <label>全文搜尋
-          <div class="search-row">
-            <input name="q" type="search" autocomplete="off" aria-label="全文搜尋" placeholder="搜尋保證成數、同一經濟利害關係人、轉（展）期、代位清償……">
+          <div class="search-row autocomplete-container">
+            <input name="q" type="search" autocomplete="off" aria-label="全文搜尋" aria-autocomplete="list" aria-expanded="false" placeholder="搜尋保證成數、同一經濟利害關係人、轉（展）期、代位清償……">
+            <ul class="search-suggestions" role="listbox" hidden></ul>
             <button type="submit">搜尋</button>
           </div>
           </label>
