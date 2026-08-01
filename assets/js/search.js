@@ -131,12 +131,36 @@
     }));
   }
 
+  function arabicToChinese(numStr) {
+    const num = parseInt(numStr, 10);
+    if (isNaN(num)) return numStr;
+    const chars = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+    if (num < 10) return chars[num];
+    if (num < 20) return '十' + (num % 10 === 0 ? '' : chars[num % 10]);
+    if (num < 100) return chars[Math.floor(num / 10)] + '十' + (num % 10 === 0 ? '' : chars[num % 10]);
+    if (num < 1000) {
+      const h = chars[Math.floor(num / 100)] + '百';
+      const rem = num % 100;
+      if (rem === 0) return h;
+      if (rem < 10) return h + '零' + chars[rem];
+      return h + arabicToChinese(rem.toString());
+    }
+    return numStr;
+  }
+
+  function expandNumerals(word) {
+    const chineseWord = word.replace(/\d+/g, (match) => arabicToChinese(match));
+    return chineseWord !== word ? [word, chineseWord] : [word];
+  }
+
   function queryConcepts(query, rawConcepts) {
     const { phrase, words } = tokenizeQuery(query);
     const concepts = prepareConcepts(rawConcepts);
     const items = words.map((word) => {
-      const source = concepts.find((concept) => concept.terms.includes(word) || concept.terms.some((term) => word.includes(term) || term.includes(word)));
-      return { token: word, id: source?.id || `term:${word}`, terms: source?.terms || [word] };
+      const expandedTerms = expandNumerals(word);
+      const source = concepts.find((concept) => expandedTerms.some(ew => concept.terms.includes(ew)) || concept.terms.some((term) => expandedTerms.some(ew => ew.includes(term) || term.includes(ew))));
+      const finalTerms = [...new Set([...(source?.terms || []), ...expandedTerms])];
+      return { token: word, id: source?.id || `term:${word}`, terms: finalTerms };
     });
     return { phrase, words, concepts: items };
   }
