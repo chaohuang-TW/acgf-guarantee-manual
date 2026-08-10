@@ -144,18 +144,155 @@
     }
   }
 
-  globalThis.SiteUtils = { fallbackCopyText, isSearchLandingEligible, targetIdFromSearchLanding, initSearchLandingCue };
+  function initInPageSearchHighlight() {
+    const currentUrl = window.location.href;
+    if (!isSearchLandingEligible(currentUrl)) return;
+
+    // Idempotency check
+    if (document.querySelector(".reading-hit-nav")) return;
+
+    const url = new URL(currentUrl);
+    const q = url.searchParams.get("q");
+    if (!q || !globalThis.ManualSearch || !globalThis.ManualSearch.findHighlightRanges) return;
+
+    const queryInfo = globalThis.ManualSearch.tokenizeQuery(q);
+    const terms = [queryInfo.phrase, ...queryInfo.words].filter(Boolean);
+    if (!terms.length) return;
+
+    const hitNodes = [];
+    const containers = document.querySelectorAll(".page-card > .display-text");
+
+    for (const container of containers) {
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+      const textNodes = [];
+      let node;
+      while ((node = walker.nextNode())) {
+        if (node.parentNode && node.parentNode.tagName === "MARK" && node.parentNode.classList.contains("reading-hit")) continue;
+        textNodes.push(node);
+      }
+
+      for (const textNode of textNodes) {
+        const text = textNode.nodeValue;
+        if (!text.trim()) continue;
+
+        const matches = globalThis.ManualSearch.findHighlightRanges(text, terms);
+        if (!matches.length) continue;
+
+        const fragment = document.createDocumentFragment();
+        let currentIndex = 0;
+        for (const match of matches) {
+          if (match.start > currentIndex) {
+            fragment.appendChild(document.createTextNode(text.slice(currentIndex, match.start)));
+          }
+          const mark = document.createElement("mark");
+          mark.className = "reading-hit";
+          mark.textContent = text.slice(match.start, match.end);
+          fragment.appendChild(mark);
+          hitNodes.push(mark);
+          currentIndex = match.end;
+        }
+        if (currentIndex < text.length) {
+          fragment.appendChild(document.createTextNode(text.slice(currentIndex)));
+        }
+        textNode.parentNode.replaceChild(fragment, textNode);
+      }
+    }
+
+    if (!hitNodes.length) return;
+
+    const navBar = document.createElement("div");
+    navBar.className = "reading-hit-nav";
+    navBar.setAttribute("role", "region");
+    navBar.setAttribute("aria-label", "搜尋命中導覽");
+
+    const counter = document.createElement("span");
+    counter.className = "reading-hit-count";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "reading-hit-prev";
+    prevBtn.textContent = "上一個";
+    prevBtn.setAttribute("aria-label", "上一個命中");
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "reading-hit-next";
+    nextBtn.textContent = "下一個";
+    nextBtn.setAttribute("aria-label", "下一個命中");
+
+    const controls = document.createElement("div");
+    controls.className = "reading-hit-controls";
+    controls.appendChild(prevBtn);
+    controls.appendChild(counter);
+    controls.appendChild(nextBtn);
+    navBar.appendChild(controls);
+
+    const mainContainer = document.querySelector("main") || document.body;
+    mainContainer.appendChild(navBar);
+
+    let currentHitIndex = 0;
+
+    function updateActiveHit(index) {
+      if (hitNodes[currentHitIndex]) {
+        hitNodes[currentHitIndex].classList.remove("reading-hit-current");
+      }
+      currentHitIndex = index;
+
+      const activeNode = hitNodes[currentHitIndex];
+      activeNode.classList.add("reading-hit-current");
+      counter.textContent = `${currentHitIndex + 1} / ${hitNodes.length}`;
+
+      prevBtn.disabled = currentHitIndex === 0;
+      nextBtn.disabled = currentHitIndex === hitNodes.length - 1;
+
+      const rect = activeNode.getBoundingClientRect();
+      const scrollY = window.scrollY + rect.top - (window.innerHeight / 2);
+      window.scrollTo({ top: scrollY, behavior: "smooth" });
+    }
+
+    prevBtn.addEventListener("click", () => {
+      if (currentHitIndex > 0) updateActiveHit(currentHitIndex - 1);
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (currentHitIndex < hitNodes.length - 1) updateActiveHit(currentHitIndex + 1);
+    });
+
+    setTimeout(() => {
+      const hash = targetIdFromSearchLanding(currentUrl);
+      let targetIndex = 0;
+      if (hash) {
+        const targetElement = document.querySelector(hash);
+        if (targetElement) {
+          const firstHitIndex = hitNodes.findIndex(node => {
+            const card = node.closest(".page-card");
+            if (!card) return false;
+            const pos = targetElement.compareDocumentPosition(card);
+            return card === targetElement || (pos & Node.DOCUMENT_POSITION_FOLLOWING);
+          });
+          if (firstHitIndex !== -1) {
+            targetIndex = firstHitIndex;
+          }
+        }
+      }
+      updateActiveHit(targetIndex);
+    }, 100);
+  }
+
+  globalThis.SiteUtils = { fallbackCopyText, isSearchLandingEligible, targetIdFromSearchLanding, initSearchLandingCue, initInPageSearchHighlight };
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => {
         initBackToTop();
         initCopyPageLinks();
         initSearchLandingCue();
+        initInPageSearchHighlight();
       });
     } else {
       initBackToTop();
       initCopyPageLinks();
       initSearchLandingCue();
+      initInPageSearchHighlight();
     }
   }
 })();

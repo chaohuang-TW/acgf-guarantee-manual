@@ -539,18 +539,11 @@
   }
 
 
-  function highlightText(text, terms) {
-    const fragment = document.createDocumentFragment();
-    if (!text || !terms || !terms.length) {
-      fragment.appendChild(document.createTextNode(text || ""));
-      return fragment;
-    }
+  function findHighlightRanges(text, terms) {
+    if (!text || !terms || !terms.length) return [];
 
     const mapped = compactNormalizeWithMap(text);
-    if (!mapped.text) {
-      fragment.appendChild(document.createTextNode(text));
-      return fragment;
-    }
+    if (!mapped.text) return [];
 
     const uniqueTerms = [...new Set(terms.filter(Boolean))];
     const normalizedTerms = uniqueTerms
@@ -558,10 +551,7 @@
       .filter(Boolean)
       .sort((a, b) => b.length - a.length);
 
-    if (!normalizedTerms.length) {
-      fragment.appendChild(document.createTextNode(text));
-      return fragment;
-    }
+    if (!normalizedTerms.length) return [];
 
     const matches = [];
     for (const nTerm of normalizedTerms) {
@@ -581,6 +571,21 @@
     }
 
     matches.sort((a, b) => a.start - b.start);
+    return matches;
+  }
+
+  function highlightText(text, terms) {
+    const fragment = document.createDocumentFragment();
+    if (!text) {
+      fragment.appendChild(document.createTextNode(""));
+      return fragment;
+    }
+
+    const matches = findHighlightRanges(text, terms);
+    if (!matches.length) {
+      fragment.appendChild(document.createTextNode(text));
+      return fragment;
+    }
 
     let currentIndex = 0;
     for (const match of matches) {
@@ -1042,7 +1047,7 @@
     if (initialState.q && selectedScope === "all") run("skip");
   }
 
-  globalThis.ManualSearch = { highlightText, bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, readSearchStateFromUrl, writeSearchStateToUrl, searchStateUrl, decorateResultUrlWithSearchState };
+  globalThis.ManualSearch = { findHighlightRanges, highlightText, bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, readSearchStateFromUrl, writeSearchStateToUrl, searchStateUrl, decorateResultUrlWithSearchState };
   if (typeof document !== "undefined") {
     document.querySelectorAll("[data-search]").forEach(attach);
     document.querySelectorAll("[data-keyword]").forEach((button) => button.addEventListener("click", () => {
