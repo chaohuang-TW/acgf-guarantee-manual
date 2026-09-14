@@ -22,6 +22,8 @@ VERSION = json.loads((ROOT / "data" / "version.json").read_text(encoding="utf-8"
 VERSIONS = json.loads((ROOT / "data" / "versions.json").read_text(encoding="utf-8"))
 TOC = json.loads((ROOT / "data" / "toc.json").read_text(encoding="utf-8"))
 SEARCH_HEADINGS = json.loads((ROOT / "data" / "search-headings.json").read_text(encoding="utf-8"))
+RELATED_FORMS = json.loads((ROOT / "data" / "related-forms.json").read_text(encoding="utf-8"))
+
 READING_UNITS = load_resolved_units()
 READING_UNITS_BY_ID = {unit["id"]: unit for unit in READING_UNITS}
 READING_UNITS_BY_PDF = units_by_pdf(READING_UNITS)
@@ -234,6 +236,88 @@ def source_meta_for_unit(unit: dict) -> str:
     start, end = min(pages), max(pages)
     return f"手冊頁 {start}" if start == end else f"手冊頁 {start}–{end}"
 
+
+
+def render_related_forms_block(unit_id: str, relative: str) -> str:
+    rels = [r for r in RELATED_FORMS["relations"] if r["contentRef"]["id"] == unit_id]
+    if not rels:
+        return ""
+
+    kind_map = {
+        "application-form": "申請書",
+        "required-form": "應備書表",
+        "notification-form": "通知書",
+        "supporting-form": "檢附書表",
+        "reporting-form": "報送書表",
+        "reference-form": "相關書表",
+        "other-explicit": "手冊明文相關書表"
+    }
+
+    # Dedup and sort
+    # Sort by min(pdfPage), then evidence local order
+    deduped = {}
+    for r in rels:
+        num = r["form"]["number"]
+        if num not in deduped:
+            pdf_page = min([ev["pdfPage"] for ev in r["evidence"]]) if r["evidence"] else 9999
+            deduped[num] = (pdf_page, r)
+
+    sorted_rels = sorted(deduped.values(), key=lambda x: x[0])
+
+    html = ['<section class="related-forms" aria-labelledby="related-forms-title">']
+    html.append('<h2 id="related-forms-title">相關書表與文件</h2>')
+    html.append('<div class="related-form-list">')
+
+    for _, r in sorted_rels:
+        fnum = r["form"]["number"]
+        ftitle = r["form"]["title"]
+        fkind = kind_map.get(r["relationship"], "相關書表")
+
+        # Link to form page
+        # Form urls are "versions/115-04/forms/form-xx.html" or "special/form-xx.html"
+        # We can just use the provided url in the data, but it's absolute from root. We need to make it relative to `relative`
+        form_url = rel_from(relative, r["form"]["url"])
+
+        card = f'''
+        <a href="{e(form_url)}" class="related-form-card">
+            <div class="related-form-number">格式{e(fnum)}</div>
+            <div class="related-form-title">{e(ftitle)}</div>
+            <div class="related-form-kind">{e(fkind)}</div>
+            <div class="related-form-cta">查看書表 →</div>
+        </a>'''
+        html.append(card)
+
+    html.append('</div>')
+    html.append('<p class="related-forms-disclaimer">相關書表依本版手冊明文引用整理；實際應備文件及辦理方式仍以正式規定及最新通知為準。</p>')
+    html.append('</section>')
+
+    return "\n".join(html)
+
+def render_related_rules_block(form_number: str, relative: str) -> str:
+    rels = [r for r in RELATED_FORMS["relations"] if r["form"]["number"] == form_number]
+    if not rels:
+        return ""
+
+    deduped = {}
+    for r in rels:
+        uid = r["contentRef"]["id"]
+        if uid not in deduped:
+            deduped[uid] = r
+
+    # Sort by contentRef id or just keep it
+    sorted_rels = list(deduped.values())
+
+    html = ['<section class="related-rules" aria-labelledby="related-rules-title">']
+    html.append('<h2 id="related-rules-title">相關作業規定</h2>')
+    html.append('<div class="related-rules-list">')
+
+    for r in sorted_rels:
+        title = r["contentRef"]["title"]
+        url = rel_from(relative, r["contentRef"]["url"])
+        html.append(f'<div><a href="{e(url)}">{e(title)} 查看規定 →</a></div>')
+
+    html.append('</div></section>')
+    return "\n".join(html)
 
 def render_reading_unit(unit: dict, relative: str) -> str:
     cards: list[str] = []
@@ -478,6 +562,7 @@ def build_parts() -> None:
                 f'<h1>{e(section["title"])}</h1>',
                 f'<p class="source-meta">{e(source_meta_for_unit(unit))}</p>',
                 render_reading_unit(unit, section_relative),
+                render_related_forms_block(section["id"], section_relative),
                 pagination,
             ]
             section_main = fill(
@@ -538,7 +623,8 @@ def build_forms(items: list[dict], forms_seq: list[tuple[str, str, str]], specia
         pagination = reading_pagination(item["code"], forms_seq, item_relative)
         note = '<div class="layout-note"><strong>正式書表版面請以原始PDF為準</strong><p>下列擷取文字僅供搜尋與輔助查閱，未重新設計為線上表單。</p></div>'
         cards = "".join(page_card(page, item_relative) for page in page_range(item["printedPage"], end))
-        content = f'<h1>{e(item["code"])}：{e(item["title"])}</h1><p class="source-meta">手冊頁 {item["printedPage"]}-{end}</p>{note}{cards}{pagination}'
+        related_rules = render_related_rules_block(item["code"].replace("格式 ", ""), item_relative)
+        content = f'<h1>{e(item["code"])}：{e(item["title"])}</h1><p class="source-meta">手冊頁 {item["printedPage"]}-{end}</p>{note}{cards}{related_rules}{pagination}'
         parent_title = "專用書表" if special else "信用保證書表"
         main = fill(TEMPLATES["section"], BREADCRUMB=breadcrumb([("首頁", rel_from(item_relative, "index.html")), ("完整目錄", rel_from(item_relative, VERSION_ROOT + "/index.html")), (parent_title, rel_from(item_relative, relative))], f'{item["code"]}：{item["title"]}'), LOCAL_NAV=f'<p><a href="{e(rel_from(item_relative, relative))}">返回{parent_title}目錄</a></p>', CONTENT=content)
         write(item_relative, f'{item["code"]}：{item["title"]}', main)
@@ -669,16 +755,16 @@ def main() -> None:
     build_version_index()
     build_parts()
     build_appendices()
-    
+
     forms_seq = []
-    
+
     # Merge and sort forms by printedPage to match physical sequence
     combined_forms = []
     for item in TOC["forms"]:
         combined_forms.append(("forms", item))
     for item in TOC["specialForms"]:
         combined_forms.append(("specialForms", item))
-        
+
     def form_sort_key(entry):
         idx, (category, item) = entry
         page = item.get("printedPage")
@@ -690,15 +776,15 @@ def main() -> None:
             return (float(str(page).replace("頁", "").strip()), idx)
         except ValueError:
             return (float('inf'), idx)
-            
+
     combined_forms_sorted = [x[1] for x in sorted(enumerate(combined_forms), key=form_sort_key)]
-    
+
     for category, item in combined_forms_sorted:
         slug = slug_code(item["code"])
         target_dir = "forms" if category == "forms" else "forms/special"
         target = f"{VERSION_ROOT}/{target_dir}/{slug}.html"
         forms_seq.append((item["code"], f"{item['code']}：{item['title']}", target))
-        
+
     build_forms(TOC["forms"], forms_seq, special=False)
     build_forms(TOC["specialForms"], forms_seq, special=True)
     build_physical_pages_and_search()

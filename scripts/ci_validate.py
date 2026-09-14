@@ -50,10 +50,13 @@ def main() -> None:
     run(node, "tests/test_search_logic.cjs")
     run(python, "tests/test_search_highlight.py")
     run(python, "tests/test_reading_query_highlight.py")
+    run(python, "tests/test_related_forms.py")
+    run(python, "scripts/validate_related_forms.py")
     run(python, "scripts/e2e_reading_units.py")
     run(python, "scripts/e2e_search_ux.py")
     run(python, "scripts/e2e_reading_navigation.py")
     run(python, "scripts/e2e_reading_query_highlight.py")
+    run(python, "scripts/e2e_related_forms.py")
     print("CI VALIDATION PASSED")
 
 

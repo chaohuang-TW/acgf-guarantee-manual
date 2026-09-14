@@ -1,0 +1,787 @@
+{
+  "version": "115-04",
+  "source": "authoritative-manual-explicit-relations",
+  "relations": [
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-application",
+        "title": "肆、申請信用保證作業",
+        "url": "versions/115-04/chapters/part-1/guarantee-application.html"
+      },
+      "form": {
+        "id": "form-31",
+        "number": "31",
+        "title": "農業信用保證基金蒐集、處理及利用個人資料告知書",
+        "url": "versions/115-04/forms/form-31.html"
+      },
+      "relationship": "other-explicit",
+      "evidence": [
+        {
+          "pdfPage": 21,
+          "printedPage": "13",
+          "text": "...一項之告知義務。 2、受託機構得採用本基金告知書（格式31）代本基金履行前 項告知義務，或依上揭告知書內容，...",
+          "offset": 541
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-application",
+        "title": "肆、申請信用保證作業",
+        "url": "versions/115-04/chapters/part-1/guarantee-application.html"
+      },
+      "form": {
+        "id": "form-3",
+        "number": "3",
+        "title": "信用保證申請書（政策性農業專案貸款個人戶用）",
+        "url": "versions/115-04/forms/form-3.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 25,
+          "printedPage": "17",
+          "text": "...檢送文件： （1）「信用保證申請書（個人戶用）」（格式3或3-1）一份。 （2）借、保戶「信用調查表」（格式4或4...",
+          "offset": 585
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-application",
+        "title": "肆、申請信用保證作業",
+        "url": "versions/115-04/chapters/part-1/guarantee-application.html"
+      },
+      "form": {
+        "id": "form-3-1",
+        "number": "3-1",
+        "title": "信用保證申請書（一般農業貸款個人戶用）",
+        "url": "versions/115-04/forms/form-3-1.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 25,
+          "printedPage": "17",
+          "text": "...檢送文件： （1）「信用保證申請書（個人戶用）」（格式3或3-1）一份。 （2）借、保戶「信用調查表」（格式4或4...",
+          "offset": 585
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-application",
+        "title": "肆、申請信用保證作業",
+        "url": "versions/115-04/chapters/part-1/guarantee-application.html"
+      },
+      "form": {
+        "id": "form-4",
+        "number": "4",
+        "title": "信用調查表",
+        "url": "versions/115-04/forms/form-4.html"
+      },
+      "relationship": "other-explicit",
+      "evidence": [
+        {
+          "pdfPage": 25,
+          "printedPage": "17",
+          "text": "...3或3-1）一份。 （2）借、保戶「信用調查表」（格式4或4-1）或以受託機構 徵信調查書表替代。 （3）授信審核...",
+          "offset": 612
+        },
+        {
+          "pdfPage": 25,
+          "printedPage": "17",
+          "text": "...戶用）」（格式3或3-1）一份。 （2）借、保戶「信用調查表」（格式4或4-1）或以受託機構 徵信調查書表替代...",
+          "offset": 605
+        },
+        {
+          "pdfPage": 26,
+          "printedPage": "18",
+          "text": "...5或5-1）一份。 （2）借、保戶「信用調查表」（格式4或4-1）或以受託機構 徵信調查書表替代。 （3）授信審核...",
+          "offset": 108
+        },
+        {
+          "pdfPage": 26,
+          "printedPage": "18",
+          "text": "...戶用）」（格式5或5-1）一份。 （2）借、保戶「信用調查表」（格式4或4-1）或以受託機構 徵信調查書表替代...",
+          "offset": 101
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-application",
+        "title": "肆、申請信用保證作業",
+        "url": "versions/115-04/chapters/part-1/guarantee-application.html"
+      },
+      "form": {
+        "id": "form-4-1",
+        "number": "4-1",
+        "title": "企業戶信用調查表",
+        "url": "versions/115-04/forms/form-4-1.html"
+      },
+      "relationship": "other-explicit",
+      "evidence": [
+        {
+          "pdfPage": 25,
+          "printedPage": "17",
+          "text": "...3或3-1）一份。 （2）借、保戶「信用調查表」（格式4或4-1）或以受託機構 徵信調查書表替代。 （3）授信審核...",
+          "offset": 612
+        },
+        {
+          "pdfPage": 26,
+          "printedPage": "18",
+          "text": "...5或5-1）一份。 （2）借、保戶「信用調查表」（格式4或4-1）或以受託機構 徵信調查書表替代。 （3）授信審核...",
+          "offset": 108
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-application",
+        "title": "肆、申請信用保證作業",
+        "url": "versions/115-04/chapters/part-1/guarantee-application.html"
+      },
+      "form": {
+        "id": "form-5",
+        "number": "5",
+        "title": "信用保證申請書（政策性農業專案貸款企業戶用）",
+        "url": "versions/115-04/forms/form-5.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 26,
+          "printedPage": "18",
+          "text": "...檢送文件： （1）「信用保證申請書（企業戶用）」（格式5或5-1）一份。 （2）借、保戶「信用調查表」（格式4或4...",
+          "offset": 81
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-application",
+        "title": "肆、申請信用保證作業",
+        "url": "versions/115-04/chapters/part-1/guarantee-application.html"
+      },
+      "form": {
+        "id": "form-5-1",
+        "number": "5-1",
+        "title": "信用保證申請書（一般農業貸款企業戶用）",
+        "url": "versions/115-04/forms/form-5-1.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 26,
+          "printedPage": "18",
+          "text": "...檢送文件： （1）「信用保證申請書（企業戶用）」（格式5或5-1）一份。 （2）借、保戶「信用調查表」（格式4或4...",
+          "offset": 81
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-application",
+        "title": "肆、申請信用保證作業",
+        "url": "versions/115-04/chapters/part-1/guarantee-application.html"
+      },
+      "form": {
+        "id": "form-12",
+        "number": "12",
+        "title": "信用保證委託書（網路送保專用）",
+        "url": "versions/115-04/forms/form-12.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 26,
+          "printedPage": "18",
+          "text": "...保者，受託機構應請借保戶填具「信用保證委託書」 （格式12或12-1），並自本基金網站列印「保證申請書」或「審...",
+          "offset": 614
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-application",
+        "title": "肆、申請信用保證作業",
+        "url": "versions/115-04/chapters/part-1/guarantee-application.html"
+      },
+      "form": {
+        "id": "form-12-1",
+        "number": "12-1",
+        "title": "信用保證委託書（消費性貸款網路送保專用）",
+        "url": "versions/115-04/forms/form-12-1.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 26,
+          "printedPage": "18",
+          "text": "...保者，受託機構應請借保戶填具「信用保證委託書」 （格式12或12-1），並自本基金網站列印「保證申請書」或「審...",
+          "offset": 614
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-application",
+        "title": "肆、申請信用保證作業",
+        "url": "versions/115-04/chapters/part-1/guarantee-application.html"
+      },
+      "form": {
+        "id": "form-6",
+        "number": "6",
+        "title": "保證手續費收入通知單",
+        "url": "versions/115-04/forms/form-6.html"
+      },
+      "relationship": "notification-form",
+      "evidence": [
+        {
+          "pdfPage": 27,
+          "printedPage": "19",
+          "text": "...基金同意承保之案件，於受託機構收取保證手續費並填製保證手 續費收入通知單，經本基金核對無誤後，即核發農業信用保證書。 ※保...",
+          "offset": 535
+        },
+        {
+          "pdfPage": 31,
+          "printedPage": "23",
+          "text": "...後，應自本基金網站登錄「保證手 續費收入通知單」（格式6），並下載交申請人收執。 2、保證手續費應匯繳基金...",
+          "offset": 145
+        },
+        {
+          "pdfPage": 31,
+          "printedPage": "23",
+          "text": "...1、受託機構代收保證手續費後，應自本基金網站登錄「保證手 續費收入通知單」（格式6），並下載交申請人收執。 2、保證手續費...",
+          "offset": 132
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-application",
+        "title": "肆、申請信用保證作業",
+        "url": "versions/115-04/chapters/part-1/guarantee-application.html"
+      },
+      "form": {
+        "id": "form-17",
+        "number": "17",
+        "title": "保證貸款清償結案或餘額變更通知書",
+        "url": "versions/115-04/forms/form-17.html"
+      },
+      "relationship": "notification-form",
+      "evidence": [
+        {
+          "pdfPage": 29,
+          "printedPage": "21",
+          "text": "...通報或填製「保證貸款清償結案或餘額變更通知 書」（格式17）通知本基金。本基金按實際保證期間，...",
+          "offset": 664
+        },
+        {
+          "pdfPage": 29,
+          "printedPage": "21",
+          "text": "...部借款，受託機構得以基金網路作業 系統通報或填製「保證貸款清償結案或餘額變更通知 書」（格式17）通知本基金。本基金按實際保證期間，...",
+          "offset": 645
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-application",
+        "title": "肆、申請信用保證作業",
+        "url": "versions/115-04/chapters/part-1/guarantee-application.html"
+      },
+      "form": {
+        "id": "form-16",
+        "number": "16",
+        "title": "保證手續費匯款明細表（農漁會專用）",
+        "url": "versions/115-04/forms/form-16.html"
+      },
+      "relationship": "supporting-form",
+      "evidence": [
+        {
+          "pdfPage": 31,
+          "printedPage": "23",
+          "text": "...匯款明細登錄作業」 登錄「保證手續費匯款明細表」（格式16），以利作業。...",
+          "offset": 325
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-changes",
+        "title": "壹、保證內容變更之處理",
+        "url": "versions/115-04/chapters/part-2/guarantee-changes.html"
+      },
+      "form": {
+        "id": "form-18",
+        "number": "18",
+        "title": "信用保證貸款內容變更申請書",
+        "url": "versions/115-04/forms/form-18.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 32,
+          "printedPage": "24",
+          "text": "...業系統申請或填製「信用 保證貸款內容變更申請書」（格式18），送本基金同意後辦理： （一）借款人。 （二）企...",
+          "offset": 119
+        },
+        {
+          "pdfPage": 32,
+          "printedPage": "24",
+          "text": "...證內容者，受託機構應以基金網路作業系統申請或填製「信用 保證貸款內容變更申請書」（格式18），送本基金同意後辦理： （一）借款人...",
+          "offset": 103
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "guarantee-termination",
+        "title": "貳、終止保證之處理",
+        "url": "versions/115-04/chapters/part-2/guarantee-termination.html"
+      },
+      "form": {
+        "id": "form-18",
+        "number": "18",
+        "title": "信用保證貸款內容變更申請書",
+        "url": "versions/115-04/forms/form-18.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 32,
+          "printedPage": "24",
+          "text": "...續期間，受託機構認為已無 繼續保證必要者，應填製「信用保證貸款內容變更申請書」或以公 函通知本基金終止保證。 二、信用保證案件...",
+          "offset": 55
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "credit-deterioration",
+        "title": "參、保證貸款信用惡化之處理",
+        "url": "versions/115-04/chapters/part-2/credit-deterioration.html"
+      },
+      "form": {
+        "id": "form-19",
+        "number": "19",
+        "title": "保證貸款期中信用惡化通知書",
+        "url": "versions/115-04/forms/form-19.html"
+      },
+      "relationship": "notification-form",
+      "evidence": [
+        {
+          "pdfPage": 33,
+          "printedPage": "25",
+          "text": "...業系統通報或填製「保證貸款期中信用惡化 通知書」（格式19）通知本基金： （一）授信對象死亡者。 （二）授信...",
+          "offset": 90
+        },
+        {
+          "pdfPage": 33,
+          "printedPage": "25",
+          "text": "...悉之日起二 個月內，以基金網路作業系統通報或填製「保證貸款期中信用惡化 通知書」（格式19）通知本基金： （一）授信對象死亡者。...",
+          "offset": 74
+        },
+        {
+          "pdfPage": 33,
+          "printedPage": "25",
+          "text": "...惡化情事，貸款機構不主張提前視為到期 者，請填製「保證貸款期中信用惡化通知書」通知本基金。 前列信用惡化情事如受託機構疏漏未於...",
+          "offset": 479
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "pre-negotiation",
+        "title": "肆、保證貸款債務人聲請前置協商（調解）之處理",
+        "url": "versions/115-04/chapters/part-2/pre-negotiation.html"
+      },
+      "form": {
+        "id": "form-23",
+        "number": "23",
+        "title": "保證貸款協議分期償還申請書",
+        "url": "versions/115-04/forms/form-23.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 35,
+          "printedPage": "27",
+          "text": "...容變更申請書」、「保證貸款協 議分期償還申請書」（格式23），並檢附相關文件（如法院裁定書、 前置協商協議書...",
+          "offset": 322
+        },
+        {
+          "pdfPage": 35,
+          "printedPage": "27",
+          "text": "... 以公函或本基金「信用保證貸款內容變更申請書」、「保證貸款協 議分期償還申請書」（格式23），並檢附相關文件（如法院裁定書、 前...",
+          "offset": 306
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "pre-negotiation",
+        "title": "肆、保證貸款債務人聲請前置協商（調解）之處理",
+        "url": "versions/115-04/chapters/part-2/pre-negotiation.html"
+      },
+      "form": {
+        "id": "form-18",
+        "number": "18",
+        "title": "信用保證貸款內容變更申請書",
+        "url": "versions/115-04/forms/form-18.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 35,
+          "printedPage": "27",
+          "text": "...解書核定之日期為準）後3個月內， 以公函或本基金「信用保證貸款內容變更申請書」、「保證貸款協 議分期償還申請書」（格式23），...",
+          "offset": 290
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "overdue-guarantee",
+        "title": "伍、保證貸款到期未獲清償之處理",
+        "url": "versions/115-04/chapters/part-2/overdue-guarantee.html"
+      },
+      "form": {
+        "id": "form-20",
+        "number": "20",
+        "title": "保證戶逾期案件報表",
+        "url": "versions/115-04/forms/form-20.html"
+      },
+      "relationship": "notification-form",
+      "evidence": [
+        {
+          "pdfPage": 37,
+          "printedPage": "29",
+          "text": "...以基金網路作業系統通報或以「保證戶逾期案件報表」（格式 20）通知本基金保證貸款逾期。 （二）受託機構於保證貸...",
+          "offset": 84
+        },
+        {
+          "pdfPage": 37,
+          "printedPage": "29",
+          "text": "...於到期之日起三個月內 以基金網路作業系統通報或以「保證戶逾期案件報表」（格式 20）通知本基金保證貸款逾期。 （二）受...",
+          "offset": 73
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "overdue-guarantee",
+        "title": "伍、保證貸款到期未獲清償之處理",
+        "url": "versions/115-04/chapters/part-2/overdue-guarantee.html"
+      },
+      "form": {
+        "id": "form-22",
+        "number": "22",
+        "title": "信用保證貸款轉（展）期申請書（個人戶用）",
+        "url": "versions/115-04/forms/form-22.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 37,
+          "printedPage": "29",
+          "text": "...系統申請或填 製「信用保證貸款轉（展）期申請書」（格式22或22-1） 辦理。 申請轉（展）期保證案件，其原擔保條件（...",
+          "offset": 378
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "overdue-guarantee",
+        "title": "伍、保證貸款到期未獲清償之處理",
+        "url": "versions/115-04/chapters/part-2/overdue-guarantee.html"
+      },
+      "form": {
+        "id": "form-22-1",
+        "number": "22-1",
+        "title": "信用保證貸款轉（展）期申請書（企業戶用）",
+        "url": "versions/115-04/forms/form-22-1.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 37,
+          "printedPage": "29",
+          "text": "...系統申請或填 製「信用保證貸款轉（展）期申請書」（格式22或22-1） 辦理。 申請轉（展）期保證案件，其原擔保條件（...",
+          "offset": 378
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "overdue-guarantee",
+        "title": "伍、保證貸款到期未獲清償之處理",
+        "url": "versions/115-04/chapters/part-2/overdue-guarantee.html"
+      },
+      "form": {
+        "id": "form-23",
+        "number": "23",
+        "title": "保證貸款協議分期償還申請書",
+        "url": "versions/115-04/forms/form-23.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 38,
+          "printedPage": "30",
+          "text": "...個月內， 填製「信用保證貸款協議分期償還申請書」（格式23），檢 附相關文件送本基金同意後辦理。 （二）檢附...",
+          "offset": 339
+        },
+        {
+          "pdfPage": 38,
+          "printedPage": "30",
+          "text": "...證者，受託機構應於核准之日起二個月內， 填製「信用保證貸款協議分期償還申請書」（格式23），檢 附相關文件送本基金同意後辦理。...",
+          "offset": 324
+        },
+        {
+          "pdfPage": 38,
+          "printedPage": "30",
+          "text": "...文件送本基金同意後辦理。 （二）檢附文件 1、信用保證貸款協議分期償還申請書。 2、申請及批覆文件影本。 3、主從債務人財產及...",
+          "offset": 375
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "overdue-guarantee",
+        "title": "伍、保證貸款到期未獲清償之處理",
+        "url": "versions/115-04/chapters/part-2/overdue-guarantee.html"
+      },
+      "form": {
+        "id": "form-17",
+        "number": "17",
+        "title": "保證貸款清償結案或餘額變更通知書",
+        "url": "versions/115-04/forms/form-17.html"
+      },
+      "relationship": "notification-form",
+      "evidence": [
+        {
+          "pdfPage": 39,
+          "printedPage": "31",
+          "text": "...通報，或以「保證貸款清償結案或餘額變更通 知書」（格式17）通知本基金。 （二）逾期案件之催收： 1、保證貸...",
+          "offset": 83
+        },
+        {
+          "pdfPage": 39,
+          "printedPage": "31",
+          "text": "...結案者，受託機構得以基 金網路作業系統通報，或以「保證貸款清償結案或餘額變更通 知書」（格式17）通知本基金。 （二）逾期案件之催收：...",
+          "offset": 64
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "overdue-guarantee",
+        "title": "伍、保證貸款到期未獲清償之處理",
+        "url": "versions/115-04/chapters/part-2/overdue-guarantee.html"
+      },
+      "form": {
+        "id": "form-24",
+        "number": "24",
+        "title": "保證貸款塗銷抵押權、撤銷假扣押、假處分、撤回強制執行申請書",
+        "url": "versions/115-04/forms/form-24.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 41,
+          "printedPage": "33",
+          "text": "...權（撤銷假扣押、假 處分、撤回強制執行）申請書」（格式24），檢附相關文件送本基 金同意後辦理。 所稱「主從...",
+          "offset": 528
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "subrogation-documents",
+        "title": "參、代位清償應檢送文件",
+        "url": "versions/115-04/chapters/part-3/subrogation-documents.html"
+      },
+      "form": {
+        "id": "form-25",
+        "number": "25",
+        "title": "代位清償申請書",
+        "url": "versions/115-04/forms/form-25.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 46,
+          "printedPage": "38",
+          "text": "...系統申請或填製「農業信用保證基金代位清償申請書」（格式25）並 檢送下列文件： 一、「擔保品及借保戶財產處分...",
+          "offset": 71
+        },
+        {
+          "pdfPage": 46,
+          "printedPage": "38",
+          "text": "...應以基金網路作 業系統申請或填製「農業信用保證基金代位清償申請書」（格式25）並 檢送下列文件： 一、「擔保品及借...",
+          "offset": 62
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "subrogation-documents",
+        "title": "參、代位清償應檢送文件",
+        "url": "versions/115-04/chapters/part-3/subrogation-documents.html"
+      },
+      "form": {
+        "id": "form-25a",
+        "number": "25A",
+        "title": "擔保品及借、保戶財產處分情形表",
+        "url": "versions/115-04/forms/form-25a.html"
+      },
+      "relationship": "other-explicit",
+      "evidence": [
+        {
+          "pdfPage": 46,
+          "printedPage": "38",
+          "text": "...下列文件： 一、「擔保品及借保戶財產處分情形表」（格式25A）（含書面及電 子檔）。 二、「代位清償案件收回本...",
+          "offset": 105
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "subrogation-documents",
+        "title": "參、代位清償應檢送文件",
+        "url": "versions/115-04/chapters/part-3/subrogation-documents.html"
+      },
+      "form": {
+        "id": "form-25b",
+        "number": "25B",
+        "title": "代位清償案件收回本金明細表",
+        "url": "versions/115-04/forms/form-25b.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 46,
+          "printedPage": "38",
+          "text": "...電 子檔）。 二、「代位清償案件收回本金明細表」（格式25B）。 三、「申請代位清償檢附文件影本清單」（格式2...",
+          "offset": 141
+        },
+        {
+          "pdfPage": 46,
+          "printedPage": "38",
+          "text": "...形表」（格式25A）（含書面及電 子檔）。 二、「代位清償案件收回本金明細表」（格式25B）。 三、「申請代位清償檢附文件影本...",
+          "offset": 126
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "subrogation-documents",
+        "title": "參、代位清償應檢送文件",
+        "url": "versions/115-04/chapters/part-3/subrogation-documents.html"
+      },
+      "form": {
+        "id": "form-25c",
+        "number": "25C",
+        "title": "申請代位清償檢附文件影本清單",
+        "url": "versions/115-04/forms/form-25c.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 46,
+          "printedPage": "38",
+          "text": "...25B）。 三、「申請代位清償檢附文件影本清單」（格式25C），以及其列載 之文件影本。（參閱本手冊第168頁...",
+          "offset": 168
+        },
+        {
+          "pdfPage": 46,
+          "printedPage": "38",
+          "text": "...位清償案件收回本金明細表」（格式25B）。 三、「申請代位清償檢附文件影本清單」（格式25C），以及其列載 之文件影本。（參閱本...",
+          "offset": 152
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "subrogation-documents",
+        "title": "參、代位清償應檢送文件",
+        "url": "versions/115-04/chapters/part-3/subrogation-documents.html"
+      },
+      "form": {
+        "id": "form-26-1",
+        "number": "26-1",
+        "title": "代位清償申請書（農家消費貸款專用）",
+        "url": "versions/115-04/forms/form-26-1.html"
+      },
+      "relationship": "application-form",
+      "evidence": [
+        {
+          "pdfPage": 46,
+          "printedPage": "38",
+          "text": "...請；農家消費貸款案件， 應檢附專用代位清償申請書（格式26-1），並檢附該申請書所載文 件。...",
+          "offset": 275
+        }
+      ]
+    },
+    {
+      "contentRef": {
+        "type": "chapter",
+        "id": "debt-recovery",
+        "title": "代位清償後之債權追索",
+        "url": "versions/115-04/chapters/part-4/debt-recovery.html"
+      },
+      "form": {
+        "id": "form-29",
+        "number": "29",
+        "title": "追償收回通知單",
+        "url": "versions/115-04/forms/form-29.html"
+      },
+      "relationship": "required-form",
+      "evidence": [
+        {
+          "pdfPage": 53,
+          "printedPage": "45",
+          "text": "...收回款，請匯還本基金，並填製「追償收回通知單」 （格式29）及檢附相關文件，於匯款當日傳真或寄回本基金。本基...",
+          "offset": 128
+        },
+        {
+          "pdfPage": 53,
+          "printedPage": "45",
+          "text": "...。 二、受託機構如有收回款，請匯還本基金，並填製「追償收回通知單」 （格式29）及檢附相關文件，於匯款當日傳真或寄...",
+          "offset": 118
+        }
+      ]
+    }
+  ]
+}
