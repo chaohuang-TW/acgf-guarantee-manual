@@ -154,15 +154,33 @@
   }
 
   function queryConcepts(query, rawConcepts) {
+    const rawPhrase = String(query || "").trim();
+    const rawWords = rawPhrase.split(/[\s\u3000,，、；;：:！!？?（）()【】《》]+/).filter(Boolean);
     const { phrase, words } = tokenizeQuery(query);
     const concepts = prepareConcepts(rawConcepts);
+    const rawWordMap = new Map();
+    for (let i = 0; i < words.length; i++) {
+      if (rawWords[i] && !rawWordMap.has(words[i])) {
+        rawWordMap.set(words[i], rawWords[i]);
+      }
+    }
     const items = words.map((word) => {
+      const displayToken = rawWordMap.get(word) || word;
       const expandedTerms = expandNumerals(word);
       const source = concepts.find((concept) => expandedTerms.some(ew => concept.terms.includes(ew)) || concept.terms.some((term) => expandedTerms.some(ew => ew.includes(term) || term.includes(ew))));
+      const numeralTerms = expandedTerms.filter((term) => term !== word);
+      const conceptTerms = (source?.terms || []).filter((term) => !expandedTerms.includes(term) && term !== word);
       const finalTerms = [...new Set([...(source?.terms || []), ...expandedTerms])];
-      return { token: word, id: source?.id || `term:${word}`, terms: finalTerms };
+      return {
+        token: word,
+        displayToken,
+        id: source?.id || `term:${word}`,
+        numeralTerms,
+        conceptTerms,
+        terms: finalTerms,
+      };
     });
-    return { phrase, words, concepts: items };
+    return { phrase, words, rawPhrase, concepts: items };
   }
 
   function compactNormalizeWithMap(value) {
@@ -322,6 +340,171 @@
     return spread <= 180 ? Math.max(20, 110 - Math.floor(spread / 2)) : 0;
   }
 
+  function formatMatchReason(reason) {
+    if (!reason) return "";
+    switch (reason.kind) {
+      case "exact-form":
+        return `書表編號完全符合「${reason.queryTerm}」`;
+      case "direct-heading":
+        return `章節標題命中「${reason.queryTerm}」`;
+      case "direct-body":
+        return `正文直接命中「${reason.queryTerm}」`;
+      case "numeral-expansion":
+        return `數字展開「${reason.queryTerm}」→「${reason.matchedTerm}」`;
+      case "concept-expansion":
+        return `相關詞「${reason.queryTerm}」→「${reason.matchedTerm}」`;
+      default:
+        return reason.matchedTerm ? `命中「${reason.matchedTerm}」` : `命中「${reason.queryTerm}」`;
+    }
+  }
+
+  function buildMatchReasons(record, queryInfo, exactForm, maybeOffsetMatches, maybeSegment) {
+    let segment = null;
+    if (maybeSegment && typeof maybeSegment === "object") {
+      segment = maybeSegment;
+    } else if (maybeOffsetMatches && typeof maybeOffsetMatches === "object" && !Array.isArray(maybeOffsetMatches)) {
+      segment = maybeOffsetMatches;
+    } else if (typeof maybeSegment === "string") {
+      segment = { title: maybeSegment };
+    }
+
+    const title = segment?.title || record.title || "";
+    const breadcrumb = (segment?.breadcrumb || record.breadcrumb || []).join(" › ");
+    const headings = segment?.text != null
+      ? (record.headings || []).filter((h) => segment.text.includes(h))
+      : (record.headings || []);
+    const headingsText = headings.join(" › ");
+    const body = segment?.text != null ? segment.text : (record.text || "");
+
+    const titleNorm = normalize(title);
+    const breadcrumbNorm = normalize(breadcrumb);
+    const headingsNorm = normalize(headingsText);
+    const bodyNorm = normalize(body);
+
+    const titleCompact = compactNormalizeWithMap(title).text;
+    const breadcrumbCompact = compactNormalizeWithMap(breadcrumb).text;
+    const headingsCompact = compactNormalizeWithMap(headingsText).text;
+    const bodyCompact = compactNormalizeWithMap(body).text;
+
+    const reasons = [];
+
+    if (exactForm && record.type === "form") {
+      const displayForm = queryInfo.rawPhrase || queryInfo.phrase;
+      reasons.push({
+        queryTerm: displayForm,
+        matchedTerm: displayForm,
+        kind: "exact-form",
+        field: "form-number",
+      });
+    }
+
+    for (const concept of queryInfo.concepts) {
+      const qToken = concept.token;
+      const displayTerm = concept.displayToken || qToken;
+      const qCompact = compactNormalizeWithMap(qToken).text;
+
+      if (exactForm && record.type === "form" && reasons.some((r) => r.kind === "exact-form")) {
+        continue;
+      }
+
+      // Priority 1: direct-heading
+      if (titleNorm.includes(qToken) || (qCompact && titleCompact.includes(qCompact))) {
+        reasons.push({
+          queryTerm: displayTerm,
+          matchedTerm: qToken,
+          kind: "direct-heading",
+          field: "title",
+        });
+        continue;
+      }
+      if (breadcrumbNorm.includes(qToken) || (qCompact && breadcrumbCompact.includes(qCompact))) {
+        reasons.push({
+          queryTerm: displayTerm,
+          matchedTerm: qToken,
+          kind: "direct-heading",
+          field: "breadcrumb",
+        });
+        continue;
+      }
+      if (headingsNorm.includes(qToken) || (qCompact && headingsCompact.includes(qCompact))) {
+        reasons.push({
+          queryTerm: displayTerm,
+          matchedTerm: qToken,
+          kind: "direct-heading",
+          field: "heading",
+        });
+        continue;
+      }
+
+      // Priority 2: direct-body
+      if (bodyNorm.includes(qToken) || (qCompact && bodyCompact.includes(qCompact))) {
+        reasons.push({
+          queryTerm: displayTerm,
+          matchedTerm: qToken,
+          kind: "direct-body",
+          field: "body",
+        });
+        continue;
+      }
+
+      // Priority 3: numeral-expansion
+      const numeralTerms = concept.numeralTerms || [];
+      let foundNumeral = false;
+      for (const numTerm of numeralTerms) {
+        const numCompact = compactNormalizeWithMap(numTerm).text;
+        if (titleNorm.includes(numTerm) || (numCompact && titleCompact.includes(numCompact))) {
+          reasons.push({ queryTerm: displayTerm, matchedTerm: numTerm, kind: "numeral-expansion", field: "title" });
+          foundNumeral = true;
+          break;
+        }
+        if (headingsNorm.includes(numTerm) || (numCompact && headingsCompact.includes(numCompact))) {
+          reasons.push({ queryTerm: displayTerm, matchedTerm: numTerm, kind: "numeral-expansion", field: "heading" });
+          foundNumeral = true;
+          break;
+        }
+        if (bodyNorm.includes(numTerm) || (numCompact && bodyCompact.includes(numCompact))) {
+          reasons.push({ queryTerm: displayTerm, matchedTerm: numTerm, kind: "numeral-expansion", field: "body" });
+          foundNumeral = true;
+          break;
+        }
+      }
+      if (foundNumeral) continue;
+
+      // Priority 4: concept-expansion
+      const conceptTerms = concept.conceptTerms || [];
+      let foundConcept = false;
+      for (const cTerm of conceptTerms) {
+        const cCompact = compactNormalizeWithMap(cTerm).text;
+        if (titleNorm.includes(cTerm) || (cCompact && titleCompact.includes(cCompact))) {
+          reasons.push({ queryTerm: displayTerm, matchedTerm: cTerm, kind: "concept-expansion", field: "title" });
+          foundConcept = true;
+          break;
+        }
+        if (headingsNorm.includes(cTerm) || (cCompact && headingsCompact.includes(cCompact))) {
+          reasons.push({ queryTerm: displayTerm, matchedTerm: cTerm, kind: "concept-expansion", field: "heading" });
+          foundConcept = true;
+          break;
+        }
+        if (bodyNorm.includes(cTerm) || (cCompact && bodyCompact.includes(cCompact))) {
+          reasons.push({ queryTerm: displayTerm, matchedTerm: cTerm, kind: "concept-expansion", field: "body" });
+          foundConcept = true;
+          break;
+        }
+      }
+      if (foundConcept) continue;
+    }
+
+    const deduped = [];
+    const seenQueryTerms = new Set();
+    for (const r of reasons) {
+      if (!seenQueryTerms.has(r.queryTerm)) {
+        seenQueryTerms.add(r.queryTerm);
+        deduped.push(r);
+      }
+    }
+    return deduped;
+  }
+
   function chapterKey(record) {
     if (record.type === "form" || record.type === "lookup-table") return `record:${record.url}`;
     return `${record.type || "unknown"}:${(record.breadcrumb || []).join("|")}`;
@@ -397,6 +580,7 @@
       matchedTerms: [...matchedTerms],
       coveredTerms: covered.map((concept) => concept.token),
       chapterKey: chapterKey(record),
+      offsetMatches,
     };
   }
 
@@ -431,12 +615,19 @@
     const matches = records.map((record, index) => recordSearchResult(record, index, queryInfo, intents)).filter(Boolean);
     const ranked = diversify(matches);
     const expanded = ranked.flatMap((match) => {
-      if (match.segmentMatches.length <= 1) return [match];
-      return match.segmentMatches.map((selection) => ({
-        ...match,
-        segment: selection.segment,
-        matchedTerms: selection.terms.length ? selection.terms : match.matchedTerms,
-      }));
+      if (match.segmentMatches.length <= 1) {
+        match.matchReasons = buildMatchReasons(match.record, queryInfo, match.exactForm, match.offsetMatches, match.segment);
+        return [match];
+      }
+      return match.segmentMatches.map((selection) => {
+        const expandedMatch = {
+          ...match,
+          segment: selection.segment,
+          matchedTerms: selection.terms.length ? selection.terms : match.matchedTerms,
+        };
+        expandedMatch.matchReasons = buildMatchReasons(expandedMatch.record, queryInfo, expandedMatch.exactForm, expandedMatch.offsetMatches, selection.segment);
+        return expandedMatch;
+      });
     });
     return { queryInfo, intents, matches: expanded };
   }
@@ -704,8 +895,23 @@
       });
       article.append(button);
     }
-    const meta = [result.matchedTerms.length ? `命中：${result.matchedTerms.slice(0, 3).join("、")}` : "", result.coveredTerms.length ? `涵蓋：${result.coveredTerms.join("、")}` : ""].filter(Boolean).join("　");
-    if (meta) appendText(article, "p", "result-match-meta", meta);
+    if (result.matchReasons && result.matchReasons.length > 0) {
+      const reasonList = document.createElement("ul");
+      reasonList.className = "result-match-reasons";
+      for (const reason of result.matchReasons) {
+        const text = formatMatchReason(reason);
+        if (!text) continue;
+        const li = document.createElement("li");
+        const span = document.createElement("span");
+        span.className = "match-reason";
+        span.textContent = `命中依據：${text}`;
+        li.appendChild(span);
+        reasonList.appendChild(li);
+      }
+      if (reasonList.children.length > 0) {
+        article.appendChild(reasonList);
+      }
+    }
     const pages = passage && (passage.startPdfPage !== record.pdfPage || passage.endPdfPage !== record.pdfPage)
       ? `內容涵蓋手冊頁：${passage.startPrintedPage}–${passage.endPrintedPage}　命中頁：手冊頁${record.printedPage || "無"}　PDF頁：${record.pdfPage}／203`
       : `手冊頁：${record.printedPage || "無"}　PDF頁：${record.pdfPage}／203`;
@@ -786,18 +992,18 @@
       copyButton.hidden = selectedScope !== "all";
       const stateToPass = selectedScope === "all" ? { q: input.value, type: selectedType } : null;
       results.replaceChildren(...shown.map((result) => resultElement(result, siteRoot, stateToPass)));
-      
+
       if (observer) {
         observer.disconnect();
         observer = null;
       }
-      
+
       if (shown.length < filtered.length) {
         const sentinel = document.createElement("div");
         sentinel.className = "search-sentinel";
         sentinel.style.height = "1px";
         results.appendChild(sentinel);
-        
+
         observer = new IntersectionObserver((entries) => {
           if (entries[0].isIntersecting) {
             visibleCount += resultLimit;
@@ -806,7 +1012,7 @@
         }, { rootMargin: "200px" });
         observer.observe(sentinel);
       }
-      
+
       if (moreButton) moreButton.hidden = shown.length >= filtered.length;
     }
 
@@ -849,14 +1055,14 @@
           status.textContent = zeroResultMessage(query);
           results.replaceChildren();
           copyButton.hidden = true;
-          
+
           filterButtons.forEach(btn => {
             const type = btn.dataset.searchType;
             const baseText = type === "all" ? "全部" : TYPE_LABELS[type] || type;
             btn.textContent = `${baseText} (0)`;
             if (type !== "all") btn.disabled = true;
           });
-          
+
           return;
         }
         const typeCounts = { all: currentMatches.length };
@@ -971,7 +1177,7 @@
         } else {
           return;
         }
-        
+
         items.forEach((li, idx) => {
           if (idx === activeSuggestionIndex) {
             li.classList.add("active");
@@ -1047,7 +1253,7 @@
     if (initialState.q && selectedScope === "all") run("skip");
   }
 
-  globalThis.ManualSearch = { findHighlightRanges, highlightText, bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, readSearchStateFromUrl, writeSearchStateToUrl, searchStateUrl, decorateResultUrlWithSearchState };
+  globalThis.ManualSearch = { findHighlightRanges, highlightText, bodyMatchOffsets, buildMatchReasons, formatMatchReason, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, readSearchStateFromUrl, writeSearchStateToUrl, searchStateUrl, decorateResultUrlWithSearchState };
   if (typeof document !== "undefined") {
     document.querySelectorAll("[data-search]").forEach(attach);
     document.querySelectorAll("[data-keyword]").forEach((button) => button.addEventListener("click", () => {

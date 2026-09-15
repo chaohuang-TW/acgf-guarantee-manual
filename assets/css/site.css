@@ -81,7 +81,9 @@ button, input { font: inherit; }
 .search-result h3 { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 .result-type { color: var(--muted); font-size: .82rem; font-weight: 650; white-space: nowrap; }
 .result-snippet { margin-top: .35rem !important; overflow-wrap: anywhere; }
-.result-match-meta { margin-top: .35rem !important; color: var(--muted); font-size: .86rem; font-weight: 600; }
+.result-match-reasons { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0 0; padding: 0; list-style: none; }
+.match-reason { display: inline-block; padding: 0.2rem 0.5rem; background: var(--surface); color: var(--navy-800); border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; font-weight: 600; }
+@media (forced-colors: active) { .match-reason { border: 1px solid CanvasText; } }
 .result-path, .result-pages { color: var(--muted); font-size: .9rem; }
 .search-context-toggle { margin-top: .55rem; padding: .35rem .65rem; color: var(--navy-800); background: transparent; border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: .9rem; cursor: pointer; }
 .result-context-full { margin-top: .55rem !important; white-space: pre-wrap; }

@@ -169,7 +169,7 @@ assert.equal(css.includes("#ffe39a"), false);
 
 console.log("SEARCH LOGIC TESTS PASSED");
 
-const { readSearchStateFromUrl, searchStateUrl, decorateResultUrlWithSearchState } = context.ManualSearch;
+const { readSearchStateFromUrl, searchStateUrl, decorateResultUrlWithSearchState, buildMatchReasons, formatMatchReason } = context.ManualSearch;
 
 assert.deepEqual(JSON.parse(JSON.stringify(readSearchStateFromUrl("https://example.com/"))), { q: "", type: "all" });
 assert.deepEqual(JSON.parse(JSON.stringify(readSearchStateFromUrl("https://example.com/?q=test"))), { q: "test", type: "all" });
@@ -184,3 +184,67 @@ assert.equal(decorateResultUrlWithSearchState("https://example.com/page.html", {
 assert.equal(decorateResultUrlWithSearchState("https://example.com/page.html#hash", { q: "test", type: "form" }), "https://example.com/page.html?fromSearch=1&q=test&type=form#hash");
 assert.equal(decorateResultUrlWithSearchState("https://example.com/page.html", { q: "", type: "all" }), "https://example.com/page.html");
 assert.equal(decorateResultUrlWithSearchState("https://example.com/page.html", null), "https://example.com/page.html");
+
+// --- Match Transparency Tests ---
+// A. 代償利息 → direct-body queryTerm exact matchedTerm exact
+const testBodyRes = searchRecords([{ type: "chapter", title: "其他規定", text: "本文包含代償利息內容" }], "代償利息", concepts, intents);
+assert.equal(testBodyRes.matches[0].matchReasons.some(r => r.kind === "direct-body" && r.queryTerm === "代償利息" && r.matchedTerm === "代償利息" && r.field === "body"), true, "Should have direct-body reason with exact terms");
+assert.equal(formatMatchReason(testBodyRes.matches[0].matchReasons[0]), "正文直接命中「代償利息」");
+
+// B. 真正 heading fixture → direct-heading
+const testHeadingRes = searchRecords([{ type: "chapter", title: "代償利息之計算", text: "其他規定內容" }], "代償利息", concepts, intents);
+assert.equal(testHeadingRes.matches[0].matchReasons.some(r => r.kind === "direct-heading" && r.queryTerm === "代償利息" && r.matchedTerm === "代償利息" && r.field === "title"), true, "Should have direct-heading reason");
+assert.equal(formatMatchReason(testHeadingRes.matches[0].matchReasons[0]), "章節標題命中「代償利息」");
+
+// C. 抵押品 result只有擔保品 → concept-expansion
+const testConceptRes = searchRecords([{ type: "chapter", title: "其他", text: "本文包含擔保品" }], "抵押品", concepts, intents);
+assert.equal(testConceptRes.matches[0].matchReasons.some(r => r.kind === "concept-expansion" && r.queryTerm === "抵押品" && r.matchedTerm === "擔保品"), true, "Should have concept-expansion reason");
+assert.equal(formatMatchReason(testConceptRes.matches[0].matchReasons[0]), "相關詞「抵押品」→「擔保品」");
+
+// D. fixture同時含抵押品及擔保品 → direct wins → 不得 concept-expansion
+const testDirectSuppression = searchRecords([{ type: "chapter", title: "其他", text: "本文包含抵押品及擔保品" }], "抵押品", concepts, intents);
+assert.equal(testDirectSuppression.matches[0].matchReasons.some(r => r.kind === "direct-body"), true, "Direct body should match");
+assert.equal(testDirectSuppression.matches[0].matchReasons.some(r => r.kind === "concept-expansion"), false, "Direct match must suppress concept expansion");
+
+// E. 第4 → 第四 → numeral-expansion
+const testNumeralRes = searchRecords([{ type: "chapter", title: "其他", text: "本文包含第四點" }], "第4", concepts, intents);
+assert.equal(testNumeralRes.matches[0].matchReasons.some(r => r.kind === "numeral-expansion" && r.queryTerm === "第4" && r.matchedTerm === "第四"), true, "Should have numeral-expansion reason");
+assert.equal(formatMatchReason(testNumeralRes.matches[0].matchReasons[0]), "數字展開「第4」→「第四」");
+
+// F. fixture同時含第4及第四 → direct wins
+const testNumeralSuppression = searchRecords([{ type: "chapter", title: "其他", text: "本文包含第4點與第四點" }], "第4", concepts, intents);
+assert.equal(testNumeralSuppression.matches[0].matchReasons.some(r => r.kind === "direct-body"), true, "Direct match should win for numeral");
+assert.equal(testNumeralSuppression.matches[0].matchReasons.some(r => r.kind === "numeral-expansion"), false, "Direct match must suppress numeral expansion");
+
+// G. 格式25A → exact-form queryTerm/display preserved as 格式25A 不得格式25a
+const testFormRes = searchRecords([{ type: "form", title: "格式 25A：申請表", text: "" }], "格式25A", concepts, intents);
+assert.equal(testFormRes.matches[0].matchReasons.some(r => r.kind === "exact-form" && r.queryTerm === "格式25A"), true, "Should preserve display casing 格式25A");
+assert.equal(formatMatchReason(testFormRes.matches[0].matchReasons[0]), "書表編號完全符合「格式25A」");
+
+// H. 青農 保證成數 → 每token最多1 reason
+const testMultiToken = searchRecords([{ type: "chapter", title: "青年農民專案", text: "本專案保證成數最高九成" }], "青農 保證成數", concepts, intents);
+assert.equal(testMultiToken.matches[0].matchReasons.length <= 2, true, "Multi-token query should have at most 1 reason per token");
+const queryTerms = testMultiToken.matches[0].matchReasons.map(r => r.queryTerm);
+assert.equal(new Set(queryTerms).size, queryTerms.length, "Each query token must have at most 1 reason");
+
+// I. shared physical page / multiple logical segments → no provenance leakage
+const sharedRecord = {
+  type: "chapter",
+  title: "第二篇 期中管理",
+  text: "段落A包含擔保品。段落B包含其他作業說明。",
+  readingSegments: [
+    { id: "seg-a", title: "第一節 變更處理", text: "段落A包含擔保品。" },
+    { id: "seg-b", title: "第二節 逾期處理", text: "段落B包含其他作業說明。" }
+  ]
+};
+const sharedSearch = searchRecords([sharedRecord], "抵押品", concepts, intents);
+const segARes = sharedSearch.matches.find(m => m.segment && m.segment.id === "seg-a");
+const segBRes = sharedSearch.matches.find(m => m.segment && m.segment.id === "seg-b");
+
+assert.equal(Boolean(segARes), true, "Segment A should be matched via 擔保品");
+assert.equal(segARes.matchReasons.some(r => r.kind === "concept-expansion" && r.queryTerm === "抵押品" && r.matchedTerm === "擔保品"), true, "Segment A should have concept-expansion reason");
+if (segBRes) {
+  assert.equal(segBRes.matchReasons.some(r => r.kind === "concept-expansion" && r.matchedTerm === "擔保品"), false, "Segment B must NOT inherit Segment A's concept-expansion reason");
+}
+
+console.log("MATCH TRANSPARENCY TESTS PASSED");
