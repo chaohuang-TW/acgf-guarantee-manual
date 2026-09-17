@@ -7,7 +7,7 @@ const css = fs.readFileSync("assets/css/site.css", "utf8");
 const context = { console, URL };
 context.globalThis = context;
 vm.runInNewContext(source, context, { filename: "search.js" });
-const { bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, filterMatches, filterRecordsByScope, findLogicalPassage, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage } = context.ManualSearch;
+const { bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, filterMatches, filterRecordsByScope, findLogicalPassage, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, buildRecoveryVocabulary, levenshteinDistance, evaluateTypoToken, buildZeroResultRecovery } = context.ManualSearch;
 const concepts = JSON.parse(fs.readFileSync("data/search-concepts.json", "utf8"));
 const intents = JSON.parse(fs.readFileSync("data/search-intents.json", "utf8"));
 const index = JSON.parse(fs.readFileSync("site/assets/data/search-index.json", "utf8"));
@@ -248,3 +248,108 @@ if (segBRes) {
 }
 
 console.log("MATCH TRANSPARENCY TESTS PASSED");
+
+// ==========================================
+// Search UX 4.3 Zero-Result Recovery Unit Tests
+// ==========================================
+
+const recoveryVocab = buildRecoveryVocabulary(index, concepts, intents);
+
+// Test N: vocabulary normalized dedup
+const uniqueTerms = new Set(recoveryVocab.map(v => v.normalizedTerm));
+assert.equal(uniqueTerms.size, recoveryVocab.length, "All terms in recovery vocabulary must be distinct normalizedTerms");
+
+// Test O: multi-source provenance merge
+const multiSource = recoveryVocab.find(v => v.sources.length > 1);
+assert.equal(Boolean(multiSource), true, "Vocabulary should contain multi-source terms");
+const claimPaymentVocab = recoveryVocab.find(v => v.normalizedTerm === "代位清償");
+assert.equal(Boolean(claimPaymentVocab), true, "代位清償 must be in vocabulary");
+assert.equal(claimPaymentVocab.sources.length >= 1, true, "代位清償 must have provenance sources");
+
+// Test A: 代位清嘗 → suggestion 代位清償
+const recA = buildZeroResultRecovery({ rawQuery: "代位清嘗", records: index, concepts, intents, vocabulary: recoveryVocab });
+assert.equal(recA.suggestions.length, 1, "代位清嘗 should have exactly 1 suggestion");
+assert.equal(recA.suggestions[0].query, "代位清償");
+assert.equal(recA.suggestions[0].kind, "typo-correction");
+assert.equal(recA.suggestions[0].evidence.length, 1);
+assert.equal(recA.suggestions[0].evidence[0].originalToken, "代位清嘗");
+assert.equal(recA.suggestions[0].evidence[0].correctedToken, "代位清償");
+assert.equal(recA.suggestions[0].evidence[0].editDistance, 1);
+assert.equal(recA.suggestions[0].evidence[0].normalizedDistance, 0.25);
+assert.equal(recA.suggestions[0].evidence[0].distanceGap >= 1, true);
+
+// Test B: 抵壓品 → 抵押品
+const recB = buildZeroResultRecovery({ rawQuery: "抵壓品", records: index, concepts, intents, vocabulary: recoveryVocab });
+assert.equal(recB.suggestions.length, 1, "抵壓品 should have exactly 1 suggestion");
+assert.equal(recB.suggestions[0].query, "抵押品");
+assert.equal(recB.suggestions[0].evidence[0].editDistance, 1);
+
+// Test C: 保証成數 → 保證成數
+const recC = buildZeroResultRecovery({ rawQuery: "保証成數", records: index, concepts, intents, vocabulary: recoveryVocab });
+assert.equal(recC.suggestions.length, 1, "保証成數 should have exactly 1 suggestion");
+assert.equal(recC.suggestions[0].query, "保證成數");
+assert.equal(recC.suggestions[0].evidence[0].editDistance, 1);
+
+// Test D: 信用保證申情書 → 信用保證申請書
+const recD = buildZeroResultRecovery({ rawQuery: "信用保證申情書", records: index, concepts, intents, vocabulary: recoveryVocab });
+assert.equal(recD.suggestions.length, 1, "信用保證申情書 should have exactly 1 suggestion");
+assert.equal(recD.suggestions[0].query, "信用保證申請書");
+assert.equal(recD.suggestions[0].evidence[0].editDistance, 1);
+
+// Test E: 代位清嘗 抵壓品 → 代位清償 抵押品 → evidence length = 2
+const recE = buildZeroResultRecovery({ rawQuery: "代位清嘗 抵壓品", records: index, concepts, intents, vocabulary: recoveryVocab });
+assert.equal(recE.suggestions.length, 1, "代位清嘗 抵壓品 should have 1 assembled suggestion");
+assert.equal(recE.suggestions[0].query, "代位清償 抵押品");
+assert.equal(recE.suggestions[0].evidence.length, 2, "Assembled suggestion must have 2 evidence items");
+
+// Test F: 代位清嘗 xyz123 → suggestions = []
+const recF = buildZeroResultRecovery({ rawQuery: "代位清嘗 xyz123", records: index, concepts, intents, vocabulary: recoveryVocab });
+assert.equal(recF.suggestions.length, 0, "Partial correction must be rejected");
+
+// Test G: 火星 抵壓品 → suggestions = []
+const recG = buildZeroResultRecovery({ rawQuery: "火星 抵壓品", records: index, concepts, intents, vocabulary: recoveryVocab });
+assert.equal(recG.suggestions.length, 0, "Partial correction must be rejected");
+
+// Test H: 火星貸款 → []
+const recH = buildZeroResultRecovery({ rawQuery: "火星貸款", records: index, concepts, intents, vocabulary: recoveryVocab });
+assert.equal(recH.suggestions.length, 0, "True no match must not fabricate suggestions");
+
+// Test I: 量子農業保證 → []
+const recI = buildZeroResultRecovery({ rawQuery: "量子農業保證", records: index, concepts, intents, vocabulary: recoveryVocab });
+assert.equal(recI.suggestions.length, 0, "True no match must not fabricate suggestions");
+
+// Test J: abcdefxyz → []
+const recJ = buildZeroResultRecovery({ rawQuery: "abcdefxyz", records: index, concepts, intents, vocabulary: recoveryVocab });
+assert.equal(recJ.suggestions.length, 0, "True no match must not fabricate suggestions");
+
+// Test K: 手續費綠 → ambiguity reject
+const evalK = evaluateTypoToken({ token: "手續費綠", vocabulary: recoveryVocab, records: index, concepts, intents });
+assert.equal(evalK.accepted, false, "手續費綠 must be rejected due to ambiguity (distanceGap < 1)");
+assert.equal(evalK.distanceGap, 0, "distanceGap for 手續費綠 should be 0");
+
+// Test L: generic candidate reject
+const genericTokens = ["保證", "申請", "文件", "貸款", "通知", "利息"];
+for (const gen of genericTokens) {
+  const evalGen = evaluateTypoToken({ token: "呆" + gen.slice(1), vocabulary: recoveryVocab, records: index, concepts, intents });
+  if (evalGen.correctedToken === gen) {
+    assert.equal(evalGen.accepted, false, `Generic token ${gen} must be rejected`);
+  }
+}
+
+// Test M: original result > 0 → buildZeroResultRecovery guard returns suggestions = []
+const recM1 = buildZeroResultRecovery({ rawQuery: "代償", records: index, concepts, intents, vocabulary: recoveryVocab });
+assert.equal(recM1.suggestions.length, 0, "Non-zero query 代償 must produce no recovery suggestions");
+const recM2 = buildZeroResultRecovery({ rawQuery: "抵押品", records: index, concepts, intents, vocabulary: recoveryVocab });
+assert.equal(recM2.suggestions.length, 0, "Non-zero query 抵押品 must produce no recovery suggestions");
+
+// Test P: suggestions <= 3
+assert.equal(recA.suggestions.length <= 3, true);
+assert.equal(recE.suggestions.length <= 3, true);
+
+// Test Q: structured object (no preformatted HTML strings)
+assert.equal(typeof recA, "object");
+assert.equal(typeof recA.suggestions[0].query, "string");
+assert.equal(recA.suggestions[0].query.includes("<"), false);
+assert.equal(recA.suggestions[0].evidence.every(ev => typeof ev.originalToken === "string" && !ev.originalToken.includes("<")), true);
+
+console.log("ZERO RESULT TYPO RECOVERY TESTS PASSED");

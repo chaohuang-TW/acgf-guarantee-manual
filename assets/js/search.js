@@ -812,9 +812,315 @@
     return `${start ? "…" : ""}${text.slice(start, end)}${end < text.length ? "…" : ""}`;
   }
 
+  const GENERIC_RECOVERY_TOKENS = new Set(["保證", "申請", "文件", "貸款", "通知", "利息"]);
+
+  function cleanPrefix(t) {
+    return String(t || "")
+      .replace(/^(?:[壹貳參肆伍陸柒捌玖拾]+|第[一二三四五六七八九十0-9]+[篇章節]|[一二三四五六七八九十0-9]+)[、.．]\s*/, "")
+      .replace(/^附錄[一二三四五六七八九十0-9]+[、.．]\s*/, "")
+      .replace(/^格式\s*[\w-]+\s*[:：]\s*/, "")
+      .replace(/^[（(][一二三四五六七八九十0-9]+[）)]\s*/, "")
+      .trim();
+  }
+
+  function buildRecoveryVocabulary(records, conceptsData, intentsData) {
+    const vocabMap = new Map();
+
+    function addEntry(rawTerm, sourceType, sourceId, sourceLabel) {
+      if (!rawTerm) return;
+      const t = String(rawTerm).trim();
+      if (!t) return;
+      const norm = normalize(t);
+      if (!norm) return;
+
+      if (!vocabMap.has(norm)) {
+        vocabMap.set(norm, {
+          term: t,
+          normalizedTerm: norm,
+          sources: []
+        });
+      }
+      const entry = vocabMap.get(norm);
+      const exists = entry.sources.some(s => s.sourceType === sourceType && s.sourceId === sourceId && s.sourceLabel === sourceLabel);
+      if (!exists) {
+        entry.sources.push({ sourceType, sourceId, sourceLabel });
+      }
+
+      const clean = cleanPrefix(t);
+      if (clean && clean !== t) {
+        const cleanNorm = normalize(clean);
+        if (!vocabMap.has(cleanNorm)) {
+          vocabMap.set(cleanNorm, {
+            term: clean,
+            normalizedTerm: cleanNorm,
+            sources: []
+          });
+        }
+        const cleanEntry = vocabMap.get(cleanNorm);
+        const cleanExists = cleanEntry.sources.some(s => s.sourceType === sourceType && s.sourceId === sourceId && s.sourceLabel === sourceLabel);
+        if (!cleanExists) {
+          cleanEntry.sources.push({ sourceType, sourceId, sourceLabel });
+        }
+      }
+    }
+
+    (records || []).forEach(r => {
+      const sId = r.id || r.url;
+      if (r.type === "chapter") {
+        addEntry(r.title, "chapter-title", sId, r.title);
+      } else if (r.type === "appendix") {
+        addEntry(r.title, "appendix-title", sId, r.title);
+      } else if (r.type === "form") {
+        addEntry(r.title, "form-title", sId, r.title);
+      }
+      (r.headings || []).forEach(h => {
+        addEntry(h, "heading", sId, h);
+      });
+      (r.readingSegments || []).forEach(s => {
+        const sTitle = typeof s === "string" ? s : s?.title;
+        const segId = (typeof s === "object" && s?.id) ? s.id : sId;
+        if (sTitle) addEntry(sTitle, "heading", segId, sTitle);
+      });
+    });
+
+    (conceptsData?.concepts || []).forEach(c => {
+      (c.terms || []).forEach(t => {
+        addEntry(t, "concept", c.id, "search-concepts");
+      });
+    });
+
+    (intentsData?.intents || []).forEach(it => {
+      (it.triggers || []).forEach(t => {
+        addEntry(t, "intent-trigger", it.id, "search-intents");
+      });
+      (it.preferredTerms || []).forEach(t => {
+        addEntry(t, "intent-preferred-term", it.id, "search-intents");
+      });
+    });
+
+    return [...vocabMap.values()];
+  }
+
+  function levenshteinDistance(a, b) {
+    const s1 = String(a || "");
+    const s2 = String(b || "");
+    const m = s1.length;
+    const n = s2.length;
+    if (!m) return n;
+    if (!n) return m;
+
+    let prev = new Array(n + 1);
+    let curr = new Array(n + 1);
+    for (let j = 0; j <= n; j++) prev[j] = j;
+
+    for (let i = 1; i <= m; i++) {
+      curr[0] = i;
+      const c1 = s1[i - 1];
+      for (let j = 1; j <= n; j++) {
+        const c2 = s2[j - 1];
+        const cost = c1 === c2 ? 0 : 1;
+        curr[j] = Math.min(
+          prev[j] + 1,
+          curr[j - 1] + 1,
+          prev[j - 1] + cost
+        );
+      }
+      const temp = prev;
+      prev = curr;
+      curr = temp;
+    }
+    return prev[n];
+  }
+
+  function evaluateTypoToken({ token, vocabulary, records, concepts, intents }) {
+    const originalToken = String(token || "");
+    const normToken = normalize(originalToken);
+    if (!normToken) {
+      return {
+        originalToken,
+        accepted: false,
+        correctedToken: null,
+        editDistance: null,
+        normalizedDistance: null,
+        secondCandidate: null,
+        secondDistance: null,
+        distanceGap: null,
+        sourceTypes: [],
+        sources: []
+      };
+    }
+
+    const scored = [];
+    for (const entry of (vocabulary || [])) {
+      if (entry.normalizedTerm === normToken) continue;
+      const dist = levenshteinDistance(normToken, entry.normalizedTerm);
+      const maxLen = Math.max(normToken.length, entry.normalizedTerm.length);
+      const normDist = maxLen > 0 ? dist / maxLen : 1;
+      scored.push({
+        entry,
+        dist,
+        normDist,
+        lenDiff: Math.abs(normToken.length - entry.normalizedTerm.length)
+      });
+    }
+
+    scored.sort((a, b) => {
+      if (a.dist !== b.dist) return a.dist - b.dist;
+      if (a.normDist !== b.normDist) return a.normDist - b.normDist;
+      if (a.lenDiff !== b.lenDiff) return a.lenDiff - b.lenDiff;
+      return a.entry.normalizedTerm.localeCompare(b.entry.normalizedTerm, "zh-Hant");
+    });
+
+    if (!scored.length) {
+      return {
+        originalToken,
+        accepted: false,
+        correctedToken: null,
+        editDistance: null,
+        normalizedDistance: null,
+        secondCandidate: null,
+        secondDistance: null,
+        distanceGap: null,
+        sourceTypes: [],
+        sources: []
+      };
+    }
+
+    const top1 = scored[0];
+    const top2 = scored.length > 1 ? scored[1] : null;
+    const distanceGap = top2 ? (top2.dist - top1.dist) : 999;
+    const sourceTypes = [...new Set(top1.entry.sources.map(s => s.sourceType))];
+
+    const distPass = top1.dist <= 1;
+    const normDistPass = top1.normDist <= 0.35;
+    const gapPass = distanceGap >= 1;
+    const notEqual = top1.entry.normalizedTerm !== normToken;
+    const notGeneric = !GENERIC_RECOVERY_TOKENS.has(top1.entry.normalizedTerm);
+
+    let searchMatches = 0;
+    if (distPass && normDistPass && gapPass && notEqual && notGeneric && records) {
+      const res = searchRecords(records, top1.entry.term, concepts, intents);
+      searchMatches = res.matches ? res.matches.length : 0;
+    }
+    const searchPass = searchMatches > 0;
+
+    const accepted = distPass && normDistPass && gapPass && notEqual && notGeneric && searchPass;
+
+    return {
+      originalToken,
+      accepted,
+      correctedToken: top1.entry.term,
+      editDistance: top1.dist,
+      normalizedDistance: top1.normDist,
+      secondCandidate: top2 ? top2.entry.term : null,
+      secondDistance: top2 ? top2.dist : null,
+      distanceGap,
+      sourceTypes,
+      sources: top1.entry.sources
+    };
+  }
+
+  function buildZeroResultRecovery({ rawQuery, records, concepts, intents, vocabulary }) {
+    if (!rawQuery) return { originalQuery: "", suggestions: [] };
+
+    if (records && concepts && intents) {
+      const orig = searchRecords(records, rawQuery, concepts, intents);
+      if (orig.matches && orig.matches.length > 0) {
+        return { originalQuery: rawQuery, suggestions: [] };
+      }
+    }
+
+    const vocab = vocabulary || buildRecoveryVocabulary(records, concepts, intents);
+    const tokenized = tokenizeQuery(rawQuery);
+    const words = tokenized.words;
+
+    if (!words.length) {
+      return { originalQuery: rawQuery, suggestions: [] };
+    }
+
+    if (words.length === 1) {
+      const evalRes = evaluateTypoToken({
+        token: words[0],
+        vocabulary: vocab,
+        records,
+        concepts,
+        intents
+      });
+      if (evalRes.accepted) {
+        return {
+          originalQuery: rawQuery,
+          suggestions: [
+            {
+              query: evalRes.correctedToken,
+              kind: "typo-correction",
+              evidence: [
+                {
+                  originalToken: evalRes.originalToken,
+                  correctedToken: evalRes.correctedToken,
+                  editDistance: evalRes.editDistance,
+                  normalizedDistance: evalRes.normalizedDistance,
+                  distanceGap: evalRes.distanceGap,
+                  sourceTypes: evalRes.sourceTypes
+                }
+              ]
+            }
+          ]
+        };
+      }
+      return { originalQuery: rawQuery, suggestions: [] };
+    }
+
+    const evals = [];
+    for (const w of words) {
+      const evalRes = evaluateTypoToken({
+        token: w,
+        vocabulary: vocab,
+        records,
+        concepts,
+        intents
+      });
+      if (!evalRes.accepted) {
+        return { originalQuery: rawQuery, suggestions: [] };
+      }
+      evals.push(evalRes);
+    }
+
+    const assembledQuery = evals.map(e => e.correctedToken).join(" ");
+    const candidateSearch = searchRecords(records, assembledQuery, concepts, intents);
+    if (candidateSearch.matches && candidateSearch.matches.length > 0) {
+      return {
+        originalQuery: rawQuery,
+        suggestions: [
+          {
+            query: assembledQuery,
+            kind: "typo-correction",
+            evidence: evals.map(e => ({
+              originalToken: e.originalToken,
+              correctedToken: e.correctedToken,
+              editDistance: e.editDistance,
+              normalizedDistance: e.normalizedDistance,
+              distanceGap: e.distanceGap,
+              sourceTypes: e.sourceTypes
+            }))
+          }
+        ]
+      };
+    }
+
+    return { originalQuery: rawQuery, suggestions: [] };
+  }
+
+  let cachedRecoveryVocabulary = null;
+  function getRecoveryVocabulary(records, concepts, intents) {
+    if (!cachedRecoveryVocabulary) {
+      cachedRecoveryVocabulary = buildRecoveryVocabulary(records, concepts, intents);
+    }
+    return cachedRecoveryVocabulary;
+  }
+
   function zeroResultMessage(query) {
     if (normalize(query) === "原保地貸款") return "找不到完全符合的內容，請嘗試正式用語或查看完整目錄。建議：保證對象、農業貸款；原住民族地區相關貸款請另查最新正式規定。";
-    return "找不到完全符合的內容，請嘗試正式用語或查看完整目錄。";
+    return query ? `找不到「${query}」的結果。` : "找不到完全符合的內容，請嘗試正式用語或查看完整目錄。";
   }
 
   let indexPromise;
@@ -1063,6 +1369,55 @@
             if (type !== "all") btn.disabled = true;
           });
 
+          const vocab = getRecoveryVocabulary(records, concepts, intents);
+          const recovery = buildZeroResultRecovery({
+            rawQuery: query,
+            records,
+            concepts,
+            intents,
+            vocabulary: vocab
+          });
+
+          const recoveryEl = document.createElement("div");
+          recoveryEl.className = "search-zero-recovery";
+          recoveryEl.setAttribute("role", "region");
+          recoveryEl.setAttribute("aria-label", "搜尋建議");
+
+          if (recovery.suggestions && recovery.suggestions.length > 0) {
+            const lead = document.createElement("p");
+            lead.className = "recovery-lead";
+            lead.textContent = "可以試試：";
+            recoveryEl.appendChild(lead);
+
+            const suggestionsDiv = document.createElement("div");
+            suggestionsDiv.className = "recovery-suggestions";
+
+            recovery.suggestions.slice(0, 3).forEach((s) => {
+              const chip = document.createElement("button");
+              chip.type = "button";
+              chip.className = "recovery-chip";
+              chip.dataset.suggest = s.query;
+              chip.textContent = s.query;
+              chip.addEventListener("click", () => {
+                input.value = s.query;
+                if (selectedScope !== "all") {
+                  selectedScope = "all";
+                  selectedType = "all";
+                  if (panel.__manualSearch?.setScopeAll) panel.__manualSearch.setScopeAll();
+                }
+                run("push");
+              });
+              suggestionsDiv.appendChild(chip);
+            });
+            recoveryEl.appendChild(suggestionsDiv);
+          } else {
+            const help = document.createElement("p");
+            help.className = "recovery-help";
+            help.textContent = "請嘗試縮短關鍵字，或確認正式名稱與書表編號。";
+            recoveryEl.appendChild(help);
+          }
+
+          results.appendChild(recoveryEl);
           return;
         }
         const typeCounts = { all: currentMatches.length };
@@ -1253,7 +1608,7 @@
     if (initialState.q && selectedScope === "all") run("skip");
   }
 
-  globalThis.ManualSearch = { findHighlightRanges, highlightText, bodyMatchOffsets, buildMatchReasons, formatMatchReason, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, readSearchStateFromUrl, writeSearchStateToUrl, searchStateUrl, decorateResultUrlWithSearchState };
+  globalThis.ManualSearch = { findHighlightRanges, highlightText, bodyMatchOffsets, buildMatchReasons, formatMatchReason, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, readSearchStateFromUrl, writeSearchStateToUrl, searchStateUrl, decorateResultUrlWithSearchState, buildRecoveryVocabulary, levenshteinDistance, evaluateTypoToken, buildZeroResultRecovery };
   if (typeof document !== "undefined") {
     document.querySelectorAll("[data-search]").forEach(attach);
     document.querySelectorAll("[data-keyword]").forEach((button) => button.addEventListener("click", () => {

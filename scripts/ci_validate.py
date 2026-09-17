@@ -58,6 +58,7 @@ def main() -> None:
     run(python, "scripts/e2e_reading_query_highlight.py")
     run(python, "scripts/e2e_related_forms.py")
     run(python, "scripts/e2e_search_match_transparency.py")
+    run(python, "scripts/e2e_search_zero_recovery.py")
     print("CI VALIDATION PASSED")
 
 
