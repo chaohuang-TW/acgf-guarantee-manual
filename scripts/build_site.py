@@ -12,7 +12,7 @@ import shutil
 from pathlib import Path, PurePosixPath
 
 from page_rendering import load_page_rendering
-from display_text import normalize_display_text
+from display_text import normalize_display_text, non_whitespace_characters
 from reading_units import load_resolved_units, units_by_pdf
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -320,64 +320,143 @@ def render_related_rules_block(form_number: str, relative: str) -> str:
     return "\n".join(html)
 
 
+def map_fragment_boundaries(paragraphs: list[str], fragments: list[dict]) -> list[dict]:
+    """Calculate deterministic non-whitespace boundary mapping for fragments.
+
+    Returns a list of dicts for each fragment:
+      - pdfPage: int
+      - printedPage: int | None
+      - target_nw: int
+      - paragraphIndex: int
+      - characterOffset: int
+      - is_mid_paragraph: bool
+    """
+    frag_starts: list[tuple[dict, int]] = []
+    cum_nw = 0
+    for f in fragments:
+        nw_len = len(non_whitespace_characters(f["text"]))
+        frag_starts.append((f, cum_nw))
+        cum_nw += nw_len
+
+    nw_to_pos: dict[int, tuple[int, int]] = {}
+    curr_nw = 0
+    for p_idx, p in enumerate(paragraphs):
+        for c_idx, ch in enumerate(p):
+            if not ch.isspace():
+                nw_to_pos[curr_nw] = (p_idx, c_idx)
+                curr_nw += 1
+
+    if curr_nw != cum_nw:
+        raise ValueError(
+            f"Total non-whitespace characters in paragraphs ({curr_nw}) does not match source fragments ({cum_nw})"
+        )
+
+    results: list[dict] = []
+    for f, target_nw in frag_starts:
+        if target_nw not in nw_to_pos:
+            raise ValueError(f"Offset {target_nw} not found in paragraphs mapping")
+        p_idx, c_off = nw_to_pos[target_nw]
+        results.append({
+            "pdfPage": int(f["pdfPage"]),
+            "printedPage": f.get("printedPage"),
+            "target_nw": target_nw,
+            "paragraphIndex": p_idx,
+            "characterOffset": c_off,
+            "is_mid_paragraph": (c_off > 0),
+        })
+    return results
+
+
 def render_continuous_reading_unit(unit: dict, relative: str) -> str:
     """Render a continuous logical reading unit without page card fragmentation."""
     fragments = unit["fragments"]
     raw_full_text = "".join(f["text"] for f in fragments)
 
-    frag0_paras = normalize_display_text(fragments[0]["text"])
-    frag1_paras = normalize_display_text(fragments[1]["text"])
-    frag2_paras = normalize_display_text(fragments[2]["text"])
-    frag3_paras = normalize_display_text(fragments[3]["text"])
+    raw_stream = "\n".join(f["text"] for f in fragments)
+    paragraphs = normalize_display_text(raw_stream)
 
-    unit_title = frag0_paras[0]
+    if not paragraphs or paragraphs[0] != unit["title"]:
+        raise ValueError(
+            f"First paragraph {paragraphs[0] if paragraphs else None!r} does not match unit title {unit['title']!r}"
+        )
+    unit_title = paragraphs[0]
+
+    boundary_mappings = map_fragment_boundaries(paragraphs, fragments)
+
+    from collections import defaultdict
+    anchors_by_para: dict[int, list[tuple[int, int]]] = defaultdict(list)
+    for m in boundary_mappings[1:]:
+        anchors_by_para[m["paragraphIndex"]].append((m["characterOffset"], m["pdfPage"]))
 
     body_html: list[str] = []
+    clause_counter = 1
+    toc_items: list[tuple[str, str]] = []
 
-    for p in frag0_paras[1:-1]:
-        if p.startswith("一、"):
-            body_html.append(f'<p id="clause-1">{e(p)}</p>')
+    for p_idx in range(1, len(paragraphs)):
+        p = paragraphs[p_idx]
+        para_anchors = sorted(anchors_by_para.get(p_idx, []), key=lambda x: x[0])
+
+        clause_attr = ""
+        if re.match(r"^[一二三四五六七八九十]+、", p):
+            cid = f"clause-{clause_counter}"
+            clause_attr = f' id="{cid}"'
+            toc_items.append((cid, p))
+            clause_counter += 1
+
+        pre_anchors = [
+            f'<span id="pdf-page-{pdf}" class="source-page-anchor" data-pdf-page="{pdf}" aria-hidden="true"></span>'
+            for c_off, pdf in para_anchors if c_off == 0
+        ]
+        inline_anchors = [(c_off, pdf) for c_off, pdf in para_anchors if c_off > 0]
+
+        if not inline_anchors:
+            inner = e(p)
         else:
-            body_html.append(f'<p>{e(p)}</p>')
+            parts: list[str] = []
+            last_off = 0
+            for c_off, pdf in inline_anchors:
+                parts.append(e(p[last_off:c_off]))
+                parts.append(
+                    f'<span id="pdf-page-{pdf}" class="source-page-anchor" data-pdf-page="{pdf}" aria-hidden="true"></span>'
+                )
+                last_off = c_off
+            parts.append(e(p[last_off:]))
+            inner = "".join(parts)
 
-    anchor_18 = '<span id="pdf-page-18" class="source-page-anchor" data-pdf-page="18" aria-hidden="true"></span>'
-    p18 = f'<p>{e(frag0_paras[-1])}{anchor_18}{e(frag1_paras[0])}</p>'
-    body_html.append(p18)
-
-    for p in frag1_paras[1:-1]:
-        body_html.append(f'<p>{e(p)}</p>')
-
-    anchor_19 = '<span id="pdf-page-19" class="source-page-anchor" data-pdf-page="19" aria-hidden="true"></span>'
-    p19 = f'<p>{e(frag1_paras[-1])}{anchor_19}{e(frag2_paras[0])}</p>'
-    body_html.append(p19)
-
-    for p in frag2_paras[1:]:
-        body_html.append(f'<p>{e(p)}</p>')
-
-    anchor_20 = '<span id="pdf-page-20" class="source-page-anchor" data-pdf-page="20" aria-hidden="true"></span>'
-    body_html.append(f'{anchor_20}<p>{e(frag3_paras[0])}</p>')
-
-    body_html.append(f'<p id="clause-2">{e(frag3_paras[1])}</p>')
+        pre_str = "".join(pre_anchors)
+        body_html.append(f"{pre_str}<p{clause_attr}>{inner}</p>")
 
     full_body = "\n        ".join(body_html)
 
-    quick_links = [
-        f'<a href="#pdf-page-{f["pdfPage"]}" class="source-page-link">手冊頁 {f["printedPage"]} (PDF {f["pdfPage"]})</a>'
-        for f in fragments
-    ]
+    quick_links: list[str] = []
+    for f in fragments:
+        pdf_page = int(f["pdfPage"])
+        printed_page = f.get("printedPage")
+        target_path = f"{VERSION_ROOT}/pages/page-{pdf_page:03d}.html"
+        href = f"{rel_from(relative, target_path)}#pdf-page-{pdf_page}"
+        aria_label = f"查看手冊第{printed_page}頁原始頁面" if printed_page else f"查看手冊 PDF 第{pdf_page}頁原始頁面"
+        printed_label = f"手冊頁 {printed_page} " if printed_page else ""
+        quick_links.append(
+            f'<a href="{e(href)}" class="source-page-link" aria-label="{e(aria_label)}">{printed_label}(PDF {pdf_page})</a>'
+        )
     quick_links_html = "\n          ".join(quick_links)
 
-    anchor_17 = '<span id="pdf-page-17" class="source-page-anchor" data-pdf-page="17" aria-hidden="true"></span>'
-    toc_clause_1 = frag0_paras[1]
-    toc_clause_2 = frag3_paras[1]
+    first_pdf = int(fragments[0]["pdfPage"])
+    anchor_first = f'<span id="pdf-page-{first_pdf}" class="source-page-anchor" data-pdf-page="{first_pdf}" aria-hidden="true"></span>'
 
+    toc_list_items = "\n          ".join(
+        f'<li><a href="#{cid}">{e(title)}</a></li>'
+        for cid, title in toc_items
+    )
+
+    page_count = len(fragments)
     return f"""
       <header class="continuous-header">
-        {anchor_17}
+        {anchor_first}
         <h1 class="continuous-source-heading">{e(unit_title)}</h1>
         <div class="source-provenance">
           <p class="source-meta">{e(source_meta_for_unit(unit))} <small>PDF 頁 {fragments[0]["pdfPage"]}–{fragments[-1]["pdfPage"]}</small></p>
-          <p class="source-nature-note">本主題橫跨手冊 4 頁原始文字層，已整合為連續業務主題閱讀；原始分頁界線以零寬度定位點保留於內文中。</p>
+          <p class="source-nature-note">本主題橫跨手冊 {page_count} 頁原始文字層，已整合為連續業務主題閱讀；原始分頁界線以零寬度定位點保留於內文中。</p>
           <div class="source-quick-links" aria-label="原始實體頁快速跳轉">
             <span class="source-quick-links-label">段落對應手冊頁：</span>
             {quick_links_html}
@@ -388,8 +467,7 @@ def render_continuous_reading_unit(unit: dict, relative: str) -> str:
       <nav class="topic-toc" aria-label="本規定目錄">
         <div class="topic-toc-title">條款目錄</div>
         <ul>
-          <li><a href="#clause-1">{e(toc_clause_1)}</a></li>
-          <li><a href="#clause-2">{e(toc_clause_2)}</a></li>
+          {toc_list_items}
         </ul>
       </nav>
 
@@ -397,7 +475,7 @@ def render_continuous_reading_unit(unit: dict, relative: str) -> str:
         {full_body}
       </div>
 
-      <details class="raw-text-details"><summary>查看本主題 PDF 原始文字片段 (4頁)</summary>
+      <details class="raw-text-details"><summary>查看本主題 PDF 原始文字片段 ({page_count}頁)</summary>
         <div class="layout-note" role="note">下列內容僅切割自本頁既有文字層，未改寫、補句或使用OCR。</div>
         <pre class="source-text source-text-raw">{e(raw_full_text)}</pre>
       </details>

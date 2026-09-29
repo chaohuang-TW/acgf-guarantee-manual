@@ -88,6 +88,39 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
     page.wait_for_function("() => { const el = document.getElementById('clause-2'); const r = el.getBoundingClientRect(); return r.top >= 0 && r.top <= window.innerHeight; }", timeout=5000)
 
     # =========================================================================
+    # Test 2.5: Provenance Links to Original Physical Pages
+    # =========================================================================
+    page.goto(pilot_url)
+    page.wait_for_load_state("networkidle")
+
+    for p_num, pr_num in [(17, 9), (18, 10), (19, 11), (20, 12)]:
+        link = page.locator(f'.source-page-link[href*="page-{p_num:03d}.html#pdf-page-{p_num}"]')
+        assert link.count() == 1, f"[{width}px] Missing provenance link for PDF {p_num} (printed {pr_num})"
+        href = link.get_attribute("href")
+        assert not href.startswith("#pdf-page-"), f"[{width}px] Provenance href must not be local anchor, got {href}"
+        assert f"page-{p_num:03d}.html#pdf-page-{p_num}" in href, f"[{width}px] Provenance href must target physical page, got {href}"
+        aria = link.get_attribute("aria-label")
+        assert f"第{pr_num}頁" in aria, f"[{width}px] Missing or invalid aria-label for page {pr_num}: {aria}"
+
+    # Click printed page 10 (PDF 18)
+    link_18 = page.locator('.source-page-link[href*="page-018.html#pdf-page-18"]')
+    link_18.click()
+    page.wait_for_load_state("networkidle")
+
+    current_url = page.url
+    assert "page-018.html" in current_url, f"[{width}px] Expected navigation to page-018.html, got {current_url}"
+    assert current_url.endswith("#pdf-page-18"), f"[{width}px] Expected hash #pdf-page-18, got {current_url}"
+
+    phys_18 = page.locator("#pdf-page-18")
+    assert phys_18.count() == 1, f"[{width}px] Missing #pdf-page-18 on physical page"
+    assert "page-card" in phys_18.get_attribute("class"), f"[{width}px] Physical page element must have .page-card class"
+
+    page.go_back()
+    page.wait_for_load_state("networkidle")
+    assert "excluded-guarantee.html" in page.url, f"[{width}px] Expected back navigation to excluded-guarantee.html, got {page.url}"
+    assert page.locator(".continuous-reading").count() == 1, f"[{width}px] Back navigation failed to restore continuous reading page"
+
+    # =========================================================================
     # Test 3: Search Landing Cue & Heading Highlight (?q=不予保證#pdf-page-17)
     # =========================================================================
     search_url_17 = f"{pilot_url}?fromSearch=1&q=%E4%B8%8D%E4%BA%88%E4%BF%9D%E8%AD%89#pdf-page-17"
