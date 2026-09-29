@@ -319,6 +319,91 @@ def render_related_rules_block(form_number: str, relative: str) -> str:
     html.append('</div></section>')
     return "\n".join(html)
 
+
+def render_continuous_reading_unit(unit: dict, relative: str) -> str:
+    """Render a continuous logical reading unit without page card fragmentation."""
+    fragments = unit["fragments"]
+    raw_full_text = "".join(f["text"] for f in fragments)
+
+    frag0_paras = normalize_display_text(fragments[0]["text"])
+    frag1_paras = normalize_display_text(fragments[1]["text"])
+    frag2_paras = normalize_display_text(fragments[2]["text"])
+    frag3_paras = normalize_display_text(fragments[3]["text"])
+
+    unit_title = frag0_paras[0]
+
+    body_html: list[str] = []
+
+    for p in frag0_paras[1:-1]:
+        if p.startswith("一、"):
+            body_html.append(f'<p id="clause-1">{e(p)}</p>')
+        else:
+            body_html.append(f'<p>{e(p)}</p>')
+
+    anchor_18 = '<span id="pdf-page-18" class="source-page-anchor" data-pdf-page="18" aria-hidden="true"></span>'
+    p18 = f'<p>{e(frag0_paras[-1])}{anchor_18}{e(frag1_paras[0])}</p>'
+    body_html.append(p18)
+
+    for p in frag1_paras[1:-1]:
+        body_html.append(f'<p>{e(p)}</p>')
+
+    anchor_19 = '<span id="pdf-page-19" class="source-page-anchor" data-pdf-page="19" aria-hidden="true"></span>'
+    p19 = f'<p>{e(frag1_paras[-1])}{anchor_19}{e(frag2_paras[0])}</p>'
+    body_html.append(p19)
+
+    for p in frag2_paras[1:]:
+        body_html.append(f'<p>{e(p)}</p>')
+
+    anchor_20 = '<span id="pdf-page-20" class="source-page-anchor" data-pdf-page="20" aria-hidden="true"></span>'
+    body_html.append(f'{anchor_20}<p>{e(frag3_paras[0])}</p>')
+
+    body_html.append(f'<p id="clause-2">{e(frag3_paras[1])}</p>')
+
+    full_body = "\n        ".join(body_html)
+
+    quick_links = [
+        f'<a href="#pdf-page-{f["pdfPage"]}" class="source-page-link">手冊頁 {f["printedPage"]} (PDF {f["pdfPage"]})</a>'
+        for f in fragments
+    ]
+    quick_links_html = "\n          ".join(quick_links)
+
+    anchor_17 = '<span id="pdf-page-17" class="source-page-anchor" data-pdf-page="17" aria-hidden="true"></span>'
+    toc_clause_1 = frag0_paras[1]
+    toc_clause_2 = frag3_paras[1]
+
+    return f"""
+      <header class="continuous-header">
+        {anchor_17}
+        <h1 class="continuous-source-heading">{e(unit_title)}</h1>
+        <div class="source-provenance">
+          <p class="source-meta">{e(source_meta_for_unit(unit))} <small>PDF 頁 {fragments[0]["pdfPage"]}–{fragments[-1]["pdfPage"]}</small></p>
+          <p class="source-nature-note">本主題橫跨手冊 4 頁原始文字層，已整合為連續業務主題閱讀；原始分頁界線以零寬度定位點保留於內文中。</p>
+          <div class="source-quick-links" aria-label="原始實體頁快速跳轉">
+            <span class="source-quick-links-label">段落對應手冊頁：</span>
+            {quick_links_html}
+          </div>
+        </div>
+      </header>
+
+      <nav class="topic-toc" aria-label="本規定目錄">
+        <div class="topic-toc-title">條款目錄</div>
+        <ul>
+          <li><a href="#clause-1">{e(toc_clause_1)}</a></li>
+          <li><a href="#clause-2">{e(toc_clause_2)}</a></li>
+        </ul>
+      </nav>
+
+      <div class="continuous-source-text display-text">
+        {full_body}
+      </div>
+
+      <details class="raw-text-details"><summary>查看本主題 PDF 原始文字片段 (4頁)</summary>
+        <div class="layout-note" role="note">下列內容僅切割自本頁既有文字層，未改寫、補句或使用OCR。</div>
+        <pre class="source-text source-text-raw">{e(raw_full_text)}</pre>
+      </details>
+    """
+
+
 def render_reading_unit(unit: dict, relative: str) -> str:
     cards: list[str] = []
     pages_by_pdf = {int(page["pdfPage"]): page for page in PAGES}
@@ -558,15 +643,24 @@ def build_parts() -> None:
             unit = READING_UNITS_BY_ID[section["id"]]
             section_relative = f'{VERSION_ROOT}/chapters/{part["id"]}/{section["id"]}.html'
             pagination = reading_pagination(section["id"], chapters_seq, section_relative)
-            section_content = [
-                f'<h1>{e(section["title"])}</h1>',
-                f'<p class="source-meta">{e(source_meta_for_unit(unit))}</p>',
-                render_reading_unit(unit, section_relative),
-                render_related_forms_block(section["id"], section_relative),
-                pagination,
-            ]
+            if section["id"] == "excluded-guarantee":
+                template_str = TEMPLATES["section"].replace('<article class="manual-content">', '<article class="manual-content continuous-reading">')
+                section_content = [
+                    render_continuous_reading_unit(unit, section_relative),
+                    render_related_forms_block(section["id"], section_relative),
+                    pagination,
+                ]
+            else:
+                template_str = TEMPLATES["section"]
+                section_content = [
+                    f'<h1>{e(section["title"])}</h1>',
+                    f'<p class="source-meta">{e(source_meta_for_unit(unit))}</p>',
+                    render_reading_unit(unit, section_relative),
+                    render_related_forms_block(section["id"], section_relative),
+                    pagination,
+                ]
             section_main = fill(
-                TEMPLATES["section"],
+                template_str,
                 BREADCRUMB=breadcrumb([("首頁", rel_from(section_relative, "index.html")), ("完整目錄", rel_from(section_relative, VERSION_ROOT + "/index.html")), (part["title"], rel_from(section_relative, relative))], section["title"]),
                 LOCAL_NAV=local_part_nav(part, section_relative, section["id"]),
                 CONTENT="".join(section_content),

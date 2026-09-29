@@ -115,6 +115,17 @@
     }
   }
 
+  function resolveSearchLandingHost(targetElement) {
+    if (!targetElement) return null;
+    if (targetElement.classList && targetElement.classList.contains("page-card")) {
+      return targetElement;
+    }
+    if (targetElement.classList && targetElement.classList.contains("source-page-anchor")) {
+      return targetElement.closest("p") || targetElement.nextElementSibling;
+    }
+    return targetElement;
+  }
+
   function initSearchLandingCue() {
     const currentUrl = window.location.href;
     if (isSearchLandingEligible(currentUrl)) {
@@ -122,19 +133,24 @@
       if (hash) {
         try {
           const targetElement = document.querySelector(hash);
-          if (targetElement && targetElement.classList.contains("page-card")) {
-            if (targetElement.querySelector(".search-landing-note")) {
-              return;
-            }
-            targetElement.classList.add("search-landing-target");
-            const note = document.createElement("div");
-            note.className = "search-landing-note";
-            note.textContent = "搜尋結果定位至此";
-            const header = targetElement.querySelector("h2, h3, h4, h5, h6");
-            if (header && header.nextSibling) {
-              targetElement.insertBefore(note, header.nextSibling);
-            } else {
-              targetElement.insertBefore(note, targetElement.firstChild);
+          if (targetElement) {
+            const landingHost = resolveSearchLandingHost(targetElement);
+            if (landingHost) {
+              if (document.querySelector(".search-landing-note")) {
+                return;
+              }
+              landingHost.classList.add("search-landing-target");
+              const note = document.createElement("div");
+              note.className = "search-landing-note";
+              note.textContent = "搜尋結果定位至此";
+              const header = landingHost.querySelector ? landingHost.querySelector("h2, h3, h4, h5, h6") : null;
+              if (header && header.nextSibling) {
+                landingHost.insertBefore(note, header.nextSibling);
+              } else if (landingHost.classList && landingHost.classList.contains("page-card")) {
+                landingHost.insertBefore(note, landingHost.firstChild);
+              } else if (landingHost.parentNode) {
+                landingHost.parentNode.insertBefore(note, landingHost);
+              }
             }
           }
         } catch (e) {
@@ -160,7 +176,7 @@
     if (!terms.length) return;
 
     const hitNodes = [];
-    const containers = document.querySelectorAll(".page-card > .display-text");
+    const containers = document.querySelectorAll(".page-card > .display-text, .continuous-source-heading, .continuous-source-text.display-text");
 
     for (const container of containers) {
       const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
@@ -265,10 +281,9 @@
         const targetElement = document.querySelector(hash);
         if (targetElement) {
           const firstHitIndex = hitNodes.findIndex(node => {
-            const card = node.closest(".page-card");
-            if (!card) return false;
-            const pos = targetElement.compareDocumentPosition(card);
-            return card === targetElement || (pos & Node.DOCUMENT_POSITION_FOLLOWING);
+            if (targetElement.contains(node)) return true;
+            const pos = targetElement.compareDocumentPosition(node);
+            return Boolean(pos & Node.DOCUMENT_POSITION_FOLLOWING);
           });
           if (firstHitIndex !== -1) {
             targetIndex = firstHitIndex;
@@ -279,7 +294,7 @@
     }, 100);
   }
 
-  globalThis.SiteUtils = { fallbackCopyText, isSearchLandingEligible, targetIdFromSearchLanding, initSearchLandingCue, initInPageSearchHighlight };
+  globalThis.SiteUtils = { fallbackCopyText, isSearchLandingEligible, targetIdFromSearchLanding, resolveSearchLandingHost, initSearchLandingCue, initInPageSearchHighlight };
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => {
