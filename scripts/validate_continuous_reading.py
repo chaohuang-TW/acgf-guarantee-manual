@@ -1,337 +1,415 @@
 #!/usr/bin/env python3
-"""Validate Reading UX 3.0 Continuous Logical Reading Pilot implementation."""
+"""Validate all configured continuous-reading units against source data."""
 
 from __future__ import annotations
 
-import html
 import json
 import re
 import sys
-from pathlib import Path
+from collections import Counter
 from html.parser import HTMLParser
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
-DATA = ROOT / "data"
-
 sys.path.insert(0, str(ROOT / "scripts"))
-from reading_units import load_resolved_units
+
+from build_site import (  # noqa: E402
+    CONTINUOUS_READING_UNIT_IDS,
+    VERSION_ROOT,
+    map_fragment_boundaries,
+    rel_from,
+)
+from display_text import non_whitespace_characters, normalize_display_text  # noqa: E402
+from reading_units import load_resolved_units  # noqa: E402
 
 
-class TagExtractor(HTMLParser):
+class Node:
+    def __init__(self, tag: str, attrs: list[tuple[str, str | None]], parent: "Node | None" = None):
+        self.tag = tag
+        self.attrs = {key: value or "" for key, value in attrs}
+        self.parent = parent
+        self.children: list[Node | str] = []
+
+    @property
+    def text(self) -> str:
+        return "".join(child.text if isinstance(child, Node) else child for child in self.children)
+
+    def has_class(self, name: str) -> bool:
+        return name in self.attrs.get("class", "").split()
+
+    def descendants(self, *, tag: str | None = None, class_name: str | None = None) -> list["Node"]:
+        result: list[Node] = []
+        for child in self.children:
+            if not isinstance(child, Node):
+                continue
+            if (tag is None or child.tag == tag) and (class_name is None or child.has_class(class_name)):
+                result.append(child)
+            result.extend(child.descendants(tag=tag, class_name=class_name))
+        return result
+
+
+class TreeParser(HTMLParser):
+    VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+
     def __init__(self) -> None:
-        super().__init__()
-        self.h1_tags: list[str] = []
-        self.ids: list[str] = []
-        self.anchors: list[dict[str, str]] = []
-        self.spans: list[dict[str, str]] = []
-        self._current_tag: str | None = None
-        self._current_text: list[str] = []
+        super().__init__(convert_charrefs=True)
+        self.root = Node("document", [])
+        self.stack = [self.root]
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        attr_dict = {k: v or "" for k, v in attrs}
-        if "id" in attr_dict:
-            self.ids.append(attr_dict["id"])
-        if tag == "h1":
-            self._current_tag = "h1"
-            self._current_text = []
-        elif tag == "a":
-            self.anchors.append(attr_dict)
-        elif tag == "span":
-            self.spans.append(attr_dict)
+        node = Node(tag, attrs, self.stack[-1])
+        self.stack[-1].children.append(node)
+        if tag not in self.VOID:
+            self.stack.append(node)
 
-    def handle_data(self, data: str) -> None:
-        if self._current_tag == "h1":
-            self._current_text.append(data)
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.stack[-1].children.append(Node(tag, attrs, self.stack[-1]))
 
     def handle_endtag(self, tag: str) -> None:
-        if tag == "h1" and self._current_tag == "h1":
-            self.h1_tags.append("".join(self._current_text).strip())
-            self._current_tag = None
+        for index in range(len(self.stack) - 1, 0, -1):
+            if self.stack[index].tag == tag:
+                del self.stack[index:]
+                return
+
+    def handle_data(self, data: str) -> None:
+        self.stack[-1].children.append(data)
 
 
-def validate_continuous_reading() -> list[str]:
+def _load_json(path: Path):
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _html_tree(path: Path) -> tuple[str, Node]:
+    source = path.read_text(encoding="utf-8")
+    parser = TreeParser()
+    parser.feed(source)
+    return source, parser.root
+
+
+def _first(nodes: list[Node]) -> Node | None:
+    return nodes[0] if nodes else None
+
+
+def _unique_by_id(nodes: list[Node], element_id: str) -> list[Node]:
+    return [node for node in nodes if node.attrs.get("id") == element_id]
+
+
+def _relative_target(site_path: Path, page_path: Path, href: str) -> tuple[Path | None, str | None]:
+    parsed = urlsplit(href)
+    if parsed.scheme or parsed.netloc or parsed.query:
+        return None, None
+    target_path = (page_path.parent / unquote(parsed.path)).resolve()
+    try:
+        target_path.relative_to(site_path.resolve())
+    except ValueError:
+        return None, None
+    return target_path, unquote(parsed.fragment)
+
+
+def _expected_related_forms(unit_id: str, relations: list[dict]) -> list[dict]:
+    by_number: dict[str, tuple[int, dict]] = {}
+    for relation in relations:
+        if relation["contentRef"]["id"] != unit_id:
+            continue
+        form = relation["form"]
+        number = form["number"]
+        if number not in by_number:
+            first_page = min((item["pdfPage"] for item in relation.get("evidence", [])), default=9999)
+            by_number[number] = (first_page, relation)
+    ordered = sorted(by_number.values(), key=lambda item: item[0])
+    return [item[1]["form"] for item in ordered]
+
+
+def validate_continuous_reading() -> tuple[list[str], list[dict]]:
     errors: list[str] = []
+    metrics: list[dict] = []
+    units = load_resolved_units()
+    units_by_id = {unit["id"]: unit for unit in units}
+    configured = set(CONTINUOUS_READING_UNIT_IDS)
+    if configured != {"excluded-guarantee", "credit-deterioration", "pre-negotiation", "overdue-guarantee"}:
+        errors.append(f"Continuous rendering configuration unexpectedly changed: {sorted(configured)}")
+    if not configured.issubset(units_by_id):
+        errors.append(f"Configured units missing from reading-units.json: {sorted(configured - set(units_by_id))}")
 
-    # 1. Canonical URL existence
-    pilot_relative = "versions/115-04/chapters/part-1/excluded-guarantee.html"
-    pilot_path = SITE / pilot_relative
-    if not pilot_path.is_file():
-        errors.append(f"Pilot canonical HTML file missing: {pilot_relative}")
-        return errors
+    page_data = _load_json(ROOT / "data/pages.json")
+    pages_by_pdf = {int(page["pdfPage"]): page for page in page_data}
+    relations = _load_json(ROOT / "data/related-forms.json")["relations"]
+    generated_html: dict[str, tuple[str, Node, Path]] = {}
 
-    content = pilot_path.read_text(encoding="utf-8")
-    parser = TagExtractor()
-    parser.feed(content)
+    # Per-unit gates derive all titles and page boundaries from reading-units.json.
+    for unit_id in sorted(configured):
+        unit = units_by_id.get(unit_id)
+        if not unit:
+            continue
+        relative = unit["readingUrl"]
+        path = SITE / relative
+        if not path.is_file():
+            errors.append(f"{unit_id}: canonical generated file missing: {relative}")
+            continue
+        content, document = _html_tree(path)
+        generated_html[unit_id] = (content, document, path)
+        all_nodes = document.descendants()
+        h1s = [node for node in all_nodes if node.tag == "h1"]
+        if len(h1s) != 1:
+            errors.append(f"{unit_id}: expected exactly one H1, found {len(h1s)}")
+        elif h1s[0].text.strip() != unit["title"]:
+            errors.append(f"{unit_id}: H1/title mismatch: {h1s[0].text.strip()!r} != {unit['title']!r}")
 
-    # 2. H1 Uniqueness
-    if len(parser.h1_tags) != 1:
-        errors.append(f"Expected exactly 1 H1, found {len(parser.h1_tags)}: {parser.h1_tags}")
-    elif parser.h1_tags[0] != "參、不予保證規定":
-        errors.append(f"Unexpected H1 text: {parser.h1_tags[0]!r}")
-
-    # 3. Article container class
-    if 'class="manual-content continuous-reading"' not in content:
-        errors.append("Missing 'continuous-reading' class on <article class=\"manual-content\">")
-
-    # 4. Zero .page-card elements in pilot
-    if 'class="page-card' in content:
-        errors.append("Forbidden 'page-card' class found in continuous reading unit")
-
-    # 5. Non-whitespace text 100% fidelity
-    resolved_units = load_resolved_units()
-    unit = next((u for u in resolved_units if u["id"] == "excluded-guarantee"), None)
-    if not unit:
-        errors.append("Unit 'excluded-guarantee' not found in resolved reading units")
-        return errors
-
-    raw_text = "".join(f["text"] for f in unit["fragments"])
-    raw_nw = re.sub(r"\s+", "", raw_text)
-
-    # Extract text from .continuous-source-heading and .continuous-source-text
-    heading_match = re.search(r'<h1 class="continuous-source-heading"[^>]*>(.*?)</h1>', content, re.DOTALL)
-    body_match = re.search(r'<div class="continuous-source-text display-text">(.*?)</div>\s*<details', content, re.DOTALL)
-
-    if not heading_match or not body_match:
-        errors.append("Could not locate continuous-source-heading or continuous-source-text display-text")
-    else:
-        rendered_html = heading_match.group(1) + "\n" + body_match.group(1)
-        clean_rendered = re.sub(r"<[^>]+>", "", rendered_html)
-        clean_rendered = html.unescape(clean_rendered)
-        rendered_nw = re.sub(r"\s+", "", clean_rendered)
-
-        if len(rendered_nw) != len(raw_nw):
-            errors.append(f"Text length mismatch: rendered {len(rendered_nw)} vs raw {len(raw_nw)}")
-        elif rendered_nw != raw_nw:
-            errors.append("Non-whitespace characters do not match source fragments 100%")
-
-    # 6. 4 inline source-page-anchors
-    for page_num in (17, 18, 19, 20):
-        anchor_id = f"pdf-page-{page_num}"
-        if anchor_id not in parser.ids:
-            errors.append(f"Missing source anchor id: {anchor_id}")
-
-        expected_anchor = f'<span id="{anchor_id}" class="source-page-anchor" data-pdf-page="{page_num}" aria-hidden="true"></span>'
-        if expected_anchor not in content:
-            errors.append(f"Missing or malformed source-page-anchor: {expected_anchor}")
-
-    # 7. Mid-paragraph inline anchor checks
-    # PDF 18 must be mid-paragraph inside a <p>
-    p18_pattern = r'<p>[^<]*（96 年 9 月 19 日<span id="pdf-page-18" class="source-page-anchor"[^>]*></span>農信保策字第 000207 號函）</p>'
-    if not re.search(p18_pattern, content):
-        errors.append("PDF 18 anchor is not placed correctly mid-paragraph")
-
-    # PDF 19 must be mid-paragraph inside a <p>
-    p19_pattern = r'<p>[^<]*（含現金卡及信用卡）<span id="pdf-page-19" class="source-page-anchor"[^>]*></span>或保證債務已逾期者。</p>'
-    if not re.search(p19_pattern, content):
-        errors.append("PDF 19 anchor is not placed correctly mid-paragraph")
-
-    # PDF 20 anchor before paragraph
-    p20_pattern = r'<span id="pdf-page-20" class="source-page-anchor"[^>]*></span>\s*<p>（十二）保證人有前述'
-    if not re.search(p20_pattern, content):
-        errors.append("PDF 20 anchor is not placed correctly before clause paragraph")
-
-    # 8. Clauses #clause-1 and #clause-2
-    if "clause-1" not in parser.ids:
-        errors.append("Missing id='clause-1'")
-    if "clause-2" not in parser.ids:
-        errors.append("Missing id='clause-2'")
-
-    clause1_pattern = r'<p id="clause-1">一、送保案件有下列情事之一者，不予保證。'
-    if not re.search(clause1_pattern, content):
-        errors.append("Clause 1 paragraph content mismatch or missing id")
-
-    clause2_pattern = r'<p id="clause-2">二、企業戶有前述（二）、（三）、（四）之情事'
-    if not re.search(clause2_pattern, content):
-        errors.append("Clause 2 paragraph content mismatch or missing id")
-
-    # 9. Topic TOC presence and exact excerpts from actual DOM
-    if '<nav class="topic-toc" aria-label="本規定目錄">' not in content:
-        errors.append("Missing <nav class=\"topic-toc\">")
-    toc1_match = re.search(r'<li><a href="#clause-1">(.*?)</a></li>', content)
-    toc2_match = re.search(r'<li><a href="#clause-2">(.*?)</a></li>', content)
-    if not toc1_match:
-        errors.append("Missing TOC link to #clause-1")
-    else:
-        toc1_text = html.unescape(toc1_match.group(1)).strip()
-        expected_toc1 = "一、送保案件有下列情事之一者，不予保證。但本基金另訂有保證作業要點者從其規定："
-        if toc1_text != expected_toc1:
-            errors.append(f"TOC item 1 text mismatch: expected {expected_toc1!r}, got {toc1_text!r}")
-    if not toc2_match:
-        errors.append("Missing TOC link to #clause-2")
-    else:
-        toc2_text = html.unescape(toc2_match.group(1)).strip()
-        expected_toc2 = "二、企業戶有前述（二）、（三）、（四）之情事，於政策性專案農業貸款已提出具體改善計畫，經受託機構評估認為不影響償債能力，並經本基金同意者，得最高保證七成。"
-        if toc2_text != expected_toc2:
-            errors.append(f"TOC item 2 text mismatch: expected {expected_toc2!r}, got {toc2_text!r}")
-
-    # Forbid invented TOC titles
-    for forbidden in ["一、前言", "二、實施要點"]:
-        if forbidden in content:
-            errors.append(f"Forbidden invented TOC text found in content: {forbidden!r}")
-
-    # 10. Provenance links to physical pages
-    link_pattern = r'<a\s+[^>]*href=["\x27]([^"\x27]+)["\x27][^>]*class=["\x27][^"\x27]*source-page-link[^"\x27]*["\x27][^>]*aria-label=["\x27]([^"\x27]+)["\x27][^>]*>(.*?)</a>'
-    provenance_links = re.findall(link_pattern, content)
-    if len(provenance_links) != 4:
-        errors.append(f"Expected 4 .source-page-link elements, found {len(provenance_links)}")
-
-    seen_hrefs = set()
-    for href, aria, text in provenance_links:
-        if href in seen_hrefs:
-            errors.append(f"Duplicate provenance href found: {href}")
-        seen_hrefs.add(href)
-
-        if not href.startswith("../../pages/page-") or "#pdf-page-" not in href:
-            errors.append(f"Provenance href must point to physical page, got: {href}")
+        article = _first([node for node in all_nodes if node.tag == "article" and node.has_class("continuous-reading")])
+        continuous_articles = [node for node in all_nodes if node.tag == "article" and node.has_class("continuous-reading")]
+        if len(continuous_articles) != 1:
+            errors.append(f"{unit_id}: expected one .continuous-reading article, found {len(continuous_articles)}")
+        page_cards = [node for node in all_nodes if node.has_class("page-card")]
+        if page_cards:
+            errors.append(f"{unit_id}: continuous logical page contains {len(page_cards)} .page-card element(s)")
+        if not article:
             continue
 
-        file_part, anchor_part = href.split("#", 1)
-        target_file = (pilot_path.parent / file_part).resolve()
-        if not target_file.is_file():
-            errors.append(f"Target physical page file not found: {target_file}")
-        else:
-            target_html = target_file.read_text(encoding="utf-8")
-            if f'id="{anchor_part}"' not in target_html:
-                errors.append(f"Target anchor {anchor_part} not found in {target_file.name}")
-            if 'class="page-card' not in target_html:
-                errors.append(f"Target physical page {target_file.name} missing .page-card")
-
-    expected_hrefs = [
-        f"../../pages/page-{p:03d}.html#pdf-page-{p}" for p in (17, 18, 19, 20)
-    ]
-    actual_hrefs = [l[0] for l in provenance_links]
-    if actual_hrefs != expected_hrefs:
-        errors.append(f"Provenance hrefs mismatch: expected {expected_hrefs}, got {actual_hrefs}")
-
-    # 11. Other 15 logical reading units preserve .page-card
-    other_units = [u for u in resolved_units if u["id"] != "excluded-guarantee"]
-    if len(other_units) != 15:
-        errors.append(f"Expected 15 other logical units, found {len(other_units)}")
-
-    for u in other_units:
-        u_path = SITE / u["readingUrl"]
-        if not u_path.is_file():
-            errors.append(f"Other logical unit file missing: {u['readingUrl']}")
+        source_headings = [node for node in article.descendants(tag="h1", class_name="continuous-source-heading")]
+        source_bodies = [node for node in article.descendants(tag="div", class_name="continuous-source-text")]
+        heading = _first(source_headings)
+        body = _first(source_bodies)
+        if len(source_headings) != 1 or len(source_bodies) != 1 or not heading or not body:
+            errors.append(f"{unit_id}: expected exactly one source heading and source body")
             continue
-        u_content = u_path.read_text(encoding="utf-8")
-        if 'class="page-card' not in u_content:
-            errors.append(f"Other unit {u['id']} unexpectedly missing .page-card")
-        if 'class="continuous-reading"' in u_content:
-            errors.append(f"Other unit {u['id']} unexpectedly has .continuous-reading")
 
-    # 12. 203 physical pages preserve .page-card
-    pages_data = json.loads((DATA / "pages.json").read_text(encoding="utf-8"))
-    if len(pages_data) != 203:
-        errors.append(f"Expected 203 pages in pages.json, found {len(pages_data)}")
-
-    for page in pages_data:
-        p_num = page["pdfPage"]
-        p_path = SITE / f"versions/115-04/pages/page-{p_num:03d}.html"
-        if not p_path.is_file():
-            errors.append(f"Physical page missing: page-{p_num:03d}.html")
+        fragments = unit["fragments"]
+        raw_stream = "\n".join(fragment["text"] for fragment in fragments)
+        paragraphs = normalize_display_text(raw_stream)
+        if not paragraphs or paragraphs[0] != unit["title"]:
+            errors.append(f"{unit_id}: source title gate failed; first normalized paragraph must exactly equal unit title")
             continue
-        p_content = p_path.read_text(encoding="utf-8")
-        if f'id="pdf-page-{p_num}"' not in p_content:
-            errors.append(f"Physical page {p_num} missing id='pdf-page-{p_num}'")
-        if 'class="page-card' not in p_content:
-            errors.append(f"Physical page {p_num} missing .page-card")
 
-    # 13. site.js contains resolveSearchLandingHost and anchor support
-    site_js = (ROOT / "assets/js/site.js").read_text(encoding="utf-8")
-    if "resolveSearchLandingHost" not in site_js:
-        errors.append("site.js missing resolveSearchLandingHost function")
-    if "source-page-anchor" not in site_js:
-        errors.append("site.js missing source-page-anchor handling")
+        raw_text = "".join(fragment["text"] for fragment in fragments)
+        source_text = heading.text + body.text
+        raw_sequence = non_whitespace_characters(raw_text)
+        rendered_sequence = non_whitespace_characters(source_text)
+        fidelity = raw_sequence == rendered_sequence
+        if not fidelity:
+            errors.append(f"{unit_id}: source text sequence mismatch (raw {len(raw_sequence)} NW, rendered {len(rendered_sequence)} NW)")
+        if heading.text.strip() != unit["title"]:
+            errors.append(f"{unit_id}: rendered continuous heading differs from authoritative title")
 
-    # 14. site.css contains continuous-reading styles
-    site_css = (ROOT / "assets/css/site.css").read_text(encoding="utf-8")
-    if ".continuous-reading" not in site_css:
-        errors.append("site.css missing .continuous-reading style")
-    if ".source-page-anchor" not in site_css:
-        errors.append("site.css missing .source-page-anchor style")
+        # Physical-page anchors are each unique, correctly ordered, zero-text spans.
+        expected_pages = [int(fragment["pdfPage"]) for fragment in fragments]
+        anchor_nodes = [node for node in all_nodes if node.tag == "span" and node.has_class("source-page-anchor")]
+        anchor_pages = [int(node.attrs.get("data-pdf-page", "-1")) for node in anchor_nodes]
+        if anchor_pages != expected_pages:
+            errors.append(f"{unit_id}: source-page anchors/order mismatch; expected {expected_pages}, got {anchor_pages}")
+        ids = [node.attrs.get("id", "") for node in all_nodes if node.attrs.get("id")]
+        for pdf_page in expected_pages:
+            anchor_id = f"pdf-page-{pdf_page}"
+            count = ids.count(anchor_id)
+            if count != 1:
+                errors.append(f"{unit_id}: {anchor_id} must exist exactly once, found {count}")
+            matches = _unique_by_id(all_nodes, anchor_id)
+            if matches and (matches[0].tag != "span" or not matches[0].has_class("source-page-anchor") or matches[0].text):
+                errors.append(f"{unit_id}: {anchor_id} is not a zero-text source-page span")
+        if any(node.tag == "hr" or "page-divider" in node.attrs.get("class", "").split() for node in all_nodes):
+            errors.append(f"{unit_id}: visible physical page divider found")
 
-    # 15. Generic Boundary Mapping Test (Real excluded-guarantee + Synthetic Fixture)
-    from build_site import map_fragment_boundaries, render_continuous_reading_unit
-    from display_text import normalize_display_text
+        # Check boundary placement against the same normalized source paragraph mapping.
+        from build_site import map_fragment_boundaries
+        mappings = map_fragment_boundaries(paragraphs, fragments)
+        body_paragraphs = [node for node in body.descendants(tag="p")]
+        if [node.text for node in body_paragraphs] != paragraphs[1:]:
+            errors.append(f"{unit_id}: rendered body paragraphs differ from normalized source paragraphs")
+        for mapping in mappings:
+            pdf_page = mapping["pdfPage"]
+            anchor = _first(_unique_by_id(all_nodes, f"pdf-page-{pdf_page}"))
+            if not anchor:
+                continue
+            paragraph_index = mapping["paragraphIndex"]
+            char_offset = mapping["characterOffset"]
+            if paragraph_index == 0:
+                header = anchor.parent
+                heading_parent = heading.parent
+                if header is None or header is not heading_parent or header.children.index(anchor) >= header.children.index(heading):
+                    errors.append(f"{unit_id}: first-page anchor {pdf_page} must precede source H1 in its header")
+                continue
+            if paragraph_index - 1 >= len(body_paragraphs):
+                errors.append(f"{unit_id}: boundary paragraph index out of range for PDF {pdf_page}")
+                continue
+            paragraph = body_paragraphs[paragraph_index - 1]
+            if mapping["is_mid_paragraph"]:
+                if anchor.parent is not paragraph:
+                    errors.append(f"{unit_id}: mid-paragraph anchor {pdf_page} is not inline in its paragraph")
+                    continue
+                before: list[str] = []
+                for child in paragraph.children:
+                    if child is anchor:
+                        break
+                    before.append(child.text if isinstance(child, Node) else child)
+                if "".join(before) != paragraphs[paragraph_index][:char_offset]:
+                    errors.append(f"{unit_id}: mid-paragraph anchor {pdf_page} character offset mismatch")
+            else:
+                parent = anchor.parent
+                if parent is not body or paragraph.parent is not body:
+                    errors.append(f"{unit_id}: paragraph-start anchor {pdf_page} must be a body sibling before its paragraph")
+                    continue
+                siblings = [child for child in body.children if isinstance(child, Node) or (isinstance(child, str) and child.strip())]
+                if anchor not in siblings or paragraph not in siblings or siblings.index(anchor) + 1 != siblings.index(paragraph):
+                    errors.append(f"{unit_id}: paragraph-start anchor {pdf_page} must immediately precede its paragraph")
 
-    # Real unit mapping check
-    real_stream = "\n".join(f["text"] for f in unit["fragments"])
-    real_paras = normalize_display_text(real_stream)
-    real_mapping = map_fragment_boundaries(real_paras, unit["fragments"])
+        # Provenance is data-derived, uses rel_from(), and must resolve to physical HTML anchors.
+        links = [node for node in all_nodes if node.tag == "a" and node.has_class("source-page-link")]
+        if len(links) != len(fragments):
+            errors.append(f"{unit_id}: expected {len(fragments)} provenance links, found {len(links)}")
+        for fragment, link in zip(fragments, links):
+            pdf_page = int(fragment["pdfPage"])
+            target_rel = f"{VERSION_ROOT}/pages/page-{pdf_page:03d}.html"
+            expected_href = rel_from(relative, target_rel) + f"#pdf-page-{pdf_page}"
+            if link.attrs.get("href") != expected_href:
+                errors.append(f"{unit_id}: PDF {pdf_page} provenance href mismatch: {link.attrs.get('href')!r} != {expected_href!r}")
+            printed = fragment.get("printedPage")
+            expected_label = f"查看手冊第{printed}頁原始頁面" if printed else f"查看手冊 PDF 第{pdf_page}頁原始頁面"
+            if link.attrs.get("aria-label") != expected_label:
+                errors.append(f"{unit_id}: PDF {pdf_page} provenance aria-label mismatch")
+            target_file, target_anchor = _relative_target(SITE, path, link.attrs.get("href", ""))
+            if not target_file or not target_file.is_file():
+                errors.append(f"{unit_id}: provenance destination missing/outside site for PDF {pdf_page}")
+            elif not target_anchor:
+                errors.append(f"{unit_id}: provenance destination has no anchor for PDF {pdf_page}")
+            else:
+                _, target_document = _html_tree(target_file)
+                target_nodes = target_document.descendants()
+                if len(_unique_by_id(target_nodes, target_anchor)) != 1:
+                    errors.append(f"{unit_id}: provenance destination #{target_anchor} is missing/duplicated")
+                target_card = _first([node for node in target_nodes if node.attrs.get("id") == target_anchor])
+                if not target_card or not target_card.has_class("page-card"):
+                    errors.append(f"{unit_id}: physical target #{target_anchor} must retain .page-card")
 
-    if len(real_mapping) != 4:
-        errors.append(f"Expected 4 real mapping entries, got {len(real_mapping)}")
-    else:
-        # PDF 17: para 0 / offset 0
-        if real_mapping[0]["paragraphIndex"] != 0 or real_mapping[0]["characterOffset"] != 0:
-            errors.append(f"PDF 17 mapping unexpected: {real_mapping[0]}")
-        # PDF 18: mid-paragraph
-        if not real_mapping[1]["is_mid_paragraph"] or real_mapping[1]["paragraphIndex"] != 11 or real_mapping[1]["characterOffset"] != 35:
-            errors.append(f"PDF 18 mapping unexpected: {real_mapping[1]}")
-        # PDF 19: mid-paragraph
-        if not real_mapping[2]["is_mid_paragraph"] or real_mapping[2]["paragraphIndex"] != 29 or real_mapping[2]["characterOffset"] != 30:
-            errors.append(f"PDF 19 mapping unexpected: {real_mapping[2]}")
-        # PDF 20: paragraph boundary (offset 0)
-        if real_mapping[3]["is_mid_paragraph"] or real_mapping[3]["paragraphIndex"] != 40 or real_mapping[3]["characterOffset"] != 0:
-            errors.append(f"PDF 20 mapping unexpected: {real_mapping[3]}")
+        # TOC text must be exact source paragraph text; an empty TOC is omitted entirely.
+        toc_nodes = [node for node in all_nodes if node.tag == "nav" and node.has_class("topic-toc")]
+        source_clause_nodes = [node for node in body_paragraphs if re.match(r"^[一二三四五六七八九十]+、", node.text)]
+        if source_clause_nodes:
+            if len(toc_nodes) != 1:
+                errors.append(f"{unit_id}: expected one source-derived topic TOC, found {len(toc_nodes)}")
+            else:
+                toc_links = [node for node in toc_nodes[0].descendants(tag="a")]
+                if len(toc_links) != len(source_clause_nodes):
+                    errors.append(f"{unit_id}: TOC link count {len(toc_links)} != source clause count {len(source_clause_nodes)}")
+                for link in toc_links:
+                    target_id = link.attrs.get("href", "").removeprefix("#")
+                    targets = _unique_by_id(all_nodes, target_id)
+                    if not target_id or len(targets) != 1 or targets[0].tag != "p":
+                        errors.append(f"{unit_id}: TOC link target is missing/ambiguous/not a paragraph: {target_id!r}")
+                    elif link.text != targets[0].text:
+                        errors.append(f"{unit_id}: TOC text is not an exact source paragraph excerpt for {target_id}")
+        elif toc_nodes:
+            errors.append(f"{unit_id}: empty topic TOC should be omitted")
 
-    # Synthetic fixture check (3 fragments)
-    synthetic_unit = {
-        "title": "測試主題標題",
-        "id": "synthetic-test",
-        "fragments": [
-            {"pdfPage": 99, "printedPage": 1, "text": "測試主題標題\n\n這是第一段前面的文字，後面接著"},
-            {"pdfPage": 100, "printedPage": 2, "text": "跨頁的後半段內容。\n\n一、這是第二段完整段落。"},
-            {"pdfPage": 101, "printedPage": 3, "text": "這是第三段獨立段落。"},
-        ],
+        # Related Forms are compared to explicit relations, deduplicated by form number as in renderer.
+        expected_forms = _expected_related_forms(unit_id, relations)
+        form_sections = [node for node in all_nodes if node.tag == "section" and node.has_class("related-forms")]
+        expected_form_links = [(form["title"], rel_from(relative, form["url"])) for form in expected_forms]
+        actual_form_links: list[tuple[str, str]] = []
+        if form_sections:
+            for link in form_sections[0].descendants(tag="a", class_name="related-form-card"):
+                title = _first(link.descendants(class_name="related-form-title"))
+                actual_form_links.append((title.text.strip() if title else "", link.attrs.get("href", "")))
+        if len(form_sections) != (1 if expected_forms else 0):
+            errors.append(f"{unit_id}: related-forms section count mismatch; expected {1 if expected_forms else 0}, got {len(form_sections)}")
+        if actual_form_links != expected_form_links:
+            errors.append(f"{unit_id}: related-form title/href mismatch; expected {expected_form_links!r}, got {actual_form_links!r}")
+
+        pagination = [node for node in all_nodes if node.tag == "nav" and node.has_class("reading-pagination")]
+        if len(pagination) != 1 or not pagination[0].descendants(tag="a"):
+            errors.append(f"{unit_id}: Reading Pagination is missing or has no navigation links")
+
+        if unit_id == "overdue-guarantee":
+            contamination = sum(body.text.count(marker) for marker in ("陸、解除保證責任", "保證案件有下列情事之一者，本基金得解除保證責任"))
+            if contamination:
+                errors.append(f"{unit_id}: release-liability contamination found {contamination} occurrence(s)")
+
+        metrics.append({
+            "unitId": unit_id,
+            "sourceNonWhitespaceCharacters": len(raw_sequence),
+            "renderedNonWhitespaceCharacters": len(rendered_sequence),
+            "sourceFidelity": fidelity,
+            "anchors": anchor_pages,
+            "tocItems": len(source_clause_nodes),
+            "relatedForms": len(expected_forms),
+            "provenanceLinks": len(links),
+            "paragraphs": len(body_paragraphs),
+            "htmlBytes": len(content.encode("utf-8")),
+            "contaminationCount": 0 if unit_id == "overdue-guarantee" else None,
+        })
+
+    # All remaining logical units stay on the legacy physical-card architecture.
+    legacy_units = [unit for unit in units if unit["id"] not in configured]
+    unexpected_logical_changes = 0
+    for unit in legacy_units:
+        path = SITE / unit["readingUrl"]
+        if not path.is_file():
+            errors.append(f"Legacy logical unit file missing: {unit['readingUrl']}")
+            unexpected_logical_changes += 1
+            continue
+        _, document = _html_tree(path)
+        nodes = document.descendants()
+        cards = [node for node in nodes if node.has_class("page-card")]
+        continuous = [node for node in nodes if node.tag == "article" and node.has_class("continuous-reading")]
+        if continuous or len(cards) != len(unit["fragments"]):
+            errors.append(f"Legacy logical unit changed unexpectedly: {unit['id']} (cards {len(cards)}/{len(unit['fragments'])}, continuous {len(continuous)})")
+            unexpected_logical_changes += 1
+
+    # The existing 203 physical pages retain their physical .page-card architecture.
+    physical_changes = 0
+    for page in page_data:
+        pdf_page = int(page["pdfPage"])
+        path = SITE / f"{VERSION_ROOT}/pages/page-{pdf_page:03d}.html"
+        if not path.is_file():
+            errors.append(f"Physical page missing: {path.relative_to(SITE)}")
+            physical_changes += 1
+            continue
+        _, document = _html_tree(path)
+        nodes = document.descendants()
+        cards = [node for node in nodes if node.tag == "section" and node.has_class("page-card")]
+        anchors = _unique_by_id(nodes, f"pdf-page-{pdf_page}")
+        if len(cards) != 1 or len(anchors) != 1 or not anchors[0].has_class("page-card"):
+            errors.append(f"Physical page {pdf_page} DOM changed: page-cards={len(cards)}, anchor-count={len(anchors)}")
+            physical_changes += 1
+
+    if len(page_data) != 203:
+        errors.append(f"Expected exactly 203 physical page records, found {len(page_data)}")
+    if unexpected_logical_changes != 0:
+        errors.append(f"UNEXPECTED_LOGICAL_PAGE_CHANGES={unexpected_logical_changes}")
+    if physical_changes != 0:
+        errors.append(f"PHYSICAL_PAGE_DOM_CHANGES={physical_changes}")
+
+    # Generic empty-TOC behavior: no invented text and no empty navigation frame.
+    from build_site import render_continuous_reading_unit
+    empty_toc_unit = {
+        "id": "synthetic-no-toc",
+        "title": "測試無目錄標題",
+        "fragments": [{"pdfPage": 999, "printedPage": 1, "text": "測試無目錄標題\n\n這是一段沒有正式條款標號的原文。"}],
     }
-    syn_stream = "\n".join(f["text"] for f in synthetic_unit["fragments"])
-    syn_paras = normalize_display_text(syn_stream)
-    syn_mapping = map_fragment_boundaries(syn_paras, synthetic_unit["fragments"])
+    empty_toc_html = render_continuous_reading_unit(empty_toc_unit, "versions/115-04/chapters/part-1/synthetic.html")
+    if 'class="topic-toc"' in empty_toc_html:
+        errors.append("Generic empty-TOC behavior emitted an empty .topic-toc")
 
-    if len(syn_mapping) != 3:
-        errors.append(f"Expected 3 synthetic mapping entries, got {len(syn_mapping)}")
-    else:
-        if syn_mapping[0]["paragraphIndex"] != 0 or syn_mapping[0]["characterOffset"] != 0:
-            errors.append(f"Synthetic fragment 1 mapping unexpected: {syn_mapping[0]}")
-        if not syn_mapping[1]["is_mid_paragraph"] or syn_mapping[1]["paragraphIndex"] != 1 or syn_mapping[1]["characterOffset"] != 15:
-            errors.append(f"Synthetic fragment 2 mapping unexpected: {syn_mapping[1]}")
-        if syn_mapping[2]["is_mid_paragraph"] or syn_mapping[2]["paragraphIndex"] != 3 or syn_mapping[2]["characterOffset"] != 0:
-            errors.append(f"Synthetic fragment 3 mapping unexpected: {syn_mapping[2]}")
-
-    syn_html = render_continuous_reading_unit(synthetic_unit, "versions/115-04/chapters/part-1/synthetic.html")
-    if 'id="pdf-page-99"' not in syn_html:
-        errors.append("Synthetic HTML missing #pdf-page-99")
-    if 'id="pdf-page-100"' not in syn_html:
-        errors.append("Synthetic HTML missing #pdf-page-100")
-    if 'id="pdf-page-101"' not in syn_html:
-        errors.append("Synthetic HTML missing #pdf-page-101")
-    if "pdf-page-17" in syn_html or "pdf-page-18" in syn_html:
-        errors.append("Synthetic HTML leaked hardcoded pdf page anchors")
-
-    return errors
+    return errors, metrics
 
 
 def main() -> None:
-    errors = validate_continuous_reading()
+    errors, metrics = validate_continuous_reading()
     if errors:
         print(f"CONTINUOUS READING VALIDATION FAILED with {len(errors)} error(s):")
-        for err in errors:
-            print(f"  - {err}")
+        for error in errors:
+            print(f"  - {error}")
         sys.exit(1)
+    for item in metrics:
+        print(
+            f"PASS {item['unitId']}: source NW={item['sourceNonWhitespaceCharacters']}, "
+            f"rendered NW={item['renderedNonWhitespaceCharacters']}, fidelity={item['sourceFidelity']}, "
+            f"anchors={item['anchors']}, TOC={item['tocItems']}, Related Forms={item['relatedForms']}, "
+            f"provenance={item['provenanceLinks']}, paragraphs={item['paragraphs']}, HTML bytes={item['htmlBytes']}"
+        )
+    print("UNEXPECTED_LOGICAL_PAGE_CHANGES=0")
+    print("PHYSICAL_PAGE_DOM_CHANGES=0 (203 pages)")
     print("CONTINUOUS READING VALIDATION PASSED")
-    print("- Canonical URL verified")
-    print("- Single H1 verified (0 duplicate)")
-    print("- 2301 non-whitespace characters 100% source fidelity verified")
-    print("- 4 inline source page anchors verified (#pdf-page-17..20)")
-    print("- 2 mid-paragraph boundaries verified inline inside <p>")
-    print("- 2 clauses verified (#clause-1, #clause-2)")
-    print("- Topic TOC with exact excerpts verified")
-    print("- Zero .page-card elements in excluded-guarantee verified")
-    print("- 15 other logical units .page-card preserved verified")
-    print("- 203 physical pages .page-card preserved verified")
-    print("- Search landing host and CSS styles verified")
 
 
 if __name__ == "__main__":

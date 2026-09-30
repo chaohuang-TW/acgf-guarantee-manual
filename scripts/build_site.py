@@ -27,6 +27,14 @@ RELATED_FORMS = json.loads((ROOT / "data" / "related-forms.json").read_text(enco
 READING_UNITS = load_resolved_units()
 READING_UNITS_BY_ID = {unit["id"]: unit for unit in READING_UNITS}
 READING_UNITS_BY_PDF = units_by_pdf(READING_UNITS)
+# Rendering configuration only. Unit titles, boundaries, and source text remain
+# authoritative in data/reading-units.json and load_resolved_units().
+CONTINUOUS_READING_UNIT_IDS = frozenset({
+    "excluded-guarantee",
+    "credit-deterioration",
+    "pre-negotiation",
+    "overdue-guarantee",
+})
 TEMPLATES = {path.stem: path.read_text(encoding="utf-8") for path in (ROOT / "templates").glob("*.html")}
 PAGE_RENDERING, _, RESOLVED_RENDERING = load_page_rendering()
 PREVIEW_ROOT = ROOT / "assets" / "page-previews" / VERSION["id"]
@@ -448,6 +456,16 @@ def render_continuous_reading_unit(unit: dict, relative: str) -> str:
         f'<li><a href="#{cid}">{e(title)}</a></li>'
         for cid, title in toc_items
     )
+    topic_toc = ""
+    if toc_items:
+        topic_toc = f"""
+      <nav class="topic-toc" aria-label="本規定目錄">
+        <div class="topic-toc-title">條款目錄</div>
+        <ul>
+          {toc_list_items}
+        </ul>
+      </nav>
+"""
 
     page_count = len(fragments)
     return f"""
@@ -464,12 +482,7 @@ def render_continuous_reading_unit(unit: dict, relative: str) -> str:
         </div>
       </header>
 
-      <nav class="topic-toc" aria-label="本規定目錄">
-        <div class="topic-toc-title">條款目錄</div>
-        <ul>
-          {toc_list_items}
-        </ul>
-      </nav>
+      {topic_toc}
 
       <div class="continuous-source-text display-text">
         {full_body}
@@ -721,7 +734,7 @@ def build_parts() -> None:
             unit = READING_UNITS_BY_ID[section["id"]]
             section_relative = f'{VERSION_ROOT}/chapters/{part["id"]}/{section["id"]}.html'
             pagination = reading_pagination(section["id"], chapters_seq, section_relative)
-            if section["id"] == "excluded-guarantee":
+            if section["id"] in CONTINUOUS_READING_UNIT_IDS:
                 template_str = TEMPLATES["section"].replace('<article class="manual-content">', '<article class="manual-content continuous-reading">')
                 section_content = [
                     render_continuous_reading_unit(unit, section_relative),

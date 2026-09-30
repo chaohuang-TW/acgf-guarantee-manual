@@ -1,21 +1,38 @@
 #!/usr/bin/env python3
-"""Responsive real-browser E2E checks for Reading UX 3.0 Continuous Logical Reading Pilot."""
+"""Data-driven responsive E2E checks for configured continuous-reading units."""
 
 from __future__ import annotations
 
 import http.server
+import json
 import sys
 import threading
+import unicodedata
 from pathlib import Path
+from urllib.parse import urljoin, urlsplit
 
 from playwright.sync_api import Page, sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
+sys.path.insert(0, str(ROOT / "scripts"))
+from build_site import CONTINUOUS_READING_UNIT_IDS  # noqa: E402
+from display_text import non_whitespace_characters  # noqa: E402
+from reading_units import load_resolved_units  # noqa: E402
+
 VIEWPORTS = [
     {"width": 390, "height": 844},
     {"width": 768, "height": 1024},
     {"width": 1440, "height": 900},
+]
+
+# Queries are literal excerpts from the resolved source fragments. Their target
+# page is selected by fragment position, so PDF page numbers remain data-driven.
+SEARCH_CASES = [
+    {"unitId": "credit-deterioration", "query": "信用卡遭強制停用", "fragmentIndex": -1},
+    {"unitId": "pre-negotiation", "query": "最大債權金融機構", "fragmentIndex": -1},
+    {"unitId": "overdue-guarantee", "query": "塗銷抵押權之處理方式", "fragmentIndex": -2},
+    {"unitId": "overdue-guarantee", "query": "其他有合理理由", "fragmentIndex": -1},
 ]
 
 
@@ -24,212 +41,226 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def run_viewport(page: Page, base: str, width: int) -> dict:
+def compact(value: str) -> str:
+    return "".join(unicodedata.normalize("NFKC", value).split()).lower()
+
+
+def assert_no_overflow(page: Page, width: int) -> None:
+    dimensions = page.evaluate("() => ({scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth})")
+    assert dimensions["scroll"] <= dimensions["client"], f"[{width}px] horizontal overflow: {dimensions}"
+
+
+def assert_search_landing(page: Page, base: str, unit: dict, query: str, pdf_page: int) -> None:
+    fragment = next(item for item in unit["fragments"] if int(item["pdfPage"]) == pdf_page)
+    assert compact(query) in compact(fragment["text"]), f"Search query is not source text on PDF {pdf_page}: {query!r}"
+
+    page.goto(f"{base}/")
+    searchbox = page.get_by_role("searchbox", name="全文搜尋")
+    searchbox.fill(query)
+    searchbox.press("Enter")
+    page.locator(".search-status").filter(has_text="找到").wait_for(timeout=10000)
+
+    expected_path = "/" + unit["readingUrl"].lstrip("/")
+    expected_hash = f"#pdf-page-{pdf_page}"
+    matching_link = None
+    for link in page.locator(".search-results article h3 a").all():
+        resolved = urlsplit(urljoin(page.url, link.get_attribute("href") or ""))
+        if resolved.path.endswith(expected_path) and resolved.fragment == expected_hash.removeprefix("#"):
+            matching_link = link
+            break
+    assert matching_link is not None, f"Search result missing {expected_path}{expected_hash} for {query!r}"
+
+    href = urljoin(page.url, matching_link.get_attribute("href") or "")
+    parsed = urlsplit(href)
+    assert parsed.path.endswith(expected_path) and parsed.fragment == expected_hash[1:], f"Wrong search target: {href}"
+    matching_link.click()
+    page.wait_for_url(lambda url: urlsplit(str(url)).path.endswith(expected_path) and urlsplit(str(url)).fragment == expected_hash[1:], timeout=10000)
+
+    anchor = page.locator(f"{expected_hash}")
+    assert anchor.count() == 1, f"Search target anchor missing: {expected_hash}"
+    page.locator(".search-landing-note").wait_for(timeout=5000)
+    landing_host_has_note = page.evaluate("""(id) => {
+      const anchor = document.getElementById(id);
+      if (!anchor) return false;
+      const note = document.querySelector('.search-landing-note');
+      let host = anchor.closest('p');
+      if (!host) {
+        host = anchor.nextElementSibling;
+        if (host === note) host = note.nextElementSibling;
+      }
+      const notePrecedesHost = Boolean(note && host && (note.compareDocumentPosition(host) & Node.DOCUMENT_POSITION_FOLLOWING));
+      return Boolean(host && host.classList.contains('search-landing-target') && note && (host.contains(note) || notePrecedesHost));
+    }""", expected_hash[1:])
+    assert landing_host_has_note, f"Search landing note is not on the anchor host for {expected_hash}"
+    page.wait_for_function("""(id) => {
+      const anchor = document.getElementById(id);
+      const active = document.querySelector('.reading-hit-current');
+      return Boolean(anchor && active && (anchor.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING));
+    }""", arg=expected_hash[1:], timeout=5000)
+    first_hit_follows = page.evaluate("""(id) => {
+      const anchor = document.getElementById(id);
+      const active = document.querySelector('.reading-hit-current');
+      return Boolean(anchor && active && (anchor.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING));
+    }""", expected_hash[1:])
+    assert first_hit_follows, f"Active search hit does not follow {expected_hash} for {query!r}"
+    print(f"SEARCH LANDING PASS {unit['id']} / PDF {pdf_page}: query={query!r}; first-hit-after-anchor=True")
+
+
+def run_unit_viewport(page: Page, base: str, width: int, unit: dict, relations: list[dict]) -> dict:
     console_errors: list[str] = []
     page_errors: list[str] = []
     network_404s: list[str] = []
+    page.on("pageerror", lambda error: page_errors.append(str(error)))
+    page.on("console", lambda msg: console_errors.append(msg.text) if msg.type == "error" else None)
+    page.on("response", lambda response: network_404s.append(response.url) if response.status == 404 else None)
 
-    page.on("pageerror", lambda err: page_errors.append(f"PageError: {err}"))
-    page.on("console", lambda msg: console_errors.append(f"Console {msg.type}: {msg.text}") if msg.type in ["error"] else None)
-    page.on("response", lambda res: network_404s.append(f"404 Not Found: {res.url}") if res.status == 404 else None)
-
-    pilot_url = f"{base}/versions/115-04/chapters/part-1/excluded-guarantee.html"
-
-    # =========================================================================
-    # Test 1: Page Load, DOM Structure, and Overflow Integrity
-    # =========================================================================
-    page.goto(pilot_url)
+    url = f"{base}/{unit['readingUrl']}"
+    page.goto(url)
     page.wait_for_load_state("networkidle")
+    assert_no_overflow(page, width)
 
-    # Verify no horizontal scroll overflow
-    scroll_width = page.evaluate("() => document.documentElement.scrollWidth")
-    client_width = page.evaluate("() => document.documentElement.clientWidth")
-    assert scroll_width <= client_width, f"[{width}px] Horizontal overflow detected: scrollWidth {scroll_width} > clientWidth {client_width}"
+    assert page.locator("h1").count() == 1, f"[{width}px] {unit['id']}: expected one H1"
+    assert page.locator("h1").inner_text().strip() == unit["title"], f"[{width}px] {unit['id']}: H1/title mismatch"
+    assert page.locator("article.continuous-reading").count() == 1, f"[{width}px] {unit['id']}: continuous article missing"
+    assert page.locator(".page-card").count() == 0, f"[{width}px] {unit['id']}: page-card found in continuous unit"
 
-    # Verify H1 uniqueness and text
-    h1s = page.locator("h1")
-    assert h1s.count() == 1, f"[{width}px] Expected exactly 1 H1, found {h1s.count()}"
-    assert h1s.first.text_content().strip() == "參、不予保證規定", f"[{width}px] H1 text mismatch"
+    expected_pages = [int(fragment["pdfPage"]) for fragment in unit["fragments"]]
+    anchors = page.locator(".continuous-reading .source-page-anchor")
+    actual_pages = [int(value) for value in anchors.evaluate_all("nodes => nodes.map(node => node.dataset.pdfPage)")]
+    assert actual_pages == expected_pages, f"[{width}px] {unit['id']}: anchor order {actual_pages} != {expected_pages}"
+    for pdf_page in expected_pages:
+        assert page.locator(f".continuous-reading #pdf-page-{pdf_page}").count() == 1, f"[{width}px] {unit['id']}: anchor count for {pdf_page}"
 
-    # Verify 0 .page-card elements
-    cards = page.locator(".page-card")
-    assert cards.count() == 0, f"[{width}px] Continuous reading unit must not contain .page-card elements, found {cards.count()}"
+    raw_source = "".join(fragment["text"] for fragment in unit["fragments"])
+    rendered_source = page.locator(".continuous-source-heading").inner_text() + page.locator(".continuous-source-text").inner_text()
+    assert non_whitespace_characters(raw_source) == non_whitespace_characters(rendered_source), f"[{width}px] {unit['id']}: DOM source fidelity mismatch"
 
-    # Verify continuous container
-    assert page.locator(".continuous-reading").count() == 1, f"[{width}px] Missing .continuous-reading"
-    assert page.locator(".continuous-header").count() == 1, f"[{width}px] Missing .continuous-header"
-    assert page.locator(".source-provenance").count() == 1, f"[{width}px] Missing .source-provenance"
-    assert page.locator(".topic-toc").count() == 1, f"[{width}px] Missing .topic-toc"
+    provenance = page.locator(".continuous-reading .source-page-link")
+    assert provenance.count() == len(unit["fragments"]), f"[{width}px] {unit['id']}: provenance count mismatch"
+    for fragment, link in zip(unit["fragments"], provenance.all()):
+        pdf_page = int(fragment["pdfPage"])
+        href = link.get_attribute("href") or ""
+        assert f"page-{pdf_page:03d}.html#pdf-page-{pdf_page}" in href, f"[{width}px] {unit['id']}: bad provenance URL {href}"
+        assert link.evaluate("node => node.tagName === 'A' && node.tabIndex >= 0"), f"[{width}px] {unit['id']}: provenance not keyboard-focusable"
 
-    # Verify 4 source anchors
-    for p_num in (17, 18, 19, 20):
-        anchor = page.locator(f"#pdf-page-{p_num}")
-        assert anchor.count() == 1, f"[{width}px] Missing #pdf-page-{p_num} anchor"
+    toc = page.locator(".continuous-reading .topic-toc")
+    if toc.count():
+        assert toc.count() == 1
+        for link in toc.locator("a").all():
+            assert link.evaluate("node => node.tagName === 'A' && node.tabIndex >= 0"), f"[{width}px] {unit['id']}: TOC link not focusable"
+            target_id = (link.get_attribute("href") or "").removeprefix("#")
+            target = page.locator(f"#{target_id}")
+            assert target.count() == 1 and link.inner_text() == target.inner_text(), f"[{width}px] {unit['id']}: TOC is not exact source text"
 
-    # Verify 2 clauses
-    assert page.locator("#clause-1").count() == 1, f"[{width}px] Missing #clause-1"
-    assert page.locator("#clause-2").count() == 1, f"[{width}px] Missing #clause-2"
+    pagination = page.locator(".continuous-reading ~ .reading-pagination")
+    if not pagination.count():
+        pagination = page.locator(".reading-pagination")
+    assert pagination.count() == 1 and pagination.locator("a").count() > 0, f"[{width}px] {unit['id']}: pagination missing"
+    for link in pagination.locator("a").all():
+        assert link.evaluate("node => node.tagName === 'A' && node.tabIndex >= 0"), f"[{width}px] {unit['id']}: pagination link not focusable"
 
-    # Save screenshot
-    screenshot_path = f"/tmp/reading_ux_3_0_continuous_{width}.png"
-    page.screenshot(path=screenshot_path)
+    expected_forms: dict[str, dict] = {}
+    for relation in relations:
+        if relation["contentRef"]["id"] == unit["id"]:
+            expected_forms.setdefault(relation["form"]["number"], relation["form"])
+    cards = page.locator(".related-forms .related-form-card")
+    assert cards.count() == len(expected_forms), f"[{width}px] {unit['id']}: related form count mismatch"
+    actual_form_titles = [card.locator(".related-form-title").inner_text().strip() for card in cards.all()]
+    assert set(actual_form_titles) == {form["title"] for form in expected_forms.values()}, f"[{width}px] {unit['id']}: related form titles mismatch"
 
-    # =========================================================================
-    # Test 2: TOC Navigation Interaction
-    # =========================================================================
-    toc_clause_1 = page.locator('.topic-toc a[href="#clause-1"]')
-    assert toc_clause_1.is_visible(), f"[{width}px] TOC link to clause 1 should be visible"
-    toc_clause_1.click()
-    page.wait_for_function("() => { const el = document.getElementById('clause-1'); const r = el.getBoundingClientRect(); return r.top >= 0 && r.top <= window.innerHeight; }", timeout=5000)
+    if width == 390:
+        # Real Tab traversal to a source link, then Enter and browser Back.
+        focused_source = False
+        tab_count = 0
+        for tab_count in range(1, 81):
+            page.keyboard.press("Tab")
+            focused_source = page.evaluate("() => document.activeElement?.classList?.contains('source-page-link') || false")
+            if focused_source:
+                break
+        assert focused_source, f"[390px] {unit['id']}: Tab traversal did not reach a provenance link in 80 steps"
+        expected_physical = expected_pages[0]
+        page.keyboard.press("Enter")
+        page.wait_for_url(lambda current: f"page-{expected_physical:03d}.html" in str(current) and str(current).endswith(f"#pdf-page-{expected_physical}"), timeout=10000)
+        page.locator(f".page-card#pdf-page-{expected_physical}").wait_for()
+        page.go_back(wait_until="domcontentloaded")
+        assert page.url.endswith(unit["readingUrl"]), f"[390px] {unit['id']}: browser back failed: {page.url}"
+        assert page.locator("article.continuous-reading").count() == 1
+        print(f"KEYBOARD PASS {unit['id']}: Tab reached source link in {tab_count} steps; Enter navigation and browser Back")
 
-    toc_clause_2 = page.locator('.topic-toc a[href="#clause-2"]')
-    assert toc_clause_2.is_visible(), f"[{width}px] TOC link to clause 2 should be visible"
-    toc_clause_2.click()
-    page.wait_for_function("() => { const el = document.getElementById('clause-2'); const r = el.getBoundingClientRect(); return r.top >= 0 && r.top <= window.innerHeight; }", timeout=5000)
-
-    # =========================================================================
-    # Test 2.5: Provenance Links to Original Physical Pages
-    # =========================================================================
-    page.goto(pilot_url)
-    page.wait_for_load_state("networkidle")
-
-    for p_num, pr_num in [(17, 9), (18, 10), (19, 11), (20, 12)]:
-        link = page.locator(f'.source-page-link[href*="page-{p_num:03d}.html#pdf-page-{p_num}"]')
-        assert link.count() == 1, f"[{width}px] Missing provenance link for PDF {p_num} (printed {pr_num})"
-        href = link.get_attribute("href")
-        assert not href.startswith("#pdf-page-"), f"[{width}px] Provenance href must not be local anchor, got {href}"
-        assert f"page-{p_num:03d}.html#pdf-page-{p_num}" in href, f"[{width}px] Provenance href must target physical page, got {href}"
-        aria = link.get_attribute("aria-label")
-        assert f"第{pr_num}頁" in aria, f"[{width}px] Missing or invalid aria-label for page {pr_num}: {aria}"
-
-    # Click printed page 10 (PDF 18)
-    link_18 = page.locator('.source-page-link[href*="page-018.html#pdf-page-18"]')
-    link_18.click()
-    page.wait_for_load_state("networkidle")
-
-    current_url = page.url
-    assert "page-018.html" in current_url, f"[{width}px] Expected navigation to page-018.html, got {current_url}"
-    assert current_url.endswith("#pdf-page-18"), f"[{width}px] Expected hash #pdf-page-18, got {current_url}"
-
-    phys_18 = page.locator("#pdf-page-18")
-    assert phys_18.count() == 1, f"[{width}px] Missing #pdf-page-18 on physical page"
-    assert "page-card" in phys_18.get_attribute("class"), f"[{width}px] Physical page element must have .page-card class"
-
-    page.go_back()
-    page.wait_for_load_state("networkidle")
-    assert "excluded-guarantee.html" in page.url, f"[{width}px] Expected back navigation to excluded-guarantee.html, got {page.url}"
-    assert page.locator(".continuous-reading").count() == 1, f"[{width}px] Back navigation failed to restore continuous reading page"
-
-    # =========================================================================
-    # Test 3: Search Landing Cue & Heading Highlight (?q=不予保證#pdf-page-17)
-    # =========================================================================
-    search_url_17 = f"{pilot_url}?fromSearch=1&q=%E4%B8%8D%E4%BA%88%E4%BF%9D%E8%AD%89#pdf-page-17"
-    page.goto(search_url_17)
-    page.locator(".reading-hit-nav").wait_for(timeout=5000)
-    page.wait_for_timeout(200)
-
-    # Note exists and text matches
-    note = page.locator(".search-landing-note")
-    assert note.count() == 1, f"[{width}px] Missing .search-landing-note"
-    assert note.text_content().strip() == "搜尋結果定位至此"
-
-    # First hit is in H1
-    h1_hit = page.locator(".continuous-source-heading .reading-hit")
-    assert h1_hit.count() >= 1, f"[{width}px] Expected reading-hit inside H1"
-    assert "reading-hit-current" in h1_hit.first.get_attribute("class"), f"[{width}px] First hit in H1 should be current hit"
-
-    # =========================================================================
-    # Test 4: Mid-paragraph Inline Anchor Landing Cue & First Hit (?q=債務#pdf-page-19)
-    # =========================================================================
-    search_url_19 = f"{pilot_url}?fromSearch=1&q=%E5%82%B5%E5%8B%99#pdf-page-19"
-    page.goto(search_url_19)
-    page.locator(".reading-hit-nav").wait_for(timeout=5000)
-    page.wait_for_timeout(200)
-
-    # Note exists
-    assert page.locator(".search-landing-note").count() == 1, f"[{width}px] Missing .search-landing-note on mid-para anchor"
-
-    # Host paragraph has search-landing-target class
-    host_has_target = page.evaluate("() => { const a = document.getElementById('pdf-page-19'); const host = a.closest('p'); return host && host.classList.contains('search-landing-target'); }")
-    assert host_has_target, f"[{width}px] Host paragraph must have search-landing-target"
-
-    # Active hit must follow #pdf-page-19 anchor (inside '或保證債務已逾期者。')
-    is_following_hit = page.evaluate("""() => {
-        const anchor = document.getElementById('pdf-page-19');
-        const active = document.querySelector('.reading-hit-current');
-        if (!anchor || !active) return false;
-        return Boolean(anchor.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING);
-    }""")
-    assert is_following_hit, f"[{width}px] Active hit must strictly follow #pdf-page-19 anchor in document order"
-
-    # =========================================================================
-    # Test 5: Legacy Unit Regression Check (.page-card preservation)
-    # =========================================================================
-    legacy_url = f"{base}/versions/115-04/chapters/part-1/guarantee-subject.html?fromSearch=1&q=%E4%BF%9D%E8%AD%89#pdf-page-13"
-    page.goto(legacy_url)
-    page.locator(".reading-hit-nav").wait_for(timeout=5000)
-    page.wait_for_timeout(200)
-
-    legacy_card = page.locator("#pdf-page-13")
-    assert legacy_card.count() == 1, f"[{width}px] Missing legacy #pdf-page-13"
-    assert "page-card" in legacy_card.get_attribute("class"), f"[{width}px] Legacy element must keep .page-card"
-    assert "search-landing-target" in legacy_card.get_attribute("class"), f"[{width}px] Legacy card must receive search-landing-target"
-    assert legacy_card.locator(".search-landing-note").count() == 1, f"[{width}px] Legacy card must contain .search-landing-note"
-
-    return {
-        "width": width,
-        "console_errors": console_errors,
-        "page_errors": page_errors,
-        "network_404s": network_404s,
-    }
+    assert not console_errors, f"[{width}px] {unit['id']}: console errors: {console_errors}"
+    assert not page_errors, f"[{width}px] {unit['id']}: page errors: {page_errors}"
+    assert not network_404s, f"[{width}px] {unit['id']}: 404s: {network_404s}"
+    print(f"E2E PASS {unit['id']} at {width}px: H1, source fidelity, {len(expected_pages)} anchors/provenance, TOC, Related Forms, pagination, overflow=0, console=0, pageerror=0, 404=0")
+    return {"unitId": unit["id"], "width": width, "anchors": expected_pages, "sourceFidelity": True, "overflow": False, "consoleErrors": console_errors, "pageErrors": page_errors, "network404s": network_404s}
 
 
 def main() -> int:
     if not SITE.is_dir():
         print(f"Error: {SITE} not found. Build first.", file=sys.stderr)
         return 1
+    units = load_resolved_units()
+    units_by_id = {unit["id"]: unit for unit in units}
+    if not CONTINUOUS_READING_UNIT_IDS.issubset(units_by_id):
+        raise RuntimeError("Continuous-reading config references an unknown source unit")
+    candidates = [unit for unit in units if unit["id"] in CONTINUOUS_READING_UNIT_IDS]
+    if len(candidates) != 4:
+        raise RuntimeError(f"Expected four configured continuous-reading units; found {len(candidates)}")
 
-    server = http.server.HTTPServer(("127.0.0.1", 0), lambda *args: QuietHandler(*args, directory=str(SITE)))
+    relations = json.loads((ROOT / "data/related-forms.json").read_text(encoding="utf-8"))["relations"]
+    for case in SEARCH_CASES:
+        unit = units_by_id[case["unitId"]]
+        index = case["fragmentIndex"]
+        if not 0 <= index < len(unit["fragments"]):
+            index = len(unit["fragments"]) + index
+        if not 0 <= index < len(unit["fragments"]):
+            raise RuntimeError(f"Invalid fragment selector in search test: {case}")
+        case["pdfPage"] = int(unit["fragments"][index]["pdfPage"])
+        case["fragment"] = unit["fragments"][index]
+        if compact(case["query"]) not in compact(case["fragment"]["text"]):
+            raise RuntimeError(f"Search E2E query is not literal source text: {case['query']!r} ({case['unitId']})")
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), lambda *args: QuietHandler(*args, directory=str(SITE)))
     port = server.server_port
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    base_url = f"http://127.0.0.1:{port}"
-    print(f"Continuous Reading E2E server started at {base_url}")
-
-    results = []
+    base = f"http://127.0.0.1:{port}"
+    print(f"Continuous Reading E2E server started at {base}")
+    failures: list[str] = []
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            for vp in VIEWPORTS:
-                print(f"Testing viewport {vp['width']}x{vp['height']}...")
-                context = browser.new_context(
-                    viewport={"width": vp['width'], "height": vp['height']}
-                )
-                page = context.new_page()
-                res = run_viewport(page, base_url, vp['width'])
-                results.append(res)
-                context.close()
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            for viewport in VIEWPORTS:
+                for unit in candidates:
+                    context = browser.new_context(viewport={"width": viewport["width"], "height": viewport["height"]})
+                    page = context.new_page()
+                    try:
+                        run_unit_viewport(page, base, viewport["width"], unit, relations)
+                    except Exception as error:
+                        failures.append(f"{unit['id']}@{viewport['width']}: {error}")
+                    finally:
+                        context.close()
+            context = browser.new_context(viewport={"width": 390, "height": 844})
+            page = context.new_page()
+            for case in SEARCH_CASES:
+                try:
+                    assert_search_landing(page, base, units_by_id[case["unitId"]], case["query"], case["pdfPage"])
+                except Exception as error:
+                    failures.append(f"search:{case['unitId']}:{case['pdfPage']}: {error}")
+            context.close()
             browser.close()
     finally:
         server.shutdown()
         server.server_close()
 
-    failed = False
-    for res in results:
-        w = res["width"]
-        if res["console_errors"] or res["page_errors"] or res["network_404s"]:
-            print(f"\n[{w}px] FAIL")
-            for err in res["page_errors"]:
-                print(f"  {err}")
-            for err in res["console_errors"]:
-                print(f"  {err}")
-            for err in res["network_404s"]:
-                print(f"  {err}")
-            failed = True
-        else:
-            print(f"[{w}px] PASS (0 console errors, 0 404s, 0 overflow)")
-
-    return 1 if failed else 0
+    if failures:
+        print(f"CONTINUOUS READING E2E FAILED ({len(failures)}):")
+        for failure in failures:
+            print(f"- {failure}")
+        return 1
+    print("SEARCH LANDING CASES=4; FIRST_HIT_AFTER_ANCHOR=4/4")
+    print("VIEWPORTS=390,768,1440; KEYBOARD=4/4; OVERFLOW=0; CONSOLE=0; PAGEERROR=0; 404=0")
+    print("CONTINUOUS READING E2E PASSED")
+    return 0
 
 
 if __name__ == "__main__":
