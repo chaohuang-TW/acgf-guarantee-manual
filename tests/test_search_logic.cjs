@@ -7,10 +7,57 @@ const css = fs.readFileSync("assets/css/site.css", "utf8");
 const context = { console, URL };
 context.globalThis = context;
 vm.runInNewContext(source, context, { filename: "search.js" });
-const { bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, filterMatches, filterRecordsByScope, findLogicalPassage, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, buildRecoveryVocabulary, levenshteinDistance, evaluateTypoToken, buildZeroResultRecovery } = context.ManualSearch;
+const { bodyMatchOffsets, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, filterMatches, filterRecordsByScope, findLogicalPassage, canonicalizeFormNumberCandidate, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, buildRecoveryVocabulary, levenshteinDistance, evaluateTypoToken, buildZeroResultRecovery } = context.ManualSearch;
 const concepts = JSON.parse(fs.readFileSync("data/search-concepts.json", "utf8"));
 const intents = JSON.parse(fs.readFileSync("data/search-intents.json", "utf8"));
 const index = JSON.parse(fs.readFileSync("site/assets/data/search-index.json", "utf8"));
+
+// Search UX 4.4 Stage 1: strict canonicalization of complete form-number candidates.
+const canonicalFormCases = new Map([
+  ["25A", "25a"], ["25 A", "25a"], ["格式25A", "25a"], ["格式 25A", "25a"],
+  ["格式25 A", "25a"], ["格式 25 A", "25a"], ["格式 ２５ Ａ", "25a"], ["格式 25 a", "25a"],
+  ["25B", "25b"], ["25 B", "25b"], ["格式 25 B", "25b"],
+  ["25C", "25c"], ["25 C", "25c"], ["格式 25 C", "25c"],
+  ["3-1", "3-1"], ["3 -1", "3-1"], ["3- 1", "3-1"], ["3 - 1", "3-1"], ["格式 3 - 1", "3-1"],
+  ["3-1A", "3-1a"], ["3 - 1 A", "3-1a"], ["格式 3 - 1 A", "3-1a"],
+]);
+for (const [query, expected] of canonicalFormCases) {
+  assert.equal(canonicalizeFormNumberCandidate(query), expected, `canonical form number: ${query}`);
+  assert.equal(formNumber(query), expected, `formNumber compatibility: ${query}`);
+}
+for (const query of [
+  "25 AB", "25 A B", "2 5 A", "A25", "25-A", "3 -- 1", "3 -", "- 1", "3 - A", "3 - 1 - A", "3 1", "格式 A25", "格式 25 ABC",
+]) {
+  assert.equal(canonicalizeFormNumberCandidate(query), null, `malformed form candidate must be rejected: ${query}`);
+}
+assert.equal(formNumber("25"), "25", "naked format number remains supported");
+assert.equal(formNumber("格式 25"), "25", "格式 prefix remains optional");
+
+const exactFormHits = (query) => searchRecords(index, query, concepts, intents).matches.filter((match) => match.exactForm);
+const indexedFormCode = (match) => {
+  const titleCode = String(match.record.title || "").match(/^格式\s*(\d+(?:-\d+)?[a-z]?)(?:：|\s|$)/i)?.[1];
+  return titleCode ? canonicalizeFormNumberCandidate(titleCode) : null;
+};
+for (const [query, expectedPage] of [["格式25A", 178], ["格式25 A", 178], ["格式 ２５ Ａ", 178], ["格式 25 a", 178], ["格式25B", 179], ["格式 25 B", 179], ["格式25C", 180], ["格式 25 C", 180], ["格式 3 - 1", 135], ["格式 3 - 1 A", 192]]) {
+  const results = searchRecords(index, query, concepts, intents).matches;
+  assert.equal(results[0].record.pdfPage, expectedPage, `exact form should rank first: ${query}`);
+  assert.equal(results[0].exactForm, true, `exact form recognition: ${query}`);
+  assert.equal(exactFormHits(query).every((match) => indexedFormCode(match) === formNumber(query)), true, `exact matches must remain isolated: ${query}`);
+}
+assert.equal(exactFormHits("25").every((match) => indexedFormCode(match) === "25"), true, "25 must not exact-match 25A/B/C");
+for (const [query, expectedPage] of [["3", 132], ["3A", 189], ["3-1", 135], ["3-1A", 192]]) {
+  const hits = exactFormHits(query);
+  assert.equal(hits.length > 0, true, `exact form hit expected: ${query}`);
+  assert.equal(hits[0].record.pdfPage, expectedPage, `3 / 3A / 3-1 / 3-1A target: ${query}`);
+  assert.equal(hits.every((match) => indexedFormCode(match) === formNumber(query)), true, `3 / 3A / 3-1 / 3-1A isolation: ${query}`);
+}
+const rawSpacedForm = searchRecords([{ type: "form", title: "格式 25A：申請表", text: "格式 25A" }], "格式 25 A", concepts, intents).matches[0];
+assert.equal(rawSpacedForm.matchReasons.find((reason) => reason.kind === "exact-form").queryTerm, "格式 25 A");
+assert.equal(context.ManualSearch.formatMatchReason(rawSpacedForm.matchReasons.find((reason) => reason.kind === "exact-form")), "書表編號完全符合「格式 25 A」");
+const rawFullwidthForm = searchRecords([{ type: "form", title: "格式 25A：申請表", text: "格式 25A" }], "格式 ２５ Ａ", concepts, intents).matches[0];
+assert.equal(rawFullwidthForm.matchReasons.find((reason) => reason.kind === "exact-form").queryTerm, "格式 ２５ Ａ");
+const exactBoostFixture = (title) => searchRecords([{ type: "form", title, text: "格式25A" }], "格式25A", concepts, intents).matches[0].baseScore;
+assert.equal(exactBoostFixture("格式 25A：申請表") - exactBoostFixture("其他申請表"), 1000, "exact-form boost remains +1000");
 
 const rank = (query, url) => searchRecords(index, query, concepts, intents).matches.findIndex(({ record }) => record.url === url) + 1;
 

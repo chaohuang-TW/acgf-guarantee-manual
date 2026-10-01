@@ -290,9 +290,14 @@
     return selectReadingSegments(record, queryInfo)[0]?.segment || null;
   }
 
+  function canonicalizeFormNumberCandidate(query) {
+    const match = normalize(query).match(/^(?:格式\s*)?(\d+)\s*(?:-\s*(\d+))?\s*([a-z])?$/);
+    if (!match) return null;
+    return `${match[1]}${match[2] ? `-${match[2]}` : ""}${match[3] || ""}`;
+  }
+
   function formNumber(query) {
-    const match = normalize(query).match(/^(?:格式\s*)?(\d+(?:-\d+)?[a-z]?)$/);
-    return match ? match[1] : null;
+    return canonicalizeFormNumberCandidate(query);
   }
 
   function fieldMatches(field, terms) {
@@ -1608,7 +1613,7 @@
     if (initialState.q && selectedScope === "all") run("skip");
   }
 
-  globalThis.ManualSearch = { findHighlightRanges, highlightText, bodyMatchOffsets, buildMatchReasons, formatMatchReason, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, readSearchStateFromUrl, writeSearchStateToUrl, searchStateUrl, decorateResultUrlWithSearchState, buildRecoveryVocabulary, levenshteinDistance, evaluateTypoToken, buildZeroResultRecovery };
+  globalThis.ManualSearch = { findHighlightRanges, highlightText, bodyMatchOffsets, buildMatchReasons, formatMatchReason, buildContextText, cleanSnippetText, continuationNeeded, deduplicateAdjacentResults, diversify, filterMatches, filterRecordsByScope, findLogicalPassage, canonicalizeFormNumberCandidate, formNumber, queryConcepts, resultTarget, searchRecords, selectReadingSegment, selectReadingSegments, snippet, tokenizeQuery, zeroResultMessage, readSearchStateFromUrl, writeSearchStateToUrl, searchStateUrl, decorateResultUrlWithSearchState, buildRecoveryVocabulary, levenshteinDistance, evaluateTypoToken, buildZeroResultRecovery };
   if (typeof document !== "undefined") {
     document.querySelectorAll("[data-search]").forEach(attach);
     document.querySelectorAll("[data-keyword]").forEach((button) => button.addEventListener("click", () => {
