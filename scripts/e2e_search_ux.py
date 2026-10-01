@@ -43,7 +43,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     page.goto(f"{base}/?q=代位清償")
     page.locator(".search-status").filter(has_text="找到").wait_for()
 
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "代位清償"
+    assert page.get_by_role("combobox", name="全文搜尋").input_value() == "代位清償"
     results_count = page.locator(".search-results article").count()
     assert results_count > 0, "At least one result should be found"
     assert "q=%E4%BB%A3%E4%BD%8D%E6%B8%85%E5%84%9F" in page.url or "q=代位清償" in page.url
@@ -55,7 +55,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     page.goto(f"{base}/?q=格式25A&type=form")
     page.locator(".search-status").filter(has_text="找到").wait_for()
 
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "格式25A"
+    assert page.get_by_role("combobox", name="全文搜尋").input_value() == "格式25A"
     assert page.locator("button[data-search-type='form']").get_attribute("aria-pressed") == "true"
     assert page.locator("button[data-search-type='all']").get_attribute("aria-pressed") == "false"
 
@@ -75,7 +75,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     # Case 3: Copy Search Link完整Journey
     # ---------------------------------------------------------
     page.goto(base)
-    searchbox = page.get_by_role("searchbox", name="全文搜尋")
+    searchbox = page.get_by_role("combobox", name="全文搜尋")
     searchbox.fill("擔保品")
     searchbox.press("Enter")
     page.locator(".search-status").filter(has_text="找到").wait_for()
@@ -98,14 +98,14 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     # Reopen copied url
     page.goto(copied_url)
     page.locator(".search-status").filter(has_text="找到").wait_for()
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "擔保品"
+    assert page.get_by_role("combobox", name="全文搜尋").input_value() == "擔保品"
     assert page.locator(".search-results article").first.locator("h3").text_content() == first_title_D
 
     # ---------------------------------------------------------
     # Case 4: A → B → Back → Forward
     # ---------------------------------------------------------
     page.goto(base)
-    searchbox = page.get_by_role("searchbox", name="全文搜尋")
+    searchbox = page.get_by_role("combobox", name="全文搜尋")
 
     searchbox.fill("代位清償")
     searchbox.press("Enter")
@@ -135,7 +135,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     page.locator(".search-status").filter(has_text="找到").wait_for()
 
     assert "q=%E4%BB%A3%E4%BD%8D%E6%B8%85%E5%84%9F" in page.url or "q=代位清償" in page.url
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "代位清償"
+    assert page.get_by_role("combobox", name="全文搜尋").input_value() == "代位清償"
     assert page.locator(".search-results article").first.locator("h3").text_content() == first_A_title
     assert page.locator(".search-results article").first.locator("h3 a").get_attribute("href") == first_A_href
 
@@ -144,7 +144,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     page.locator(".search-status").filter(has_text="找到").wait_for()
 
     assert "q=%E6%93%94%E4%BF%9D%E5%93%81" in page.url or "q=擔保品" in page.url
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "擔保品"
+    assert page.get_by_role("combobox", name="全文搜尋").input_value() == "擔保品"
     assert page.locator(".search-results article").first.locator("h3").text_content() == first_B_title
     assert page.locator(".search-results article").first.locator("h3 a").get_attribute("href") == first_B_href
 
@@ -152,7 +152,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     # Case 5 & 7: Search → Logical Reading → Return & Canonical
     # ---------------------------------------------------------
     page.goto(base)
-    searchbox = page.get_by_role("searchbox", name="全文搜尋")
+    searchbox = page.get_by_role("combobox", name="全文搜尋")
     searchbox.fill("代償利息")
     searchbox.press("Enter")
     page.locator(".search-status").filter(has_text="找到").wait_for()
@@ -194,7 +194,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     return_link.click()
     page.locator(".search-status").filter(has_text="找到").wait_for()
 
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "代償利息"
+    assert page.get_by_role("combobox", name="全文搜尋").input_value() == "代償利息"
     assert page.locator(".search-results article").count() > 0
     assert "fromSearch" not in page.url
 
@@ -231,7 +231,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     return_link.click()
     page.locator(".search-status").filter(has_text="找到").wait_for()
 
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "代償利息"
+    assert page.get_by_role("combobox", name="全文搜尋").input_value() == "代償利息"
     assert "q=%E4%BB%A3%E5%84%9F%E5%88%A9%E6%81%AF" in page.url or "q=代償利息" in page.url
     assert "fromSearch" not in page.url
     assert page.locator(".search-results article").count() > 0
@@ -241,7 +241,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     # UX 4.0: Autocomplete & Typeahead
     # ---------------------------------------------------------
     page.goto(base)
-    searchbox = page.get_by_role("searchbox", name="全文搜尋")
+    searchbox = page.get_by_role("combobox", name="全文搜尋")
     searchbox.fill("代位")
     page.wait_for_selector(".search-suggestions li", state="visible")
     
@@ -324,7 +324,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     page.reload()
     page.locator(".search-status").filter(has_text="找到").wait_for()
 
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "擔保品"
+    assert page.get_by_role("combobox", name="全文搜尋").input_value() == "擔保品"
     assert "q=%E6%93%94%E4%BF%9D%E5%93%81" in page.url or "q=擔保品" in page.url
     assert page.locator(".search-results article").first.locator("h3").text_content() == first_title
     assert page.locator(".search-results article").first.locator("h3 a").get_attribute("href") == first_href
@@ -332,7 +332,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     # ---------------------------------------------------------
     # Case 11: Clear Query
     # ---------------------------------------------------------
-    searchbox = page.get_by_role("searchbox", name="全文搜尋")
+    searchbox = page.get_by_role("combobox", name="全文搜尋")
     searchbox.fill("")
     page.wait_for_timeout(500)
 
@@ -368,7 +368,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     keyword_btn.click()
     page.locator(".search-status").filter(has_text="找到").wait_for()
 
-    assert page.get_by_role("searchbox", name="全文搜尋").input_value() == "保證成數"
+    assert page.get_by_role("combobox", name="全文搜尋").input_value() == "保證成數"
     assert "q=%E4%BF%9D%E8%AD%89%E6%88%90%E6%95%B8" in page.url or "q=保證成數" in page.url
     assert page.locator(".search-results article").count() > 0
 
@@ -380,7 +380,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
     # ---------------------------------------------------------
     # A. 搜尋「代位清償」 (Title Hit)
     page.goto(base)
-    searchbox = page.get_by_role("searchbox", name="全文搜尋")
+    searchbox = page.get_by_role("combobox", name="全文搜尋")
     searchbox.fill("代位清償")
     searchbox.press("Enter")
     page.locator(".search-status").filter(has_text="找到").wait_for()
@@ -414,7 +414,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
 
     # B. 多詞搜尋
     page.goto(base)
-    searchbox = page.get_by_role("searchbox", name="全文搜尋")
+    searchbox = page.get_by_role("combobox", name="全文搜尋")
     searchbox.fill("信用 保證")
     searchbox.press("Enter")
     page.locator(".search-status").filter(has_text="找到").wait_for()
@@ -427,7 +427,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
 
     # D. 特殊字元
     page.goto(base)
-    searchbox = page.get_by_role("searchbox", name="全文搜尋")
+    searchbox = page.get_by_role("combobox", name="全文搜尋")
     searchbox.fill("<>&\"'[]()\\.*")
     searchbox.press("Enter")
     page.wait_for_timeout(500)

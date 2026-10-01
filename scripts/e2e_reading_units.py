@@ -30,7 +30,7 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
 
 def search(page: Page, base: str, query: str):
     page.goto(base)
-    page.get_by_role("searchbox", name="全文搜尋").fill(query)
+    page.get_by_role("combobox", name="全文搜尋").fill(query)
     page.get_by_role("button", name="搜尋").click()
     page.locator(".search-status").filter(has_text="找到").wait_for()
     first = page.locator(".search-results article h3 a").first
@@ -44,7 +44,8 @@ def assert_no_overflow(page: Page) -> None:
 
 def run_viewport(page: Page, base: str, width: int) -> dict:
     page.goto(base)
-    assert page.get_by_role("heading", name="農業信用保證業務作業手冊").is_visible()
+    assert page.locator(".brand span").inner_text() == "農業信用保證業務作業手冊"
+    assert page.locator("#home-title").is_visible()
     assert_no_overflow(page)
 
     interest = search(page, base, "代償利息")
@@ -68,6 +69,8 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
         '.section-nav a[href$="subrogation-requirements.html"]'
     )
     assert local_link.count() == 1
+    if width < 900:
+        page.locator(".section-nav > details > summary").click()
     local_link.click()
     page.wait_for_load_state("domcontentloaded")
     assert "/chapters/part-3/subrogation-requirements.html" in page.url
@@ -85,7 +88,7 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
     page.go_back()
     page.wait_for_load_state("domcontentloaded")
     assert page.url.startswith(base)
-    assert page.get_by_role("searchbox", name="全文搜尋").is_visible()
+    assert page.get_by_role("combobox", name="全文搜尋").is_visible()
 
     changes = search(page, base, "內容變更事項")
     assert clean_url(changes.get_attribute("href") or "").endswith(
@@ -98,6 +101,8 @@ def run_viewport(page: Page, base: str, width: int) -> dict:
     assert "貳、終止保證之處理" not in changes_text
     assert "24-23" not in page.locator("body").inner_text()
 
+    if width < 900:
+        page.locator(".global-menu > summary").click()
     main_toc = page.locator(
         'header.site-header nav[aria-label="主要導覽"]'
     ).get_by_role("link", name="完整目錄")

@@ -39,7 +39,7 @@ def run_viewport(context, page: Page, base: str, width: int) -> dict:
         try:
             if query == "25a":
                 page.goto(f"{base}/")
-                searchbox = page.get_by_role("searchbox", name="全文搜尋")
+                searchbox = page.get_by_role("combobox", name="全文搜尋")
                 assert page.locator(".search-result").count() == 0, "Raw 25a must start without previous query results"
                 searchbox.fill("25a")
                 searchbox.press("Enter")

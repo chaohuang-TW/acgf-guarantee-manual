@@ -264,9 +264,13 @@ def validate_continuous_reading() -> tuple[list[str], list[dict]]:
             if link.attrs.get("href") != expected_href:
                 errors.append(f"{unit_id}: PDF {pdf_page} provenance href mismatch: {link.attrs.get('href')!r} != {expected_href!r}")
             printed = fragment.get("printedPage")
-            expected_label = f"查看手冊第{printed}頁原始頁面" if printed else f"查看手冊 PDF 第{pdf_page}頁原始頁面"
-            if link.attrs.get("aria-label") != expected_label:
-                errors.append(f"{unit_id}: PDF {pdf_page} provenance aria-label mismatch")
+            printed_label = f"手冊頁 {printed} " if printed else ""
+            expected_label = printed_label + f"(PDF {pdf_page})"
+            if link.text.strip() != expected_label:
+                errors.append(f"{unit_id}: PDF {pdf_page} provenance visible label mismatch")
+            accessible_label = link.attrs.get("aria-label") or link.text.strip()
+            if accessible_label != expected_label:
+                errors.append(f"{unit_id}: PDF {pdf_page} provenance accessible/visible label mismatch")
             target_file, target_anchor = _relative_target(SITE, path, link.attrs.get("href", ""))
             if not target_file or not target_file.is_file():
                 errors.append(f"{unit_id}: provenance destination missing/outside site for PDF {pdf_page}")

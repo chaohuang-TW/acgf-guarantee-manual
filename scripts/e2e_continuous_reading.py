@@ -55,7 +55,7 @@ def assert_search_landing(page: Page, base: str, unit: dict, query: str, pdf_pag
     assert compact(query) in compact(fragment["text"]), f"Search query is not source text on PDF {pdf_page}: {query!r}"
 
     page.goto(f"{base}/")
-    searchbox = page.get_by_role("searchbox", name="全文搜尋")
+    searchbox = page.get_by_role("combobox", name="全文搜尋")
     searchbox.fill(query)
     searchbox.press("Enter")
     page.locator(".search-status").filter(has_text="找到").wait_for(timeout=10000)
@@ -146,6 +146,12 @@ def run_unit_viewport(page: Page, base: str, width: int, unit: dict, relations: 
     toc = page.locator(".continuous-reading .topic-toc")
     if toc.count():
         assert toc.count() == 1
+        # Read the actual visible source labels after opening the native TOC.
+        # Preserve the original exact-text, anchor and keyboard-link checks.
+        disclosure = page.locator(".topic-toc-disclosure")
+        if disclosure.count() and not disclosure.evaluate("node => node.open"):
+            disclosure.locator("summary").focus()
+            page.keyboard.press("Enter")
         for link in toc.locator("a").all():
             assert link.evaluate("node => node.tagName === 'A' && node.tabIndex >= 0"), f"[{width}px] {unit['id']}: TOC link not focusable"
             target_id = (link.get_attribute("href") or "").removeprefix("#")
@@ -170,6 +176,10 @@ def run_unit_viewport(page: Page, base: str, width: int, unit: dict, relations: 
 
     if width == 390:
         # Real Tab traversal to a source link, then Enter and browser Back.
+        # Source controls are now a native progressive disclosure. Open it with
+        # the keyboard, then retain the original source-link/Enter/Back checks.
+        page.locator(".source-provenance-details > summary").focus()
+        page.keyboard.press("Enter")
         focused_source = False
         tab_count = 0
         for tab_count in range(1, 81):

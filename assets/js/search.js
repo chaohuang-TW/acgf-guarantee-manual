@@ -1166,6 +1166,22 @@
     return element;
   }
 
+  function presentationHighlight(text, terms, ranges) {
+    if (!ranges) return highlightText(text, terms);
+    const fragment = document.createDocumentFragment();
+    let offset = 0;
+    for (const range of ranges) {
+      fragment.append(document.createTextNode(text.slice(offset, range.start)));
+      const mark = document.createElement("mark");
+      mark.className = "search-hit";
+      mark.textContent = text.slice(range.start, range.end);
+      fragment.append(mark);
+      offset = range.end;
+    }
+    fragment.append(document.createTextNode(text.slice(offset)));
+    return fragment;
+  }
+
   function resultElement(result, siteRoot, searchState) {
     const { record } = result;
     const presentation = result.segment || record;
@@ -1174,9 +1190,10 @@
     const heading = document.createElement("h3");
     const link = document.createElement("a");
     const sharedPage = (record.readingSegments || []).length > 1;
-    const passage = sharedPage ? null : findLogicalPassage(record, result.matchedTerms, result.bodyMatches);
+    const ui = result.uiPresentation;
+    const passage = ui ? ui.passage : sharedPage ? null : findLogicalPassage(record, result.matchedTerms, result.bodyMatches);
     link.href = decorateResultUrlWithSearchState(new URL(resultTarget(record, passage, result.segment), siteRoot).href, searchState);
-    link.appendChild(highlightText(presentation.title, result.matchedTerms));
+    link.appendChild(presentationHighlight(presentation.title, result.matchedTerms, ui?.titleRanges));
     heading.append(link);
     const type = document.createElement("span");
     type.className = "result-type";
@@ -1186,7 +1203,8 @@
     appendText(article, "p", "result-path", (presentation.breadcrumb || record.breadcrumb || []).join(" › "));
     const snippetP = document.createElement("p");
     snippetP.className = "result-snippet";
-    snippetP.appendChild(highlightText(passage ? passage.preview : snippet(presentation.text || record.text, result.matchedTerms), result.matchedTerms));
+    const preview = ui ? ui.preview : passage ? passage.preview : snippet(presentation.text || record.text, result.matchedTerms);
+    snippetP.appendChild(presentationHighlight(preview, result.matchedTerms, ui?.previewRanges));
     article.appendChild(snippetP);
     if (passage?.expanded) {
       const button = document.createElement("button");
@@ -1196,7 +1214,7 @@
       button.setAttribute("aria-expanded", "false");
       const full = document.createElement("p");
       full.className = "result-context-full";
-      full.appendChild(highlightText(passage.fullText, result.matchedTerms));
+      full.appendChild(presentationHighlight(passage.fullText, result.matchedTerms, ui?.fullRanges));
       article.appendChild(full);
       full.hidden = true;
       button.addEventListener("click", () => {
@@ -1237,6 +1255,43 @@
     return article;
   }
 
+  // Presentation scheduling: the same exported core runs away from UI events.
+  // If workers are unavailable or fail, the original synchronous path remains.
+  let searchWorker = null;
+  let workerSeeded = false;
+  let workerSerial = 0;
+  const workerJobs = new Map();
+  function computeForInterface(records, query, concepts, intents) {
+    if (typeof Worker === "undefined") return Promise.resolve(searchRecords(records, query, concepts, intents));
+    try {
+      if (!searchWorker) {
+        const root = new URL(document.body.dataset.siteRoot || "./", document.baseURI);
+        searchWorker = new Worker(new URL("assets/js/search-worker.js", root));
+        searchWorker.addEventListener("message", event => {
+          const job = workerJobs.get(event.data.id);
+          if (!job) return;
+          workerJobs.delete(event.data.id);
+          if (event.data.error) job.fallback();
+          else job.resolve(event.data.result);
+        });
+        searchWorker.addEventListener("error", () => {
+          searchWorker?.terminate(); searchWorker = null; workerSeeded = false;
+          const pending = [...workerJobs.values()]; workerJobs.clear();
+          pending.forEach(job => job.fallback());
+        });
+      }
+      return new Promise(resolve => {
+        const id = ++workerSerial;
+        workerJobs.set(id, { resolve, fallback: () => resolve(searchRecords(records, query, concepts, intents)) });
+        const job = { id, query };
+        if (!workerSeeded) Object.assign(job, { records, concepts, intents });
+        searchWorker.postMessage(job); workerSeeded = true;
+      });
+    } catch (error) {
+      return Promise.resolve(searchRecords(records, query, concepts, intents));
+    }
+  }
+
   function attach(panel) {
     const form = panel.querySelector("form");
     const input = panel.querySelector("input[type=search]");
@@ -1250,11 +1305,27 @@
     const localScope = panel.dataset.searchScope || "";
     const localScopeLabel = panel.dataset.searchScopeLabel || "本章";
     const resultLimit = Number(panel.dataset.searchLimit || 50);
+    const homeHeading = document.getElementById("home-title");
+    const homeHeadingContents = homeHeading ? [...homeHeading.childNodes].map(node => node.cloneNode(true)) : [];
     let selectedType = "all";
     let selectedScope = localScope ? "local" : "all";
     let visibleCount = resultLimit;
     let currentMatches = [];
     let timer;
+    let composing = false;
+    let requestVersion = 0;
+    let suggestionRequest = 0;
+    const panelNumber = [...document.querySelectorAll("[data-search]")].indexOf(panel);
+    const suggestionId = `manual-suggestions-${panelNumber}`;
+    if (suggestionsList) {
+      suggestionsList.id = suggestionId;
+      input.setAttribute("aria-controls", suggestionId);
+    }
+    const resultsHeading = document.createElement("h2");
+    resultsHeading.textContent = "搜尋結果";
+    resultsHeading.className = "search-results-heading";
+    resultsHeading.hidden = true;
+    results.before(resultsHeading);
 
     const copyButton = document.createElement("button");
     copyButton.type = "button";
@@ -1300,6 +1371,8 @@
       const shown = filtered.slice(0, visibleCount);
       const siteRoot = new URL(document.body.dataset.siteRoot || "./", document.baseURI);
       status.textContent = `找到 ${filtered.length} 筆結果，已顯示 ${shown.length} 筆。`;
+      resultsHeading.hidden = false;
+      if (!filtered.length) status.textContent = "目前內容類型沒有符合的結果，請切換其他類型或全部。";
       copyButton.hidden = selectedScope !== "all";
       const stateToPass = selectedScope === "all" ? { q: input.value, type: selectedType } : null;
       results.replaceChildren(...shown.map((result) => resultElement(result, siteRoot, stateToPass)));
@@ -1328,13 +1401,33 @@
     }
 
     async function run(historyMode = "push") {
+      const thisRequest = ++requestVersion;
+      suggestionRequest += 1;
+      if (suggestionsList) suggestionsList.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+      input.removeAttribute("aria-activedescendant");
       const query = input.value;
+      document.documentElement.classList.toggle("has-search-query", Boolean(normalize(query)));
+      if (homeHeading) {
+        if (normalize(query)) homeHeading.textContent = "搜尋手冊";
+        else homeHeading.replaceChildren(...homeHeadingContents.map(node => node.cloneNode(true)));
+      }
       visibleCount = resultLimit;
       if (moreButton) moreButton.hidden = true;
       if (searchAllButton) searchAllButton.hidden = true;
       if (!normalize(query)) {
+        currentMatches = [];
+        if (observer) { observer.disconnect(); observer = null; }
+        selectedType = "all";
+        filterButtons.forEach(button => {
+          const type = button.dataset.searchType;
+          button.textContent = type === "all" ? "全部" : TYPE_LABELS[type] || type;
+          button.disabled = false;
+          button.setAttribute("aria-pressed", String(type === "all"));
+        });
         status.textContent = "請輸入搜尋文字。";
         results.replaceChildren();
+        resultsHeading.hidden = true;
         copyButton.hidden = true;
         if (selectedScope === "all" && historyMode !== "skip") {
           writeSearchStateToUrl({ q: "", type: "all" }, historyMode === "replace");
@@ -1352,8 +1445,10 @@
       status.textContent = "搜尋中…";
       try {
         const [records, concepts, intents] = await Promise.all([loadIndex(), loadConcepts(), loadIntents()]);
+        if (thisRequest !== requestVersion || query !== input.value) return;
         const scopedRecords = selectedScope === "local" ? filterRecordsByScope(records, localScope) : records;
-        const searched = searchRecords(scopedRecords, query, concepts, intents);
+        const searched = selectedScope === "local" ? searchRecords(scopedRecords, query, concepts, intents) : await computeForInterface(records, query, concepts, intents);
+        if (thisRequest !== requestVersion || query !== input.value) return;
         currentMatches = searched.matches;
         if (!currentMatches.length && selectedScope === "local") {
           status.textContent = `${localScopeLabel}未找到相關內容。`;
@@ -1363,6 +1458,7 @@
           return;
         }
         if (!currentMatches.length) {
+          resultsHeading.hidden = false;
           status.textContent = zeroResultMessage(query);
           results.replaceChildren();
           copyButton.hidden = true;
@@ -1444,6 +1540,8 @@
 
         render();
       } catch (error) {
+        if (thisRequest !== requestVersion) return;
+        resultsHeading.hidden = true;
         status.textContent = "搜尋索引目前無法載入，請稍後再試或查閱完整PDF。";
         results.replaceChildren();
         copyButton.hidden = true;
@@ -1465,7 +1563,7 @@
       suggestionsList.replaceChildren(...suggestionsData.map((term, idx) => {
         const li = document.createElement("li");
         li.textContent = term;
-        li.id = "suggestion-" + idx;
+        li.id = `${suggestionId}-${idx}`;
         li.setAttribute("role", "option");
         li.setAttribute("aria-selected", "false");
         li.addEventListener("mousedown", (e) => {
@@ -1484,6 +1582,7 @@
     }
 
     async function updateSuggestions(query) {
+      const thisSuggestion = ++suggestionRequest;
       const normQuery = normalize(query);
       if (!normQuery) {
         renderSuggestions([]);
@@ -1491,6 +1590,7 @@
       }
       try {
         const concepts = await loadConcepts();
+        if (thisSuggestion !== suggestionRequest || query !== input.value || document.activeElement !== input || composing) return;
         const terms = new Set();
         concepts.concepts.forEach(concept => {
           concept.terms.forEach(term => {
@@ -1510,10 +1610,12 @@
         if (input.value) updateSuggestions(input.value);
       });
       input.addEventListener("blur", () => {
+        suggestionRequest += 1;
         suggestionsList.hidden = true;
         input.setAttribute("aria-expanded", "false");
       });
       input.addEventListener("keydown", (e) => {
+        if (composing || e.isComposing || e.keyCode === 229) return;
         if (suggestionsList.hidden) return;
         const items = suggestionsList.querySelectorAll("li");
         if (!items.length) return;
@@ -1555,11 +1657,14 @@
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
+      if (composing) return;
       window.clearTimeout(timer);
       lastRunQuery = input.value;
       run("push");
     });
     input.addEventListener("input", () => {
+      requestVersion += 1;
+      if (composing) return;
       if (suggestionsList) updateSuggestions(input.value);
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
@@ -1567,6 +1672,18 @@
         lastRunQuery = input.value;
         run("replace");
       }, 250);
+    });
+    input.addEventListener("compositionstart", () => {
+      composing = true;
+      suggestionRequest += 1;
+      requestVersion += 1;
+      window.clearTimeout(timer);
+      if (suggestionsList) suggestionsList.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+    });
+    input.addEventListener("compositionend", () => {
+      composing = false;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
     });
     for (const button of filterButtons) button.addEventListener("click", () => {
       selectedType = button.dataset.searchType;

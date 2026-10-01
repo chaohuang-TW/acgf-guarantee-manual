@@ -98,9 +98,9 @@ def search_box(compact: bool = False, panel_id: str = "") -> str:
     return f"""
       <div{id_attribute} class="{class_name}" data-search data-search-limit="50">
         <form role="search" novalidate>
-          <label>全文搜尋
+          <label><span class="search-label">全文搜尋</span>
           <div class="search-row autocomplete-container">
-            <input name="q" type="search" autocomplete="off" aria-label="全文搜尋" aria-autocomplete="list" aria-expanded="false" placeholder="搜尋保證成數、同一經濟利害關係人、轉（展）期、代位清償……">
+            <input name="q" type="search" autocomplete="off" role="combobox" aria-label="全文搜尋" aria-autocomplete="list" aria-expanded="false" placeholder="輸入規定、關鍵字或格式編號">
             <ul class="search-suggestions" role="listbox" hidden></ul>
             <button type="submit">搜尋</button>
           </div>
@@ -119,7 +119,8 @@ def search_box(compact: bool = False, panel_id: str = "") -> str:
             </div>
           </fieldset>
         </details>
-        <p class="search-status" aria-live="polite"></p>
+        <p class="search-help">支援多詞查詢與書表編號。查詢只在您的瀏覽器中處理。</p>
+        <div class="search-state-row"><p class="search-status" aria-live="polite" aria-atomic="true"></p></div>
         <div class="search-results"></div>
       </div>
     """
@@ -206,7 +207,7 @@ def page_card(page: dict, relative: str, heading_level: int = 2) -> str:
         actions = f'<div class="page-actions"><button type="button" class="copy-page-link" data-page-anchor="pdf-page-{pdf_page}">複製本頁連結</button><a href="{e(pdf_url)}" target="_blank" rel="noopener noreferrer">開啟原始PDF此頁 ↗</a></div>'
         body = text_body(page)
     return f"""
-      <section class="page-card" id="pdf-page-{pdf_page}">
+      <section class="page-card" id="pdf-page-{pdf_page}" data-source-page-url="{e(rel_from(relative, f'{VERSION_ROOT}/pages/page-{pdf_page:03d}.html'))}#pdf-page-{pdf_page}">
         <h{heading_level}>手冊頁：{e(printed)} <small>PDF頁：{pdf_page}／{PDF_PAGE_COUNT}</small></h{heading_level}>
         {actions}
         {body}
@@ -222,7 +223,7 @@ def reading_fragment_card(page: dict, fragment: dict, relative: str) -> str:
     physical_url = rel_from(relative, f'{VERSION_ROOT}/pages/page-{pdf_page:03d}.html') + f"#pdf-page-{pdf_page}"
     display = "".join(f"<p>{e(paragraph)}</p>" for paragraph in normalize_display_text(fragment["text"]))
     return f"""
-      <section class="page-card reading-fragment" id="pdf-page-{pdf_page}" data-fragment-start="{fragment["startOffset"]}" data-fragment-end="{fragment["endOffset"]}">
+      <section class="page-card reading-fragment" id="pdf-page-{pdf_page}" data-source-page-url="{e(physical_url)}" data-fragment-start="{fragment["startOffset"]}" data-fragment-end="{fragment["endOffset"]}">
         <h2>手冊頁：{e(printed)} <small>PDF頁：{pdf_page}／{PDF_PAGE_COUNT}</small></h2>
         <p class="fragment-note">本節內容節錄自此實體頁；完整來源頁仍保留於單頁閱讀入口。</p>
         <div class="page-actions">
@@ -432,7 +433,8 @@ def render_continuous_reading_unit(unit: dict, relative: str) -> str:
             inner = "".join(parts)
 
         pre_str = "".join(pre_anchors)
-        body_html.append(f"{pre_str}<p{clause_attr}>{inner}</p>")
+        heading_semantics = ' role="heading" aria-level="2"' if clause_attr else ""
+        body_html.append(f"{pre_str}<p{clause_attr}{heading_semantics}>{inner}</p>")
 
     full_body = "\n        ".join(body_html)
 
@@ -445,7 +447,7 @@ def render_continuous_reading_unit(unit: dict, relative: str) -> str:
         aria_label = f"查看手冊第{printed_page}頁原始頁面" if printed_page else f"查看手冊 PDF 第{pdf_page}頁原始頁面"
         printed_label = f"手冊頁 {printed_page} " if printed_page else ""
         quick_links.append(
-            f'<a href="{e(href)}" class="source-page-link" aria-label="{e(aria_label)}">{printed_label}(PDF {pdf_page})</a>'
+            f'<a href="{e(href)}" class="source-page-link">{printed_label}(PDF {pdf_page})</a>'
         )
     quick_links_html = "\n          ".join(quick_links)
 
@@ -459,12 +461,12 @@ def render_continuous_reading_unit(unit: dict, relative: str) -> str:
     topic_toc = ""
     if toc_items:
         topic_toc = f"""
-      <nav class="topic-toc" aria-label="本規定目錄">
+      <details class="topic-toc-disclosure"><summary>本規定目錄 · {len(toc_items)}條</summary><nav class="topic-toc" aria-label="本規定目錄">
         <div class="topic-toc-title">條款目錄</div>
         <ul>
           {toc_list_items}
         </ul>
-      </nav>
+      </nav></details>
 """
 
     page_count = len(fragments)
@@ -474,11 +476,13 @@ def render_continuous_reading_unit(unit: dict, relative: str) -> str:
         <h1 class="continuous-source-heading">{e(unit_title)}</h1>
         <div class="source-provenance">
           <p class="source-meta">{e(source_meta_for_unit(unit))} <small>PDF 頁 {fragments[0]["pdfPage"]}–{fragments[-1]["pdfPage"]}</small></p>
+          <details class="source-provenance-details"><summary>核對來源 · {page_count}頁</summary>
           <p class="source-nature-note">本主題橫跨手冊 {page_count} 頁原始文字層，已整合為連續業務主題閱讀；原始分頁界線以零寬度定位點保留於內文中。</p>
-          <div class="source-quick-links" aria-label="原始實體頁快速跳轉">
+          <div class="source-quick-links" role="group" aria-label="原始實體頁快速跳轉">
             <span class="source-quick-links-label">段落對應手冊頁：</span>
             {quick_links_html}
           </div>
+          </details>
         </div>
       </header>
 
@@ -521,6 +525,20 @@ def write(relative: str, title: str, main: str) -> None:
     versions_url = rel_from(relative, "versions/index.html")
     search_url = "#manual-search" if relative == "index.html" else rel_from(relative, "index.html") + "#manual-search"
     pdf_url = rel_from(relative, f"downloads/{PDF_NAME}")
+    reading_tools = ""
+    if 'class="manual-content' in main or 'class="page-card"' in main:
+        related_label = "相關規定" if 'class="related-rules' in main else "相關書表"
+        reading_tools = '''<div class="reading-tools" data-reading-tools hidden aria-label="閱讀工具" role="region">
+          <span class="reading-tools-label">閱讀工具</span>
+          <button type="button" data-reading-open="contents">本頁目錄</button>
+          <button type="button" data-reading-open="forms">__RELATED_LABEL__</button>
+          <button type="button" data-reading-open="source">核對來源</button>
+          <details class="reading-size" open><summary>字級</summary><div role="group" aria-label="正文字級"><button type="button" data-reading-size="18" aria-label="縮小正文字級">A−</button><button type="button" data-reading-size="20" aria-label="預設正文字級">A</button><button type="button" data-reading-size="24" aria-label="放大正文字級">A＋</button></div></details>
+        </div>
+        <dialog id="reading-drawer" class="reading-drawer" aria-labelledby="reading-drawer-title">
+          <div class="drawer-head"><h2 id="reading-drawer-title">閱讀工具</h2><button type="button" data-reading-close aria-label="關閉閱讀工具">關閉</button></div>
+          <div data-reading-drawer-content></div>
+        </dialog>'''.replace("__RELATED_LABEL__", related_label)
     html_text = fill(
         TEMPLATES["base"],
         TITLE=e(title + "｜農業信用保證業務作業手冊"),
@@ -532,10 +550,13 @@ def write(relative: str, title: str, main: str) -> None:
         VERSION_URL=e(version_url),
         VERSIONS_URL=e(versions_url),
         SEARCH_URL=e(search_url),
+        FORMS_URL=e(rel_from(relative, f"{VERSION_ROOT}/forms/index.html")),
+        APPENDICES_URL=e(rel_from(relative, f"{VERSION_ROOT}/appendices/index.html")),
         PDF_URL=e(pdf_url),
         VERSION_LABEL=e(VERSION_LABEL),
         EDITION=e(VERSION["edition"]),
         MAIN=main,
+        READING_TOOLS=reading_tools,
     )
     html_text = "\n".join(line.rstrip() for line in html_text.splitlines()) + "\n"
     path.write_text(html_text, encoding="utf-8")
@@ -555,7 +576,7 @@ def local_part_nav(part: dict, relative: str, current_section: str | None = None
         target = f'{VERSION_ROOT}/chapters/{part["id"]}/{section["id"]}.html'
         current = ' aria-current="page"' if section["id"] == current_section else ""
         links.append(f'<li><a href="{e(rel_from(relative, target))}"{current}>{e(section["title"])}</a></li>')
-    return f'<details open><summary>{e(part["title"])}</summary><ol>{"".join(links)}</ol></details>'
+    return f'<details><summary>{e(part["title"])}</summary><ol>{"".join(links)}</ol></details>'
 
 
 def reading_pagination(current_id: str, sequence: list[tuple[str, str, str]], relative: str) -> str:
@@ -601,14 +622,16 @@ def quick_entry(label: str, url: str) -> str:
 
 
 def build_home() -> None:
-    keywords = ["保證對象", "保證成數", "不予保證", "保證手續費", "同一經濟利害關係人", "轉（展）期", "逾期處理", "代位清償"]
+    keywords = ["保證對象", "保證成數", "不予保證", "代位清償"]
     keyword_html = "".join(f'<button type="button" data-keyword="{e(word)}">{e(word)}</button>' for word in keywords)
     hero = f"""
-      <div class="current-version">目前版本 <strong>{e(VERSION_LABEL)}</strong></div>
-      <h1>農業信用保證業務作業手冊</h1>
-      <p class="subtitle">{e(VERSION['edition'])}｜公開資料數位閱讀版</p>
+      <div class="hero-intro"><p class="eyebrow">農漁會版 · 業務查詢與閱讀</p>
+      <h1 id="home-title">找到規定，<br>回到原文脈絡。</h1>
+      <p class="subtitle">農業信用保證業務作業手冊</p>
+      <div class="current-version">資料版本 <strong>{e(VERSION_LABEL)}</strong><span>203頁原始PDF</span></div></div>
+      <div class="hero-search">
       {search_box(panel_id="manual-search")}
-      <div class="popular" aria-label="熱門關鍵字"><span>熱門關鍵字</span>{keyword_html}</div>
+      <div class="popular" role="group" aria-label="查詢範例"><span>查詢範例</span>{keyword_html}</div></div>
     """
     quick = []
     for part in TOC["parts"]:
@@ -858,7 +881,7 @@ def build_physical_pages_and_search() -> None:
         relative = f'{VERSION_ROOT}/pages/page-{page["pdfPage"]:03d}.html'
         title, crumbs, url, page_type = classify_page(page)
         content = f'<h1>{e(title)}</h1>{page_card(page, relative)}'
-        main = fill(TEMPLATES["index-list"], BREADCRUMB=breadcrumb([("首頁", rel_from(relative, "index.html")), ("完整目錄", rel_from(relative, VERSION_ROOT + "/index.html"))], f'PDF頁 {page["pdfPage"]}'), CONTENT=content)
+        main = fill(TEMPLATES["section"], BREADCRUMB=breadcrumb([("首頁", rel_from(relative, "index.html")), ("完整目錄", rel_from(relative, VERSION_ROOT + "/index.html"))], f'PDF頁 {page["pdfPage"]}'), LOCAL_NAV=f'<p><a href="{e(rel_from(relative, VERSION_ROOT + "/index.html"))}">返回完整目錄</a></p><p>原始實體頁 · PDF {page["pdfPage"]}／{PDF_PAGE_COUNT}</p>', CONTENT=content)
         write(relative, f'{title}｜PDF頁 {page["pdfPage"]}', main)
         if page["hasTextLayer"]:
             record = {
